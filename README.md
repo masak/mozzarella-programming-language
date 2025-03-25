@@ -30,14 +30,14 @@ trouble if there's already another `temp` declaration in the caller's scope:
 
 Picture the result of the macro expansion:
 
-```
-{
-    let temp = "25 degrees";
-    let angle = "60 degrees";
-    let temp = temp;    // error: redeclaration of `temp`
-    temp = angle;
-    angle = temp;
-}
+```diff
+ {
+     let temp = "25 degrees";
+     let angle = "60 degrees";
++    let temp = temp;    // error: redeclaration of `temp`
++    temp = angle;
++    angle = temp;
+ }
 ```
 
 Where did we go wrong? Thinking of the replacement as a purely textual thing,
