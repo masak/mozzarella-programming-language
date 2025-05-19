@@ -17,7 +17,7 @@ macro swap(x, y) {
 }
 ```
 
-Traditionally, the declaration of `temp` in the generated macro code gets us in
+The declaration of `temp` in the generated macro code gets us in
 trouble if there's already another `temp` declaration in the caller's scope:
 
 ```
