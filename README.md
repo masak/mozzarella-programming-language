@@ -116,3 +116,63 @@ The ability to stack multiple interpolations like this means that outer code
 quotes participate not just in interpolating and building themselves, but also
 inner code quotes. This adds to the expressivity and power of code quotes.
 
+## Grammophone grammar
+
+```
+Program -> .
+Program -> Statement .
+Program -> Declaration .
+
+Statement -> EmptyStatement .
+Statement -> ExprStatement .
+
+EmptyStatement -> semi .
+
+ExprStatement -> Expr semi .
+
+Declaration -> LetDeclaration .
+Declaration -> MacroDeclaration .
+
+LetDeclaration -> let identifier assign Expr semi .
+
+MacroDeclaration -> macro identifier parenL parenR Block .
+MacroDeclaration -> macro identifier parenL ParameterList parenR Block .
+
+ParameterList -> Parameter .
+ParameterList -> ParameterList comma Parameter .
+
+Parameter -> identifier .
+
+Block -> curlyL curlyR .
+Block -> curlyL StatementOrDeclarationList curlyR .
+
+StatementOrDeclarationList -> StatementOrDeclaration .
+StatementOrDeclarationList -> StatementOrDeclarationList StatementOrDeclaration .
+
+StatementOrDeclaration -> Statement .
+StatementOrDeclaration -> Declaration .
+
+Expr -> AssignmentExpr .
+
+AssignmentExpr -> CallExpr .
+AssignmentExpr -> VariableRef assign CallExpr .
+
+CallExpr -> PrimaryExpr .
+CallExpr -> CallExpr parenL parenR .
+CallExpr -> CallExpr parenL ArgumentList parenR .
+
+ArgumentList -> Argument .
+ArgumentList -> ArgumentList comma Argument .
+
+Argument -> Expr .
+
+PrimaryExpr -> VariableRef .
+PrimaryExpr -> CodeQuote .
+PrimaryExpr -> CodeUnquote .
+
+VariableRef -> identifier .
+
+CodeQuote -> codeL StatementOrDeclarationList codeR .
+
+CodeUnquote -> unqL Expr unqR .
+```
