@@ -176,3 +176,5 @@ CodeQuote -> codeL StatementOrDeclarationList codeR .
 
 CodeUnquote -> unqL Expr unqR .
 ```
+
+For the above grammar, the LALR parser has 60 states.
