@@ -178,3 +178,39 @@ CodeUnquote -> unqL Expr unqR .
 ```
 
 For the above grammar, the LALR parser has 60 states.
+
+## Types
+
+* `Int`
+* `Str`
+* `Bool`
+* `None`
+* `Array`
+* `SyntaxNode`
+
+## Syntax node types
+
+Following C#, there is one type `SyntaxNode` for nodes in the syntax tree.
+The below nested list contains the possible values of the `kind` field of syntax nodes.
+
+```
+Program
+Statement
+  EmptyStatement
+  ExprStatement
+Declaration
+  LetDeclaration
+  MacroDeclaration
+ParameterList
+Parameter
+Block
+StatementOrDeclarationList
+Expr
+  AssignmentExpr
+  CallExpr
+  PrimaryExpr
+    VariableRef
+    CodeQuote
+ArgumentList
+Argument
+```
