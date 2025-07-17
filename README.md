@@ -116,6 +116,31 @@ The ability to stack multiple interpolations like this means that outer code
 quotes participate not just in interpolating and building themselves, but also
 inner code quotes. This adds to the expressivity and power of code quotes.
 
+## The outer of the injectile
+
+Consider this example:
+
+```
+macro dubious(x) {
+    code`
+        print(x)
+    `;
+}
+```
+
+This example will fail with a certainty, because the `x` in `print(x)` is
+unbound, and at the time it's incorporated in place of the macro call, this
+will be discovered. Note that the presence of the `x` parameter to the macro
+does not change the situation.
+
+However, the `print` in the code quote should be fine, and so the outer
+scope of the code that gets inserted cannot just be the empty scope.
+
+In light of this, we decide the following:
+
+> The outer scope of the injectile is the "standard scope" (containing
+> readonly bindings to builtins like `print`).
+
 ## Grammophone grammar
 
 ```
