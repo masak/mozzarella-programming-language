@@ -141,6 +141,16 @@ In light of this, we decide the following:
 > The outer scope of the injectile is the "standard scope" (containing
 > readonly bindings to builtins like `print`).
 
+It does mean the following:
+
+* If `print` was redefined/shadowed in the environment of the macro, this
+  redefinition will not be seen/used by the expanded code.
+* It is not possible to read/write a global variable that's in the macro's
+  module (whether or not this module is the same as the macro call).
+
+These restrictions are known, and the decision is nevertheless made as
+above.
+
 ## Grammophone grammar
 
 ```
