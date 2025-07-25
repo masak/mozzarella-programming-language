@@ -151,6 +151,13 @@ It does mean the following:
 These restrictions are known, and the decision is nevertheless made as
 above.
 
+The restrictions also eliminate the possibility of "Type II accidental
+capture", which is when surrounding context at the caller influences
+the meaning of names in the injectile in ways that the macro author
+never intended. But since the surrounding context at the caller cannot
+influence the injectile at all, this kind of accidental capture can never
+happen.
+
 ## Grammophone grammar
 
 ```
