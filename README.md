@@ -162,8 +162,7 @@ happen.
 
 ```
 Program -> .
-Program -> Statement .
-Program -> Declaration .
+Program -> StatementOrDeclarationList .
 
 Statement -> EmptyStatement .
 Statement -> ExprStatement .
