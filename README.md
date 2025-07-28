@@ -168,25 +168,25 @@ Program -> Declaration .
 Statement -> EmptyStatement .
 Statement -> ExprStatement .
 
-EmptyStatement -> semi .
+EmptyStatement -> ";" .
 
-ExprStatement -> Expr semi .
+ExprStatement -> Expr ";" .
 
 Declaration -> LetDeclaration .
 Declaration -> MacroDeclaration .
 
-LetDeclaration -> let identifier assign Expr semi .
+LetDeclaration -> "let" identifier "=" Expr ";" .
 
-MacroDeclaration -> macro identifier parenL parenR Block .
-MacroDeclaration -> macro identifier parenL ParameterList parenR Block .
+MacroDeclaration -> "macro" identifier "(" ")" Block .
+MacroDeclaration -> "macro" identifier "(" ParameterList ")" Block .
 
 ParameterList -> Parameter .
-ParameterList -> ParameterList comma Parameter .
+ParameterList -> ParameterList "," Parameter .
 
 Parameter -> identifier .
 
-Block -> curlyL curlyR .
-Block -> curlyL StatementOrDeclarationList curlyR .
+Block -> "{" "}" .
+Block -> "{" StatementOrDeclarationList "}" .
 
 StatementOrDeclarationList -> StatementOrDeclaration .
 StatementOrDeclarationList -> StatementOrDeclarationList StatementOrDeclaration .
@@ -197,14 +197,14 @@ StatementOrDeclaration -> Declaration .
 Expr -> AssignmentExpr .
 
 AssignmentExpr -> CallExpr .
-AssignmentExpr -> VariableRef assign CallExpr .
+AssignmentExpr -> VariableRef "=" CallExpr .
 
 CallExpr -> PrimaryExpr .
-CallExpr -> CallExpr parenL parenR .
-CallExpr -> CallExpr parenL ArgumentList parenR .
+CallExpr -> CallExpr "(" ")" .
+CallExpr -> CallExpr "(" ArgumentList ")" .
 
 ArgumentList -> Argument .
-ArgumentList -> ArgumentList comma Argument .
+ArgumentList -> ArgumentList "," Argument .
 
 Argument -> Expr .
 
@@ -214,9 +214,9 @@ PrimaryExpr -> CodeUnquote .
 
 VariableRef -> identifier .
 
-CodeQuote -> codeL StatementOrDeclarationList codeR .
+CodeQuote -> "code`" StatementOrDeclarationList "`" .
 
-CodeUnquote -> unqL Expr unqR .
+CodeUnquote -> "${" Expr "}" .
 ```
 
 For the above grammar, the LALR parser has 60 states.
