@@ -234,26 +234,27 @@ For the above grammar, the LALR parser has 60 states.
 
 Following C#, there is one type `SyntaxNode` for nodes in the syntax tree.
 The below nested list contains the possible values of the `kind` field of syntax nodes.
+On the right is for each concrete node type a list of the types of its children.
+Currently, where it says `name`, we assume it's actually a `Str`, but it could also be something more general which includes a gensym type.
 
 ```
-Program
+Program                     -- Array<Statement | Declaration>
 Statement
-  EmptyStatement
-  ExprStatement
+  EmptyStatement            -- (no children)
+  ExprStatement             -- Expr
 Declaration
-  LetDeclaration
-  MacroDeclaration
-ParameterList
-Parameter
-Block
-StatementOrDeclarationList
+  LetDeclaration            -- name, Expr
+  MacroDeclaration          -- name, ParameterList, Block
+ParameterList               -- Array<Parameter>
+Parameter                   -- name
+Block                       -- Array<Statement | Declaration>
 Expr
-  AssignmentExpr
-  CallExpr
+  AssignmentExpr            -- VariableRef, Expr
+  CallExpr                  -- Expr, ArgumentList
   PrimaryExpr
-    VariableRef
-    CodeQuote
-    CodeUnquote
-ArgumentList
-Argument
+    VariableRef             -- name
+    CodeQuote               -- Array<Statement | Declaration> | Expr
+    CodeUnquote             -- Expr
+ArgumentList                -- Array<Argument>
+Argument                    -- Expr
 ```
