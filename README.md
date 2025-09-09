@@ -228,7 +228,7 @@ For the above grammar, the LALR parser has 60 states.
 * `Bool`
 * `None`
 * `Array`
-* `SyntaxNode`
+* `SyntaxNode` and its subtypes; see below
 
 ## Syntax node types
 
