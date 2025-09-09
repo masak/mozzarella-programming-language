@@ -233,7 +233,7 @@ For the above grammar, the LALR parser has 60 states.
 * `Bool`
 * `None`
 * `Array`
-* `SyntaxNode` and its subtypes; see below
+* `SyntaxNode`
 
 ## Syntax node types
 
@@ -245,13 +245,14 @@ Currently, where it says `name`, we assume it's actually a `Str`, but it could a
 ```
 Program                     -- Array<Statement | Declaration>
 Statement
-  EmptyStatement            -- (no children)
+  EmptyStatement            -- (none)
   ExprStatement             -- Expr
 Declaration
-  LetDeclaration            -- name, Expr
-  MacroDeclaration          -- name, ParameterList, Block
+  LetDeclaration            -- Variable, Expr
+  MacroDeclaration          -- Variable, ParameterList, Block
+Variable                    -- name
 ParameterList               -- Array<Parameter>
-Parameter                   -- name
+Parameter                   -- Variable
 Block                       -- Array<Statement | Declaration>
 Expr
   AssignmentExpr            -- VariableRef, Expr
@@ -259,9 +260,9 @@ Expr
   PrimaryExpr
     StrLiteral              -- Str
     IntLiteral              -- Int
-    TrueLiteral             -- (no children)
-    FalseLiteral            -- (no children)
-    NoneLiteral             -- (no children)
+    TrueLiteral             -- (none)
+    FalseLiteral            -- (none)
+    NoneLiteral             -- (none)
     VariableRef             -- name
     CodeQuote               -- Array<Statement | Declaration> | Expr
     CodeUnquote             -- Expr
