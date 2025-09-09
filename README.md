@@ -215,6 +215,7 @@ PrimaryExpr -> NoneLiteral .
 PrimaryExpr -> VariableRef .
 PrimaryExpr -> CodeQuote .
 PrimaryExpr -> CodeUnquote .
+PrimaryExpr -> "(" Expr ")" .
 
 VariableRef -> identifier .
 
