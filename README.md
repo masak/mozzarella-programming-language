@@ -252,6 +252,7 @@ Expr
   PrimaryExpr
     VariableRef
     CodeQuote
+    CodeUnquote
 ArgumentList
 Argument
 ```
