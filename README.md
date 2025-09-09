@@ -207,6 +207,11 @@ ArgumentList -> ArgumentList "," Argument .
 
 Argument -> Expr .
 
+PrimaryExpr -> StrLiteral .
+PrimaryExpr -> IntLiteral .
+PrimaryExpr -> TrueLiteral .
+PrimaryExpr -> FalseLiteral .
+PrimaryExpr -> NoneLiteral .
 PrimaryExpr -> VariableRef .
 PrimaryExpr -> CodeQuote .
 PrimaryExpr -> CodeUnquote .
@@ -252,6 +257,11 @@ Expr
   AssignmentExpr            -- VariableRef, Expr
   CallExpr                  -- Expr, ArgumentList
   PrimaryExpr
+    StrLiteral              -- Str
+    IntLiteral              -- Int
+    TrueLiteral             -- (no children)
+    FalseLiteral            -- (no children)
+    NoneLiteral             -- (no children)
     VariableRef             -- name
     CodeQuote               -- Array<Statement | Declaration> | Expr
     CodeUnquote             -- Expr
