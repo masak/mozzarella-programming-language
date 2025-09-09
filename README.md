@@ -213,6 +213,7 @@ PrimaryExpr -> CodeUnquote .
 
 VariableRef -> identifier .
 
+CodeQuote -> "code`" "`" .
 CodeQuote -> "code`" StatementOrDeclarationList "`" .
 
 CodeUnquote -> "${" Expr "}" .
