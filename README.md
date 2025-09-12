@@ -267,6 +267,11 @@ Expr
     VariableRef             -- name
     CodeQuote               -- Array<Statement | Declaration> | Expr
     CodeUnquote             -- Expr
+  Adapter
+    NoneToExprAdapter       -- (none)
+    ExprToExprAdapter       -- Expr
+    StatementToExprAdapter  -- Statement
+    StatementsToExprAdapter -- Array<Statement | Declaration>
 ArgumentList                -- Array<Argument>
 Argument                    -- Expr
 ```
