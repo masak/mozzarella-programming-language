@@ -259,19 +259,11 @@ Expr
   AssignmentExpr            -- VariableRef, Expr
   CallExpr                  -- Expr, ArgumentList
   PrimaryExpr
-    StrLiteral              -- Str
-    IntLiteral              -- Int
-    TrueLiteral             -- (none)
-    FalseLiteral            -- (none)
-    NoneLiteral             -- (none)
+    Literal                 -- Token
     VariableRef             -- name
-    CodeQuote               -- Array<Statement | Declaration> | Expr
+    CodeQuote               -- Block
     CodeUnquote             -- Expr
-  Adapter
-    NoneToExprAdapter       -- (none)
-    ExprToExprAdapter       -- Expr
-    StatementToExprAdapter  -- Statement
-    StatementsToExprAdapter -- Array<Statement | Declaration>
+    DoExpr                  -- Block
 ArgumentList                -- Array<Argument>
 Argument                    -- Expr
 ```
