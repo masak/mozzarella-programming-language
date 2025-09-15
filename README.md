@@ -215,6 +215,7 @@ PrimaryExpr -> NoneLiteral .
 PrimaryExpr -> VariableRef .
 PrimaryExpr -> CodeQuote .
 PrimaryExpr -> CodeUnquote .
+PrimaryExpr -> DoExpr .
 PrimaryExpr -> "(" Expr ")" .
 
 VariableRef -> identifier .
@@ -223,6 +224,9 @@ CodeQuote -> "code`" "`" .
 CodeQuote -> "code`" StatementOrDeclarationList "`" .
 
 CodeUnquote -> "${" Expr "}" .
+
+DoExpr -> "do" Statement .
+DoExpr -> "do" Block .
 ```
 
 For the above grammar, the LALR parser has 60 states.
