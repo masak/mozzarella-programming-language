@@ -9,6 +9,6 @@ underscore. `/\d(_?\d)*/`
 
 **New value type**: `IntValue` (holding a `bigint` as payload).
 
-**Evaluation**: An `IntListExpr` evaluates to an `IntValue` whose payload is
+**Evaluation**: An `IntLitExpr` evaluates to an `IntValue` whose payload is
 the payload of the `IntLitExpr`'s `IntLit` token.
 
