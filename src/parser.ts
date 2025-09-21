@@ -5,6 +5,7 @@ import {
     Expr,
     IntLitExpr,
     Program,
+    StrLitExpr,
 } from "./syntax";
 import {
     Token,
@@ -53,6 +54,9 @@ export class Parser {
         let token: Token;
         if (token = this.accept(TokenKind.IntLit)!) {
             return new IntLitExpr(token);
+        }
+        else if (token = this.accept(TokenKind.StrLit)!) {
+            return new StrLitExpr(token);
         }
         else {
             this.parseFail("expression");

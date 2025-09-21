@@ -40,3 +40,9 @@ export class IntLitExpr extends Expr {
     }
 }
 
+export class StrLitExpr extends Expr {
+    constructor(token: Token) {
+        super([token]);
+    }
+}
+

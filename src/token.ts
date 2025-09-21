@@ -10,14 +10,15 @@ export class TokenKind {
     }
 
     static IntLit = new TokenKind("IntLit");
+    static StrLit = new TokenKind("StrLit");
     static Eof = new TokenKind("Eof");
 }
 
 export class Token extends SyntaxNode {
     kind: TokenKind;
-    payload?: bigint;
+    payload?: bigint | string;
 
-    constructor(kind: TokenKind, payload?: bigint) {
+    constructor(kind: TokenKind, payload?: bigint | string) {
         super([]);
         this.kind = kind;
         this.payload = payload;
