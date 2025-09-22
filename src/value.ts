@@ -62,3 +62,9 @@ export class BoolValue {
     }
 }
 
+export class NoneValue {
+    toString(): string {
+        return "none";
+    }
+}
+

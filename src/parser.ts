@@ -5,6 +5,7 @@ import {
     BoolLitExpr,
     Expr,
     IntLitExpr,
+    NoneLitExpr,
     Program,
     StrLitExpr,
 } from "./syntax";
@@ -65,6 +66,9 @@ export class Parser {
         }
         else if (token = this.accept(TokenKind.TrueKeyword)!) {
             return new BoolLitExpr(token);
+        }
+        else if (token = this.accept(TokenKind.NoneKeyword)!) {
+            return new NoneLitExpr();
         }
         else {
             this.parseFail("expression");

@@ -122,6 +122,9 @@ export class Lexer {
             else if (name === "false") {
                 return new Token(TokenKind.FalseKeyword, false);
             }
+            else if (name === "none") {
+                return new Token(TokenKind.NoneKeyword);
+            }
             else {
                 throw new Error("Identifiers not supported yet");
             }

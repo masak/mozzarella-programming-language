@@ -13,6 +13,7 @@ export class TokenKind {
     static StrLit = new TokenKind("StrLit");
     static TrueKeyword = new TokenKind("TrueKeyword");
     static FalseKeyword = new TokenKind("FalseKeyword");
+    static NoneKeyword = new TokenKind("NoneKeyword");
     static Eof = new TokenKind("Eof");
 }
 

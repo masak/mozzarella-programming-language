@@ -52,3 +52,9 @@ export class BoolLitExpr extends Expr {
     }
 }
 
+export class NoneLitExpr extends Expr {
+    constructor() {
+        super([]);
+    }
+}
+
