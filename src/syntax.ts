@@ -46,3 +46,9 @@ export class StrLitExpr extends Expr {
     }
 }
 
+export class BoolLitExpr extends Expr {
+    constructor(token: Token) {
+        super([token]);
+    }
+}
+

@@ -22,8 +22,8 @@ export class Lexer {
         return pos < this.input.length && /^\d/.test(this.charAt(pos));
     }
 
-    private seeingUnderscore(pos: number): boolean {
-        return pos < this.input.length && this.charAt(pos) === "_";
+    private seeingLetter(pos: number): boolean {
+        return pos < this.input.length && /^[a-zA-z]/.test(this.charAt(pos));
     }
 
     private seeingChar(char: string, pos: number): boolean {
@@ -55,8 +55,8 @@ export class Lexer {
         else if (this.seeingDigit(this.pos)) {
             let pos = this.pos;
             let digits: Array<string> = [];
-            while (this.seeingDigit(pos) || this.seeingUnderscore(pos)) {
-                if (this.seeingUnderscore(pos)) {
+            while (this.seeingDigit(pos) || this.seeingChar("_", pos)) {
+                if (this.seeingChar("_", pos)) {
                     pos += 1;
                 }
                 if (!this.seeingDigit(pos)) {
@@ -106,6 +106,25 @@ export class Lexer {
             let s = characters.join("");
             this.lookaheadPos = pos;
             return new Token(TokenKind.StrLit, s);
+        }
+        else if (this.seeingLetter(this.pos)) {
+            let pos = this.pos;
+            let characters: Array<string> = [];
+            while (this.seeingLetter(pos)) {
+                characters.push(this.charAt(pos));
+                pos += 1;
+            }
+            this.lookaheadPos = pos;
+            let name = characters.join("");
+            if (name === "true") {
+                return new Token(TokenKind.TrueKeyword, true);
+            }
+            else if (name === "false") {
+                return new Token(TokenKind.FalseKeyword, false);
+            }
+            else {
+                throw new Error("Identifiers not supported yet");
+            }
         }
         else {
             throw new Error("Unrecognized token");

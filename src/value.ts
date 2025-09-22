@@ -50,3 +50,15 @@ export class StrValue {
     }
 }
 
+export class BoolValue {
+    payload: boolean;
+
+    constructor(payload: boolean) {
+        this.payload = payload;
+    }
+
+    toString(): string {
+        return this.payload ? "true" : "false";
+    }
+}
+

@@ -2,6 +2,7 @@ import {
     Lexer,
 } from "./lexer";
 import {
+    BoolLitExpr,
     Expr,
     IntLitExpr,
     Program,
@@ -23,7 +24,8 @@ export class Parser {
 
     private parseFail(expectation: string): never {
         throw new Error(
-            `Expected ${expectation}, found ${this.lexer.lookahead().kind}`
+            `Expected ${expectation}, ` +
+            `found ${this.lexer.lookahead().kind.kind}`
         );
     }
 
@@ -57,6 +59,12 @@ export class Parser {
         }
         else if (token = this.accept(TokenKind.StrLit)!) {
             return new StrLitExpr(token);
+        }
+        else if (token = this.accept(TokenKind.FalseKeyword)!) {
+            return new BoolLitExpr(token);
+        }
+        else if (token = this.accept(TokenKind.TrueKeyword)!) {
+            return new BoolLitExpr(token);
         }
         else {
             this.parseFail("expression");
