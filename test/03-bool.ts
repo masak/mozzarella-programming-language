@@ -4,7 +4,7 @@ import {
 } from "../src/run";
 
 test("boolean literals", (t) => {
-    t.is(run('false'), 'false');
-    t.is(run('true'), 'true');
+    t.is(run("false"), "false");
+    t.is(run("true"), "true");
 });
 
