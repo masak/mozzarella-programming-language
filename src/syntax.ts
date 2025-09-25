@@ -1,12 +1,6 @@
 import {
-    evaluate,
-} from "./evaluate";
-import {
     Token,
 } from "./token";
-import {
-    Value,
-} from "./value";
 
 export abstract class SyntaxNode {
     children: Array<SyntaxNode>;
@@ -20,18 +14,9 @@ export class Program extends SyntaxNode {
     constructor(expr: Expr) {
         super([expr]);
     }
-
-    run(): Value {
-        let expr = this.children[0] as Expr;
-        let value = expr.evaluate();
-        return value;
-    }
 }
 
 export abstract class Expr extends SyntaxNode {
-    evaluate(): Value {
-        return evaluate(this);
-    }
 }
 
 export class IntLitExpr extends Expr {

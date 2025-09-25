@@ -1,4 +1,7 @@
 import {
+    runProgram,
+} from "./evaluate";
+import {
     Lexer,
 } from "./lexer";
 import {
@@ -9,7 +12,7 @@ export function run(source: string): string {
     let lexer = new Lexer(source);
     let parser = new Parser(lexer);
     let program = parser.parseProgram();
-    let value = program.run();
+    let value = runProgram(program);
     return value.toString();
 }
 

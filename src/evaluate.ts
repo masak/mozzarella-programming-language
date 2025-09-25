@@ -10,6 +10,7 @@ import {
     Expr,
     IntLitExpr,
     NoneLitExpr,
+    Program,
     StrLitExpr,
 } from "./syntax";
 import {
@@ -35,5 +36,11 @@ export function evaluate(expr: Expr): Value {
     else {
         throw new Error(`Unknown expr type ${expr.constructor.name}`);
     }
+}
+
+export function runProgram(program: Program): Value {
+    let expr = program.children[0] as Expr;
+    let value = evaluate(expr);
+    return value;
 }
 
