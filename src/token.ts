@@ -14,6 +14,11 @@ export class TokenKind {
     static TrueKeyword = new TokenKind("TrueKeyword");
     static FalseKeyword = new TokenKind("FalseKeyword");
     static NoneKeyword = new TokenKind("NoneKeyword");
+    static Plus = new TokenKind("Plus");
+    static Minus = new TokenKind("Minus");
+    static Mult = new TokenKind("Mult");
+    static FloorDiv = new TokenKind("FloorDiv");
+    static Mod = new TokenKind("Mod");
     static Eof = new TokenKind("Eof");
 }
 

@@ -3,6 +3,8 @@ import {
     TokenKind,
 } from "./token";
 
+const WHITESPACE = /^\s*/;
+
 export class Lexer {
     input: string;
     pos: number = 0;
@@ -13,6 +15,12 @@ export class Lexer {
     }
 
     // low-level helper methods:
+
+    private skipWhitespace(): void {
+        let n = this.input.substring(this.pos).match(WHITESPACE)![0].length;
+        this.pos += n;
+        this.lookaheadPos = this.pos;
+    }
     
     private seeingEof(pos: number): boolean {
         return pos >= this.input.length;
@@ -49,6 +57,7 @@ export class Lexer {
     // lex methods:
 
     lookahead(): Token {
+        this.skipWhitespace();
         if (this.seeingEof(this.pos)) {
             return new Token(TokenKind.Eof);
         }
@@ -129,8 +138,36 @@ export class Lexer {
                 throw new Error("Identifiers not supported yet");
             }
         }
+        else if (this.seeingChar("+", this.pos)) {
+            this.lookaheadPos = this.pos + 1;
+            return new Token(TokenKind.Plus);
+        }
+        else if (this.seeingChar("-", this.pos)) {
+            this.lookaheadPos = this.pos + 1;
+            return new Token(TokenKind.Minus);
+        }
+        else if (this.seeingChar("*", this.pos)) {
+            this.lookaheadPos = this.pos + 1;
+            return new Token(TokenKind.Mult);
+        }
+        else if (this.seeingChar("/", this.pos)) {
+            let pos = this.pos + 1;
+            if (!this.seeingChar("/", this.pos)) {
+                throw new Error("Unrecognized character after '/'");
+            }
+            pos += 1;
+            this.lookaheadPos = pos;
+            return new Token(TokenKind.FloorDiv);
+        }
+        else if (this.seeingChar("%", this.pos)) {
+            this.lookaheadPos = this.pos + 1;
+            return new Token(TokenKind.Mod);
+        }
         else {
-            throw new Error("Unrecognized token");
+            let tokenGuess = this.input
+                .substring(this.pos, this.pos + 10)
+                .replace(/\s.*/, "");
+            throw new Error(`Unrecognized token '${tokenGuess}'`);
         }
     }
 

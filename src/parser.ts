@@ -4,8 +4,10 @@ import {
 import {
     BoolLitExpr,
     Expr,
+    InfixOpExpr,
     IntLitExpr,
     NoneLitExpr,
+    PrefixOpExpr,
     Program,
     StrLitExpr,
 } from "./syntax";
@@ -13,6 +15,27 @@ import {
     Token,
     TokenKind,
 } from "./token";
+
+abstract class Op {
+}
+
+class PrefixOp extends Op {
+    token: Token;
+
+    constructor(token: Token) {
+        super();
+        this.token = token;
+    }
+}
+
+class InfixOp extends Op {
+    token: Token;
+
+    constructor(token: Token) {
+        super();
+        this.token = token;
+    }
+}
 
 export class Parser {
     lexer: Lexer;
@@ -54,25 +77,88 @@ export class Parser {
     }
 
     parseExpr(): Expr {
-        let token: Token;
-        if (token = this.accept(TokenKind.IntLit)!) {
-            return new IntLitExpr(token);
+        let expectation: "term" | "operator" = "term";
+        let termStack: Array<Expr> = [];
+        let opStack: Array<Op> = [];
+
+        function reduce(): void {
+            if (opStack.length === 0) {
+                throw new Error("Empty op stack during reduce");
+            }
+            let op = opStack.pop()!;
+            if (op instanceof PrefixOp) {
+                let operand = termStack.pop()!;
+                termStack.push(new PrefixOpExpr(op.token, operand));
+            }
+            else if (op instanceof InfixOp) {
+                let rhs = termStack.pop()!;
+                let lhs = termStack.pop()!;
+                termStack.push(new InfixOpExpr(lhs, op.token, rhs));
+            }
+            else {
+                throw new Error("Unknown kind of op during reduce");
+            }
         }
-        else if (token = this.accept(TokenKind.StrLit)!) {
-            return new StrLitExpr(token);
+
+        while (true) {
+            let token: Token;
+            if (expectation === "term") {
+                if (token = this.accept(TokenKind.IntLit)!) {
+                    termStack.push(new IntLitExpr(token));
+                    expectation = "operator";
+                }
+                else if (token = this.accept(TokenKind.StrLit)!) {
+                    termStack.push(new StrLitExpr(token));
+                    expectation = "operator";
+                }
+                else if (token = this.accept(TokenKind.FalseKeyword)!) {
+                    termStack.push(new BoolLitExpr(token));
+                    expectation = "operator";
+                }
+                else if (token = this.accept(TokenKind.TrueKeyword)!) {
+                    termStack.push(new BoolLitExpr(token));
+                    expectation = "operator";
+                }
+                else if (token = this.accept(TokenKind.NoneKeyword)!) {
+                    termStack.push(new NoneLitExpr());
+                    expectation = "operator";
+                }
+                else if (token = this.accept(TokenKind.Plus)!
+                            || this.accept(TokenKind.Minus)!) {
+                    opStack.push(new PrefixOp(token));
+                    expectation = "term";
+                }
+                else {
+                    this.parseFail("expression");
+                }
+            }
+            else {  // expectation === "operator"
+                if (token = this.accept(TokenKind.Plus)!
+                    || this.accept(TokenKind.Minus)!
+                    || this.accept(TokenKind.Mult)!
+                    || this.accept(TokenKind.FloorDiv)!
+                    || this.accept(TokenKind.Mod)!) {
+                    opStack.push(new InfixOp(token));
+                }
+                else {
+                    break;  // anything unknown in op pos means we're done
+                }
+                expectation = "term";
+            }
         }
-        else if (token = this.accept(TokenKind.FalseKeyword)!) {
-            return new BoolLitExpr(token);
+
+        while (opStack.length > 0) {
+            reduce();
         }
-        else if (token = this.accept(TokenKind.TrueKeyword)!) {
-            return new BoolLitExpr(token);
+
+        if (termStack.length > 1) {
+            throw new Error("Too many terms left -- impossible");
         }
-        else if (token = this.accept(TokenKind.NoneKeyword)!) {
-            return new NoneLitExpr();
+        else if (termStack.length < 1) {
+            throw new Error("Not enough terms left -- impossible");
         }
-        else {
-            this.parseFail("expression");
-        }
+
+        return termStack[0];
     }
 }
 

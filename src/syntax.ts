@@ -43,3 +43,15 @@ export class NoneLitExpr extends Expr {
     }
 }
 
+export class PrefixOpExpr extends Expr {
+    constructor(token: Token, operand: Expr) {
+        super([token, operand]);
+    }
+}
+
+export class InfixOpExpr extends Expr {
+    constructor(lhs: Expr, token: Token, rhs: Expr) {
+        super([lhs, token, rhs]);
+    }
+}
+
