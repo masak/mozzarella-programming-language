@@ -163,6 +163,10 @@ export class Lexer {
             this.lookaheadPos = this.pos + 1;
             return new Token(TokenKind.Mod);
         }
+        else if (this.seeingChar("~", this.pos)) {
+            this.lookaheadPos = this.pos + 1;
+            return new Token(TokenKind.Tilde);
+        }
         else {
             let tokenGuess = this.input
                 .substring(this.pos, this.pos + 10)

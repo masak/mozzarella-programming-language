@@ -124,7 +124,8 @@ export class Parser {
                     expectation = "operator";
                 }
                 else if (token = this.accept(TokenKind.Plus)!
-                            || this.accept(TokenKind.Minus)!) {
+                            || this.accept(TokenKind.Minus)!
+                            || this.accept(TokenKind.Tilde)!) {
                     opStack.push(new PrefixOp(token));
                     expectation = "term";
                 }
@@ -137,7 +138,8 @@ export class Parser {
                     || this.accept(TokenKind.Minus)!
                     || this.accept(TokenKind.Mult)!
                     || this.accept(TokenKind.FloorDiv)!
-                    || this.accept(TokenKind.Mod)!) {
+                    || this.accept(TokenKind.Mod)!
+                    || this.accept(TokenKind.Tilde)!) {
                     opStack.push(new InfixOp(token));
                 }
                 else {

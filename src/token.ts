@@ -19,6 +19,7 @@ export class TokenKind {
     static Mult = new TokenKind("Mult");
     static FloorDiv = new TokenKind("FloorDiv");
     static Mod = new TokenKind("Mod");
+    static Tilde = new TokenKind("Tilde");
     static Eof = new TokenKind("Eof");
 }
 

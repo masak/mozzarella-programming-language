@@ -20,6 +20,29 @@ import {
     TokenKind,
 } from "./token";
 
+function stringify(value: Value): StrValue {
+    if (value instanceof IntValue) {
+        return new StrValue(String(value.payload));
+    }
+    else if (value instanceof StrValue) {
+        return new StrValue(value.payload);
+    }
+    else if (value instanceof BoolValue) {
+        return new StrValue(value.payload ? "true" : "false");
+    }
+    else if (value instanceof NoneValue) {
+        return new StrValue("none");
+    }
+    else { // generic fallback
+        let typeName = value.constructor.name;
+        if (!/Value$/.test(typeName)) {
+            throw new Error("Type name doesn't end in 'Value'");
+        }
+        let shortTypeName = typeName.replace(/Value$/, "");
+        return new StrValue("<" + shortTypeName + ">");
+    }
+}
+
 export function evaluate(expr: Expr): Value {
     if (expr instanceof IntLitExpr) {
         let payload = (expr.children[0] as Token).payload as bigint;
@@ -52,6 +75,10 @@ export function evaluate(expr: Expr): Value {
                 throw new Error("Expected Int as operand of -");
             }
             return new IntValue(-operandValue.payload);
+        }
+        else if (token.kind === TokenKind.Tilde) {
+            let operandValue = evaluate(operand);
+            return stringify(operandValue);
         }
         else {
             throw new Error(`Unknown prefix op type ${token.kind.kind}`);
@@ -124,6 +151,13 @@ export function evaluate(expr: Expr): Value {
                 throw new Error("Division by 0");
             }
             return new IntValue(left.payload % right.payload);
+        }
+        else if (token.kind === TokenKind.Tilde) {
+            let left = evaluate(lhs);
+            let strLeft = stringify(left);
+            let right = evaluate(rhs);
+            let strRight = stringify(right);
+            return new StrValue(strLeft.payload + strRight.payload);
         }
         else {
             throw new Error(`Unknown infix op type ${token.kind.kind}`);
