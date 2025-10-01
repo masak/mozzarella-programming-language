@@ -167,6 +167,32 @@ export class Lexer {
             this.lookaheadPos = this.pos + 1;
             return new Token(TokenKind.Tilde);
         }
+        else if (this.seeingChar("?", this.pos)) {
+            this.lookaheadPos = this.pos + 1;
+            return new Token(TokenKind.Quest);
+        }
+        else if (this.seeingChar("!", this.pos)) {
+            this.lookaheadPos = this.pos + 1;
+            return new Token(TokenKind.Bang);
+        }
+        else if (this.seeingChar("&", this.pos)) {
+            let pos = this.pos + 1;
+            if (!this.seeingChar("&", this.pos)) {
+                throw new Error("Unrecognized character after '&'");
+            }
+            pos += 1;
+            this.lookaheadPos = pos;
+            return new Token(TokenKind.AmpAmp);
+        }
+        else if (this.seeingChar("|", this.pos)) {
+            let pos = this.pos + 1;
+            if (!this.seeingChar("|", this.pos)) {
+                throw new Error("Unrecognized character after '|'");
+            }
+            pos += 1;
+            this.lookaheadPos = pos;
+            return new Token(TokenKind.PipePipe);
+        }
         else {
             let tokenGuess = this.input
                 .substring(this.pos, this.pos + 10)

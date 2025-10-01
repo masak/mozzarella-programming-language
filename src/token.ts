@@ -20,6 +20,10 @@ export class TokenKind {
     static FloorDiv = new TokenKind("FloorDiv");
     static Mod = new TokenKind("Mod");
     static Tilde = new TokenKind("Tilde");
+    static Quest = new TokenKind("Quest");
+    static Bang = new TokenKind("Bang");
+    static AmpAmp = new TokenKind("AmpAmp");
+    static PipePipe = new TokenKind("PipePipe");
     static Eof = new TokenKind("Eof");
 }
 

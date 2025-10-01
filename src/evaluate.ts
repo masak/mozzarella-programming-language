@@ -43,6 +43,24 @@ function stringify(value: Value): StrValue {
     }
 }
 
+function boolify(value: Value): boolean {
+    if (value instanceof IntValue) {
+        return value.payload !== 0n;
+    }
+    else if (value instanceof StrValue) {
+        return value.payload !== "";
+    }
+    else if (value instanceof BoolValue) {
+        return value.payload;
+    }
+    else if (value instanceof NoneValue) {
+        return false;
+    }
+    else { // generic fallback
+        return true;
+    }
+}
+
 export function evaluate(expr: Expr): Value {
     if (expr instanceof IntLitExpr) {
         let payload = (expr.children[0] as Token).payload as bigint;
@@ -79,6 +97,14 @@ export function evaluate(expr: Expr): Value {
         else if (token.kind === TokenKind.Tilde) {
             let operandValue = evaluate(operand);
             return stringify(operandValue);
+        }
+        else if (token.kind === TokenKind.Quest) {
+            let operandValue = evaluate(operand);
+            return new BoolValue(boolify(operandValue));
+        }
+        else if (token.kind === TokenKind.Bang) {
+            let operandValue = evaluate(operand);
+            return new BoolValue(!boolify(operandValue));
         }
         else {
             throw new Error(`Unknown prefix op type ${token.kind.kind}`);
@@ -158,6 +184,24 @@ export function evaluate(expr: Expr): Value {
             let right = evaluate(rhs);
             let strRight = stringify(right);
             return new StrValue(strLeft.payload + strRight.payload);
+        }
+        else if (token.kind === TokenKind.AmpAmp) {
+            let left = evaluate(lhs);
+            if (boolify(left)) {
+                return evaluate(rhs);
+            }
+            else {
+                return left;
+            }
+        }
+        else if (token.kind === TokenKind.PipePipe) {
+            let left = evaluate(lhs);
+            if (boolify(left)) {
+                return left;
+            }
+            else {
+                return evaluate(rhs);
+            }
         }
         else {
             throw new Error(`Unknown infix op type ${token.kind.kind}`);

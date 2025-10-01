@@ -125,7 +125,9 @@ export class Parser {
                 }
                 else if (token = this.accept(TokenKind.Plus)!
                             || this.accept(TokenKind.Minus)!
-                            || this.accept(TokenKind.Tilde)!) {
+                            || this.accept(TokenKind.Tilde)!
+                            || this.accept(TokenKind.Quest)!
+                            || this.accept(TokenKind.Bang)!) {
                     opStack.push(new PrefixOp(token));
                     expectation = "term";
                 }
@@ -139,7 +141,9 @@ export class Parser {
                     || this.accept(TokenKind.Mult)!
                     || this.accept(TokenKind.FloorDiv)!
                     || this.accept(TokenKind.Mod)!
-                    || this.accept(TokenKind.Tilde)!) {
+                    || this.accept(TokenKind.Tilde)!
+                    || this.accept(TokenKind.AmpAmp)!
+                    || this.accept(TokenKind.PipePipe)!) {
                     opStack.push(new InfixOp(token));
                 }
                 else {
