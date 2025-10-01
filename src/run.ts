@@ -3,10 +3,10 @@ import {
 } from "./evaluate";
 import {
     Lexer,
-} from "./lexer";
+} from "./lex";
 import {
     Parser,
-} from "./parser";
+} from "./parse";
 
 export function run(source: string): string {
     let lexer = new Lexer(source);

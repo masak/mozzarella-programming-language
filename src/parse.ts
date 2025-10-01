@@ -1,6 +1,6 @@
 import {
     Lexer,
-} from "./lexer";
+} from "./lex";
 import {
     BoolLitExpr,
     Expr,
