@@ -152,7 +152,7 @@ export class Lexer {
         }
         else if (this.seeingChar("/", this.pos)) {
             let pos = this.pos + 1;
-            if (!this.seeingChar("/", this.pos)) {
+            if (!this.seeingChar("/", pos)) {
                 throw new Error("Unrecognized character after '/'");
             }
             pos += 1;
@@ -172,12 +172,18 @@ export class Lexer {
             return new Token(TokenKind.Quest);
         }
         else if (this.seeingChar("!", this.pos)) {
-            this.lookaheadPos = this.pos + 1;
+            let pos = this.pos + 1;
+            if (this.seeingChar("=", pos)) {
+                pos += 1;
+                this.lookaheadPos = pos;
+                return new Token(TokenKind.BangEq);
+            }
+            this.lookaheadPos = pos;
             return new Token(TokenKind.Bang);
         }
         else if (this.seeingChar("&", this.pos)) {
             let pos = this.pos + 1;
-            if (!this.seeingChar("&", this.pos)) {
+            if (!this.seeingChar("&", pos)) {
                 throw new Error("Unrecognized character after '&'");
             }
             pos += 1;
@@ -186,12 +192,41 @@ export class Lexer {
         }
         else if (this.seeingChar("|", this.pos)) {
             let pos = this.pos + 1;
-            if (!this.seeingChar("|", this.pos)) {
+            if (!this.seeingChar("|", pos)) {
                 throw new Error("Unrecognized character after '|'");
             }
             pos += 1;
             this.lookaheadPos = pos;
             return new Token(TokenKind.PipePipe);
+        }
+        else if (this.seeingChar("<", this.pos)) {
+            let pos = this.pos + 1;
+            if (this.seeingChar("=", pos)) {
+                pos += 1;
+                this.lookaheadPos = pos;
+                return new Token(TokenKind.LessEq);
+            }
+            this.lookaheadPos = pos;
+            return new Token(TokenKind.Less);
+        }
+        else if (this.seeingChar(">", this.pos)) {
+            let pos = this.pos + 1;
+            if (this.seeingChar("=", pos)) {
+                pos += 1;
+                this.lookaheadPos = pos;
+                return new Token(TokenKind.GreaterEq);
+            }
+            this.lookaheadPos = pos;
+            return new Token(TokenKind.Greater);
+        }
+        else if (this.seeingChar("=", this.pos)) {
+            let pos = this.pos + 1;
+            if (!this.seeingChar("=", pos)) {
+                throw new Error("Unrecognized character after '='");
+            }
+            pos += 1;
+            this.lookaheadPos = pos;
+            return new Token(TokenKind.EqEq);
         }
         else {
             let tokenGuess = this.input

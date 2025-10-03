@@ -37,6 +37,74 @@ class InfixOp extends Op {
     }
 }
 
+const comparisonOps = new Set([
+    TokenKind.Less,
+    TokenKind.LessEq,
+    TokenKind.Greater,
+    TokenKind.GreaterEq,
+    TokenKind.EqEq,
+    TokenKind.BangEq,
+]);
+
+const multiplicativeStrength = 90;
+const additiveStrength = 80;
+const concatenativeStrength = 70;
+const comparativeStrength = 60;
+const conjunctiveStrength = 50;
+const disjunctiveStrength = 40;
+
+// Binding strength of an infix token. Higher means tighter.
+function strength(infixToken: Token): number {
+    let kind = infixToken.kind;
+    if ([TokenKind.Mult, TokenKind.FloorDiv, TokenKind.Mod].includes(kind)) {
+        return multiplicativeStrength;
+    }
+    else if ([TokenKind.Plus, TokenKind.Minus].includes(kind)) {
+        return additiveStrength;
+    }
+    else if (kind === TokenKind.Tilde) {
+        return concatenativeStrength;
+    }
+    else if (comparisonOps.has(kind)) {
+        return comparativeStrength;
+    }
+    else if (kind === TokenKind.AmpAmp) {
+        return conjunctiveStrength;
+    }
+    else if (kind === TokenKind.PipePipe) {
+        return disjunctiveStrength;
+    }
+    else {
+        throw new Error("Precondition error: unrecognized infix token");
+    }
+}
+
+// Returns whether this precedence level/strength has operators associating to
+// the left or to the right. Currently we only have left-associating operators.
+function associativity(strength: number): "left" | "right" {
+    return "left";
+}
+
+const prefixOps = [
+    TokenKind.Plus,
+    TokenKind.Minus,
+    TokenKind.Tilde,
+    TokenKind.Quest,
+    TokenKind.Bang,
+];
+
+const infixOps = [
+    TokenKind.Plus,
+    TokenKind.Minus,
+    TokenKind.Mult,
+    TokenKind.FloorDiv,
+    TokenKind.Mod,
+    TokenKind.Tilde,
+    TokenKind.AmpAmp,
+    TokenKind.PipePipe,
+    ...comparisonOps,
+];
+
 export class Parser {
     lexer: Lexer;
 
@@ -68,6 +136,16 @@ export class Parser {
         return null;
     }
 
+    private acceptAny(kinds: Array<TokenKind>): Token | null {
+        for (let kind of kinds) {
+            let token = this.accept(kind);
+            if (token !== null) {
+                return token;
+            }
+        }
+        return null;
+    }
+
     // parse methods:
 
     parseProgram(): Program {
@@ -80,6 +158,25 @@ export class Parser {
         let expectation: "term" | "operator" = "term";
         let termStack: Array<Expr> = [];
         let opStack: Array<Op> = [];
+
+        function topOfStackIsTighterThan(incomingToken: Token): boolean {
+            if (opStack.length === 0) { // vacuously false
+                return false;
+            }
+            let topOfStack = opStack[opStack.length - 1]; // guaranteed
+            if (topOfStack instanceof PrefixOp) { // always tighter
+                return true;
+            }
+            if (!(topOfStack instanceof InfixOp)) {
+                throw new Error("Precondition failed: unknown op type");
+            }
+            let topOpToken = topOfStack.token;
+            let topOpStrength = strength(topOpToken);
+            let incomingStrength = strength(incomingToken);
+            return topOpStrength > incomingStrength /* tighter */ ||
+                (topOpStrength === incomingStrength
+                     && associativity(topOpStrength) === "left");
+        }
 
         function reduce(): void {
             if (opStack.length === 0) {
@@ -123,11 +220,7 @@ export class Parser {
                     termStack.push(new NoneLitExpr());
                     expectation = "operator";
                 }
-                else if (token = this.accept(TokenKind.Plus)!
-                            || this.accept(TokenKind.Minus)!
-                            || this.accept(TokenKind.Tilde)!
-                            || this.accept(TokenKind.Quest)!
-                            || this.accept(TokenKind.Bang)!) {
+                else if (token = this.acceptAny(prefixOps)!) {
                     opStack.push(new PrefixOp(token));
                     expectation = "term";
                 }
@@ -136,14 +229,10 @@ export class Parser {
                 }
             }
             else {  // expectation === "operator"
-                if (token = this.accept(TokenKind.Plus)!
-                    || this.accept(TokenKind.Minus)!
-                    || this.accept(TokenKind.Mult)!
-                    || this.accept(TokenKind.FloorDiv)!
-                    || this.accept(TokenKind.Mod)!
-                    || this.accept(TokenKind.Tilde)!
-                    || this.accept(TokenKind.AmpAmp)!
-                    || this.accept(TokenKind.PipePipe)!) {
+                if (token = this.acceptAny(infixOps)!) {
+                    while (topOfStackIsTighterThan(token)) {
+                        reduce();
+                    }
                     opStack.push(new InfixOp(token));
                 }
                 else {

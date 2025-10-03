@@ -61,6 +61,166 @@ function boolify(value: Value): boolean {
     }
 }
 
+function isComparable(value: Value): boolean {
+    return value instanceof IntValue ||
+        value instanceof StrValue;
+}
+
+function isLessThan(left: Value, right: Value): boolean {
+    let comparable = isComparable(left) && isComparable(right);
+    let sameType = left.constructor === right.constructor;
+    if (!(comparable && sameType)) {
+        throw new Error(`Cannot compare ${left.constructor.name} ` +
+                        `and ${right.constructor.name}`);
+    }
+
+    if (left instanceof IntValue) {
+        if (!(right instanceof IntValue)) {
+            throw new Error("Precondition failed: not an Int");
+        }
+        return left.payload < right.payload;
+    }
+    else if (left instanceof StrValue) {
+        if (!(right instanceof StrValue)) {
+            throw new Error("Precondition failed: not a Str");
+        }
+        return left.payload < right.payload;
+    }
+    else {
+        throw new Error("Precondition failed: unrecognized comparable type");
+    }
+}
+
+function areEqual(left: Value, right: Value): boolean {
+    if (left instanceof IntValue) {
+        if (!(right instanceof IntValue)) {
+            return false;
+        }
+        return left.payload === right.payload;
+    }
+    else if (left instanceof StrValue) {
+        if (!(right instanceof StrValue)) {
+            return false;
+        }
+        return left.payload === right.payload;
+    }
+    else if (left instanceof BoolValue) {
+        if (!(right instanceof BoolValue)) {
+            return false;
+        }
+        return left.payload === right.payload;
+    }
+    else if (left instanceof NoneValue) {
+        if (!(right instanceof NoneValue)) {
+            return false;
+        }
+        return true;
+    }
+    else {
+        // Generic fallback: reference equality
+        return left === right;
+    }
+}
+
+const comparisonOps = new Set([
+    TokenKind.Less,
+    TokenKind.LessEq,
+    TokenKind.Greater,
+    TokenKind.GreaterEq,
+    TokenKind.EqEq,
+    TokenKind.BangEq,
+]);
+
+// Traverses down the left leg of an expression tree, collecting all comparison
+// operators and their operands, in left-to-right (top-to-bottom) order.
+function findAllChainedOps(root: Expr): [Array<Expr>, Array<Token>] {
+    if (!(root instanceof InfixOpExpr)
+        || !comparisonOps.has((root.children[1] as Token).kind)) {
+        throw new Error("Precondition failed: root must be comparison expr");
+    }
+    let stack: Array<InfixOpExpr> = [root];
+    while (true) {
+        let lhs = stack[stack.length - 1].children[0];
+        if (lhs instanceof InfixOpExpr
+            && comparisonOps.has((lhs.children[1] as Token).kind)) {
+            stack.push(lhs);
+        }
+        else {
+            break;
+        }
+    }
+    let firstLhs: Expr = stack[stack.length - 1].children[0] as Expr;
+    let exprs: Array<Expr> = [firstLhs];
+    let ops: Array<Token> = [];
+    while (stack.length > 0) {
+        let expr = stack.pop()!;
+        let op = expr.children[1] as Token;
+        ops.push(op);
+        let rhs = expr.children[2] as Expr;
+        exprs.push(rhs);
+    }
+    return [exprs, ops];
+}
+
+// Upholds the following rules:
+//
+// - The != operator doesn't chain with anything (even itself)
+// - The (< <= ==) operators go together, as do the (> >= ==) operators, but
+//   any other combination of comparison operators is disallowed
+function checkForUnchainableOps(ops: Array<Token>) {
+    let hasNotEq = ops.some((op) => op.kind === TokenKind.BangEq);
+    if (hasNotEq && ops.length > 1) {
+        let notEqOpIndex = ops.findIndex((op) => op.kind === TokenKind.BangEq);
+        let otherOp = notEqOpIndex < ops.length
+            ? ops[notEqOpIndex + 1]
+            : ops[notEqOpIndex - 1];
+        throw new Error(`Cannot chain != and ${otherOp.kind.kind}`);
+    }
+
+    let hasLessTypeOps = ops.some(
+        (op) => op.kind === TokenKind.Less || op.kind === TokenKind.LessEq
+    );
+    let hasGreaterTypeOps = ops.some(
+        (op) => op.kind === TokenKind.Greater
+            || op.kind === TokenKind.GreaterEq
+    );
+    if (hasLessTypeOps && hasGreaterTypeOps) {
+        let lessTypeOp = ops.find(
+            (op) => op.kind === TokenKind.Less || op.kind === TokenKind.LessEq
+        )!;
+        let greaterTypeOp = ops.find(
+            (op) => op.kind === TokenKind.Greater
+                || op.kind === TokenKind.GreaterEq
+        )!;
+        throw new Error(`Cannot chain ${lessTypeOp.kind.kind} ` +
+                        `and ${greaterTypeOp.kind.kind}`);
+    }
+}
+
+function evaluateComparison(left: Value, op: Token, right: Value): boolean {
+    if (op.kind === TokenKind.Less) {
+        return isLessThan(left, right);
+    }
+    else if (op.kind === TokenKind.LessEq) {
+        return isLessThan(left, right) || areEqual(left, right);
+    }
+    else if (op.kind === TokenKind.Greater) {
+        return isLessThan(right, left);
+    }
+    else if (op.kind === TokenKind.GreaterEq) {
+        return isLessThan(right, left) || areEqual(left, right);
+    }
+    else if (op.kind === TokenKind.EqEq) {
+        return areEqual(left, right);
+    }
+    else if (op.kind === TokenKind.BangEq) {
+        return !areEqual(left, right);
+    }
+    else {
+        throw new Error(`Unrecognized comparison token kind ${op.kind.kind}`);
+    }
+}
+
 export function evaluate(expr: Expr): Value {
     if (expr instanceof IntLitExpr) {
         let payload = (expr.children[0] as Token).payload as bigint;
@@ -202,6 +362,22 @@ export function evaluate(expr: Expr): Value {
             else {
                 return evaluate(rhs);
             }
+        }
+        else if (comparisonOps.has(token.kind)) {
+            let [exprs, ops] = findAllChainedOps(expr);
+            checkForUnchainableOps(ops);
+            let success = true; // until proven false
+            let prev = evaluate(exprs[0]);
+            for (let i = 0; i < ops.length; i++) {
+                let next = evaluate(exprs[i + 1]);
+                let op = ops[i];
+                success = evaluateComparison(prev, op, next);
+                if (!success) {
+                    break;
+                }
+                prev = next;
+            }
+            return new BoolValue(success);
         }
         else {
             throw new Error(`Unknown infix op type ${token.kind.kind}`);

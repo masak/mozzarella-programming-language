@@ -24,6 +24,12 @@ export class TokenKind {
     static Bang = new TokenKind("Bang");
     static AmpAmp = new TokenKind("AmpAmp");
     static PipePipe = new TokenKind("PipePipe");
+    static Less = new TokenKind("Less");
+    static LessEq = new TokenKind("LessEq");
+    static Greater = new TokenKind("Greater");
+    static GreaterEq = new TokenKind("GreaterEq");
+    static EqEq = new TokenKind("EqEq");
+    static BangEq = new TokenKind("BangEq");
     static Eof = new TokenKind("Eof");
 }
 
