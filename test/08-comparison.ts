@@ -3,7 +3,7 @@ import {
     run,
 } from "../src/run";
 
-test("integer operators", (t) => {
+test("comparison operators", (t) => {
     t.is(run("1 < 2"), "true");
     t.is(run("2 < 1"), "false");
     t.is(run("3 < 3"), "false");

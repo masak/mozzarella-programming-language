@@ -3,7 +3,7 @@ import {
     run,
 } from "../src/run";
 
-test("integer operators", (t) => {
+test("boolean operators", (t) => {
     t.is(run("?0"), "false");
     t.is(run("?5"), "true");
     t.is(run('?""'), "false");
