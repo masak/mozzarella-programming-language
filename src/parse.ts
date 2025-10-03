@@ -7,6 +7,7 @@ import {
     InfixOpExpr,
     IntLitExpr,
     NoneLitExpr,
+    ParenExpr,
     PrefixOpExpr,
     Program,
     StrLitExpr,
@@ -35,6 +36,9 @@ class InfixOp extends Op {
         super();
         this.token = token;
     }
+}
+
+class ParenOp extends Op {
 }
 
 const comparisonOps = new Set([
@@ -167,6 +171,9 @@ export class Parser {
             if (topOfStack instanceof PrefixOp) { // always tighter
                 return true;
             }
+            else if (topOfStack instanceof ParenOp) { // not really an op
+                return false;
+            }
             if (!(topOfStack instanceof InfixOp)) {
                 throw new Error("Precondition failed: unknown op type");
             }
@@ -224,6 +231,13 @@ export class Parser {
                     opStack.push(new PrefixOp(token));
                     expectation = "term";
                 }
+                else if (token = this.accept(TokenKind.ParenL)!) {
+                    opStack.push(new ParenOp());
+                    expectation = "term";
+                }
+                else if (token = this.accept(TokenKind.ParenR)!) {
+                    this.parseFail("term");
+                }
                 else {
                     this.parseFail("expression");
                 }
@@ -234,11 +248,23 @@ export class Parser {
                         reduce();
                     }
                     opStack.push(new InfixOp(token));
+                    expectation = "term";
+                }
+                else if (token = this.accept(TokenKind.ParenR)!) {
+                    if (!opStack.some((op) => op instanceof ParenOp)) {
+                        throw new Error("')' without '('");
+                    }
+                    while (!(opStack[opStack.length - 1] instanceof ParenOp)) {
+                        reduce();
+                    }
+                    opStack.pop();  // the ParenL
+                    let inner = termStack.pop()!;
+                    termStack.push(new ParenExpr(inner));
+                    expectation = "operator";
                 }
                 else {
                     break;  // anything unknown in op pos means we're done
                 }
-                expectation = "term";
             }
         }
 

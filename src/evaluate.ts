@@ -11,6 +11,7 @@ import {
     InfixOpExpr,
     IntLitExpr,
     NoneLitExpr,
+    ParenExpr,
     PrefixOpExpr,
     Program,
     StrLitExpr,
@@ -382,6 +383,11 @@ export function evaluate(expr: Expr): Value {
         else {
             throw new Error(`Unknown infix op type ${token.kind.kind}`);
         }
+    }
+    else if (expr instanceof ParenExpr) {
+        let inner = expr.children[0] as Expr;
+        let value = evaluate(inner);
+        return value;
     }
     else {
         throw new Error(`Unknown expr type ${expr.constructor.name}`);

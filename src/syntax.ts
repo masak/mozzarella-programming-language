@@ -55,3 +55,9 @@ export class InfixOpExpr extends Expr {
     }
 }
 
+export class ParenExpr extends Expr {
+    constructor(inner: Expr) {
+        super([inner]);
+    }
+}
+

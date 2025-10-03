@@ -228,10 +228,19 @@ export class Lexer {
             this.lookaheadPos = pos;
             return new Token(TokenKind.EqEq);
         }
+        else if (this.seeingChar("(", this.pos)) {
+            this.lookaheadPos = this.pos + 1;
+            return new Token(TokenKind.ParenL);
+        }
+        else if (this.seeingChar(")", this.pos)) {
+            this.lookaheadPos = this.pos + 1;
+            return new Token(TokenKind.ParenR);
+        }
         else {
             let tokenGuess = this.input
                 .substring(this.pos, this.pos + 10)
-                .replace(/\s.*/, "");
+                .replace(/\s.*/, "")
+                .replace(/\w+$/, "");
             throw new Error(`Unrecognized token '${tokenGuess}'`);
         }
     }

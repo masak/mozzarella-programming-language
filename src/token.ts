@@ -30,6 +30,8 @@ export class TokenKind {
     static GreaterEq = new TokenKind("GreaterEq");
     static EqEq = new TokenKind("EqEq");
     static BangEq = new TokenKind("BangEq");
+    static ParenL = new TokenKind("ParenL");
+    static ParenR = new TokenKind("ParenR");
     static Eof = new TokenKind("Eof");
 }
 
