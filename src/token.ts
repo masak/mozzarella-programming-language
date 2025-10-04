@@ -32,6 +32,7 @@ export class TokenKind {
     static BangEq = new TokenKind("BangEq");
     static ParenL = new TokenKind("ParenL");
     static ParenR = new TokenKind("ParenR");
+    static Semi = new TokenKind("Semi");
     static Eof = new TokenKind("Eof");
 }
 

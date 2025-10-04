@@ -4,12 +4,14 @@ import {
 import {
     BoolLitExpr,
     Expr,
+    ExprStatement,
     InfixOpExpr,
     IntLitExpr,
     NoneLitExpr,
     ParenExpr,
     PrefixOpExpr,
     Program,
+    Statement,
     StrLitExpr,
 } from "./syntax";
 import {
@@ -153,9 +155,15 @@ export class Parser {
     // parse methods:
 
     parseProgram(): Program {
-        let expr = this.parseExpr();
+        let statement = this.parseStatement();
         this.expect(TokenKind.Eof);
-        return new Program(expr);
+        return new Program(statement);
+    }
+
+    parseStatement(): Statement {
+        let expr = this.parseExpr();
+        this.accept(TokenKind.Semi);
+        return new ExprStatement(expr);
     }
 
     parseExpr(): Expr {

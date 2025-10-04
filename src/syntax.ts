@@ -11,6 +11,15 @@ export abstract class SyntaxNode {
 }
 
 export class Program extends SyntaxNode {
+    constructor(stmt: Statement) {
+        super([stmt]);
+    }
+}
+
+export abstract class Statement extends SyntaxNode {
+}
+
+export class ExprStatement extends Statement {
     constructor(expr: Expr) {
         super([expr]);
     }

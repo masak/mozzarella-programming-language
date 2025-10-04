@@ -8,12 +8,14 @@ import {
 import {
     BoolLitExpr,
     Expr,
+    ExprStatement,
     InfixOpExpr,
     IntLitExpr,
     NoneLitExpr,
     ParenExpr,
     PrefixOpExpr,
     Program,
+    Statement,
     StrLitExpr,
 } from "./syntax";
 import {
@@ -222,7 +224,7 @@ function evaluateComparison(left: Value, op: Token, right: Value): boolean {
     }
 }
 
-export function evaluate(expr: Expr): Value {
+function evaluate(expr: Expr): Value {
     if (expr instanceof IntLitExpr) {
         let payload = (expr.children[0] as Token).payload as bigint;
         return new IntValue(payload);
@@ -394,9 +396,22 @@ export function evaluate(expr: Expr): Value {
     }
 }
 
+function executeStatement(statement: Statement): Value {
+    if (statement instanceof ExprStatement) {
+        let expr = statement.children[0] as Expr;
+        let value = evaluate(expr);
+        return value;
+    }
+    else {
+        throw new Error(
+            `Unknown statement type ${statement.constructor.name}`
+        );
+    }
+}
+
 export function runProgram(program: Program): Value {
-    let expr = program.children[0] as Expr;
-    let value = evaluate(expr);
+    let statement = program.children[0] as Statement;
+    let value = executeStatement(statement);
     return value;
 }
 
