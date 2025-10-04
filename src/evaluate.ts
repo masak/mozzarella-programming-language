@@ -414,8 +414,11 @@ function executeStatement(statement: Statement): Value {
 }
 
 export function runProgram(program: Program): Value {
-    let statement = program.children[0] as Statement;
-    let value = executeStatement(statement);
-    return value;
+    let statements = program.children as Array<Statement>;
+    let lastValue = new NoneValue();
+    for (let statement of statements) {
+        lastValue = executeStatement(statement);
+    }
+    return lastValue;
 }
 

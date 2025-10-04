@@ -142,6 +142,10 @@ export class Parser {
         return this.lexer.lookahead().kind === kind;
     }
 
+    private seeingStartOfStatement(): boolean {
+        return this.seeingStartOfExpr() || this.seeing(TokenKind.Semi);
+    }
+
     private seeingStartOfExpr(): boolean {
         let lookahead = this.lexer.lookahead().kind;
         return termStartTokens.has(lookahead);
@@ -175,16 +179,17 @@ export class Parser {
     // parse methods:
 
     parseProgram(): Program {
-        let statement = this.parseStatement();
+        let statements: Array<Statement> = [];
+        while (this.seeingStartOfStatement()) {
+            let statement = this.parseStatement();
+            statements.push(statement);
+        }
         this.expect(TokenKind.Eof);
-        return new Program(statement);
+        return new Program(statements);
     }
 
     parseStatement(): Statement {
-        if (this.seeing(TokenKind.Eof)) {
-            return new EmptyStatement();
-        }
-        else if (this.accept(TokenKind.Semi)) {
+        if (this.accept(TokenKind.Semi)) {
             return new EmptyStatement();
         }
         else if (this.seeingStartOfExpr()) {
