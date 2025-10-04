@@ -181,21 +181,24 @@ export class Parser {
     parseProgram(): Program {
         let statements: Array<Statement> = [];
         while (this.seeingStartOfStatement()) {
-            let statement = this.parseStatement();
+            let [statement, sawSemi] = this.parseStatement();
             statements.push(statement);
+            if (!sawSemi) {
+                break;
+            }
         }
         this.expect(TokenKind.Eof);
         return new Program(statements);
     }
 
-    parseStatement(): Statement {
+    parseStatement(): [Statement, boolean] {
         if (this.accept(TokenKind.Semi)) {
-            return new EmptyStatement();
+            return [new EmptyStatement(), true];
         }
         else if (this.seeingStartOfExpr()) {
             let expr = this.parseExpr();
-            this.accept(TokenKind.Semi);
-            return new ExprStatement(expr);
+            let sawSemi = Boolean(this.accept(TokenKind.Semi));
+            return [new ExprStatement(expr), sawSemi];
         }
         else {
             this.parseFail("statement");
