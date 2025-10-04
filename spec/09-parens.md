@@ -2,9 +2,7 @@
 
 **New tokens**: `ParenL` (`(`), `ParenR` (`)`).
 
-**Context-free syntax**:
-
-* `ParenExpr ::= "(" Expr ")" ;`
+**Context-free syntax**: `ParenExpr ::= "(" Expr ")" ;`
 
 **Evaluation**:
 
