@@ -3,6 +3,7 @@ import {
 } from "./lex";
 import {
     BoolLitExpr,
+    EmptyStatement,
     Expr,
     ExprStatement,
     InfixOpExpr,
@@ -91,15 +92,15 @@ function associativity(strength: number): "left" | "right" {
     return "left";
 }
 
-const prefixOps = [
+const prefixOps = new Set([
     TokenKind.Plus,
     TokenKind.Minus,
     TokenKind.Tilde,
     TokenKind.Quest,
     TokenKind.Bang,
-];
+]);
 
-const infixOps = [
+const infixOps = new Set([
     TokenKind.Plus,
     TokenKind.Minus,
     TokenKind.Mult,
@@ -109,7 +110,17 @@ const infixOps = [
     TokenKind.AmpAmp,
     TokenKind.PipePipe,
     ...comparisonOps,
-];
+]);
+
+const termStartTokens = new Set([
+    TokenKind.IntLit,
+    TokenKind.StrLit,
+    TokenKind.FalseKeyword,
+    TokenKind.TrueKeyword,
+    TokenKind.NoneKeyword,
+    TokenKind.ParenL,
+    ...prefixOps,
+]);
 
 export class Parser {
     lexer: Lexer;
@@ -127,6 +138,15 @@ export class Parser {
         );
     }
 
+    private seeing(kind: TokenKind): boolean {
+        return this.lexer.lookahead().kind === kind;
+    }
+
+    private seeingStartOfExpr(): boolean {
+        let lookahead = this.lexer.lookahead().kind;
+        return termStartTokens.has(lookahead);
+    }
+
     private expect(kind: TokenKind): void {
         if (this.lexer.lookahead().kind !== kind) {
             this.parseFail(`token ${kind.kind}`);
@@ -142,7 +162,7 @@ export class Parser {
         return null;
     }
 
-    private acceptAny(kinds: Array<TokenKind>): Token | null {
+    private acceptAny(kinds: Set<TokenKind>): Token | null {
         for (let kind of kinds) {
             let token = this.accept(kind);
             if (token !== null) {
@@ -161,9 +181,20 @@ export class Parser {
     }
 
     parseStatement(): Statement {
-        let expr = this.parseExpr();
-        this.accept(TokenKind.Semi);
-        return new ExprStatement(expr);
+        if (this.seeing(TokenKind.Eof)) {
+            return new EmptyStatement();
+        }
+        else if (this.accept(TokenKind.Semi)) {
+            return new EmptyStatement();
+        }
+        else if (this.seeingStartOfExpr()) {
+            let expr = this.parseExpr();
+            this.accept(TokenKind.Semi);
+            return new ExprStatement(expr);
+        }
+        else {
+            this.parseFail("statement");
+        }
     }
 
     parseExpr(): Expr {

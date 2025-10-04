@@ -7,6 +7,7 @@ import {
 } from "./value";
 import {
     BoolLitExpr,
+    EmptyStatement,
     Expr,
     ExprStatement,
     InfixOpExpr,
@@ -401,6 +402,9 @@ function executeStatement(statement: Statement): Value {
         let expr = statement.children[0] as Expr;
         let value = evaluate(expr);
         return value;
+    }
+    else if (statement instanceof EmptyStatement) {
+        return new NoneValue();
     }
     else {
         throw new Error(

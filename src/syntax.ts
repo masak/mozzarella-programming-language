@@ -25,6 +25,12 @@ export class ExprStatement extends Statement {
     }
 }
 
+export class EmptyStatement extends Statement {
+    constructor() {
+        super([]);
+    }
+}
+
 export abstract class Expr extends SyntaxNode {
 }
 
