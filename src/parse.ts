@@ -330,6 +330,9 @@ export class Parser {
                     termStack.push(new ParenExpr(inner));
                     expectation = "operator";
                 }
+                else if (termStartTokens.has(token)) {
+                    throw new Error("Two terms in a row");
+                }
                 else {
                     break;  // anything unknown in op pos means we're done
                 }
