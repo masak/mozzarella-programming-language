@@ -134,6 +134,9 @@ export class Lexer {
             else if (name === "none") {
                 return new Token(TokenKind.NoneKeyword);
             }
+            else if (name === "do") {
+                return new Token(TokenKind.DoKeyword);
+            }
             else {
                 throw new Error("Identifiers not supported yet");
             }

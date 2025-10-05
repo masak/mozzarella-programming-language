@@ -9,6 +9,7 @@ import {
     Block,
     BlockStatement,
     BoolLitExpr,
+    DoExpr,
     EmptyStatement,
     Expr,
     ExprStatement,
@@ -392,6 +393,11 @@ function evaluate(expr: Expr): Value {
     else if (expr instanceof ParenExpr) {
         let inner = expr.children[0] as Expr;
         let value = evaluate(inner);
+        return value;
+    }
+    else if (expr instanceof DoExpr) {
+        let statement = expr.children[0] as Statement;
+        let value = executeStatement(statement);
         return value;
     }
     else {

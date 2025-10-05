@@ -88,3 +88,9 @@ export class ParenExpr extends Expr {
     }
 }
 
+export class DoExpr extends Expr {
+    constructor(statement: Statement) {
+        super([statement]);
+    }
+}
+

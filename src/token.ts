@@ -35,6 +35,7 @@ export class TokenKind {
     static Semi = new TokenKind("Semi");
     static BraceL = new TokenKind("BraceL");
     static BraceR = new TokenKind("BraceR");
+    static DoKeyword = new TokenKind("DoKeyword");
     static Eof = new TokenKind("Eof");
 }
 

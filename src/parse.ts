@@ -5,6 +5,7 @@ import {
     Block,
     BlockStatement,
     BoolLitExpr,
+    DoExpr,
     EmptyStatement,
     Expr,
     ExprStatement,
@@ -122,6 +123,7 @@ const termStartTokens = new Set([
     TokenKind.NoneKeyword,
     TokenKind.ParenL,
     ...prefixOps,
+    TokenKind.DoKeyword,
 ]);
 
 export class Parser {
@@ -305,6 +307,15 @@ export class Parser {
                 }
                 else if (token = this.accept(TokenKind.ParenR)!) {
                     this.parseFail("term");
+                }
+                else if (token = this.accept(TokenKind.DoKeyword)!) {
+                    let [statement, sawSemi] = this.parseStatement();
+                    if (!sawSemi && !this.seeing(TokenKind.Eof)
+                       && !this.seeing(TokenKind.BraceR)) {
+                        this.parseFail("semicolon or closing curly brace");
+                    }
+                    termStack.push(new DoExpr(statement));
+                    expectation = "operator";
                 }
                 else {
                     this.parseFail("expression");
