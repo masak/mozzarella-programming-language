@@ -16,6 +16,12 @@ export class Program extends SyntaxNode {
     }
 }
 
+export class Block extends SyntaxNode {
+    constructor(statements: Array<Statement>) {
+        super(statements);
+    }
+}
+
 export abstract class Statement extends SyntaxNode {
 }
 
@@ -28,6 +34,12 @@ export class ExprStatement extends Statement {
 export class EmptyStatement extends Statement {
     constructor() {
         super([]);
+    }
+}
+
+export class BlockStatement extends Statement {
+    constructor(block: Block) {
+        super([block]);
     }
 }
 

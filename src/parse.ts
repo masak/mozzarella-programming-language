@@ -2,6 +2,8 @@ import {
     Lexer,
 } from "./lex";
 import {
+    Block,
+    BlockStatement,
     BoolLitExpr,
     EmptyStatement,
     Expr,
@@ -143,7 +145,8 @@ export class Parser {
     }
 
     private seeingStartOfStatement(): boolean {
-        return this.seeingStartOfExpr() || this.seeing(TokenKind.Semi);
+        return this.seeingStartOfExpr() || this.seeing(TokenKind.Semi) ||
+            this.seeing(TokenKind.BraceL);
     }
 
     private seeingStartOfExpr(): boolean {
@@ -200,9 +203,27 @@ export class Parser {
             let sawSemi = Boolean(this.accept(TokenKind.Semi));
             return [new ExprStatement(expr), sawSemi];
         }
+        else if (this.seeing(TokenKind.BraceL)) {
+            let block = this.parseBlock();
+            return [new BlockStatement(block), true];
+        }
         else {
             this.parseFail("statement");
         }
+    }
+
+    parseBlock(): Block {
+        this.accept(TokenKind.BraceL);
+        let statements: Array<Statement> = [];
+        while (this.seeingStartOfStatement()) {
+            let [statement, sawSemi] = this.parseStatement();
+            statements.push(statement);
+            if (!sawSemi) {
+                break;
+            }
+        }
+        this.accept(TokenKind.BraceR);
+        return new Block(statements);
     }
 
     parseExpr(): Expr {

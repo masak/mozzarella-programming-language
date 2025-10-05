@@ -240,6 +240,14 @@ export class Lexer {
             this.lookaheadPos = this.pos + 1;
             return new Token(TokenKind.Semi);
         }
+        else if (this.seeingChar("{", this.pos)) {
+            this.lookaheadPos = this.pos + 1;
+            return new Token(TokenKind.BraceL);
+        }
+        else if (this.seeingChar("}", this.pos)) {
+            this.lookaheadPos = this.pos + 1;
+            return new Token(TokenKind.BraceR);
+        }
         else {
             let tokenGuess = this.input
                 .substring(this.pos, this.pos + 10)

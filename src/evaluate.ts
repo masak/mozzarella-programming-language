@@ -6,6 +6,8 @@ import {
     Value,
 } from "./value";
 import {
+    Block,
+    BlockStatement,
     BoolLitExpr,
     EmptyStatement,
     Expr,
@@ -406,11 +408,24 @@ function executeStatement(statement: Statement): Value {
     else if (statement instanceof EmptyStatement) {
         return new NoneValue();
     }
+    else if (statement instanceof BlockStatement) {
+        let block = statement.children[0] as Block;
+        return runBlock(block);
+    }
     else {
         throw new Error(
             `Unknown statement type ${statement.constructor.name}`
         );
     }
+}
+
+function runBlock(block: Block): Value {
+    let statements = block.children as Array<Statement>;
+    let lastValue = new NoneValue();
+    for (let statement of statements) {
+        lastValue = executeStatement(statement);
+    }
+    return lastValue;
 }
 
 export function runProgram(program: Program): Value {
