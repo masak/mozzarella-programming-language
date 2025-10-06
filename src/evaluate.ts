@@ -13,6 +13,8 @@ import {
     EmptyStatement,
     Expr,
     ExprStatement,
+    IfClause,
+    IfStatement,
     InfixOpExpr,
     IntLitExpr,
     NoneLitExpr,
@@ -417,6 +419,24 @@ function executeStatement(statement: Statement): Value {
     else if (statement instanceof BlockStatement) {
         let block = statement.children[0] as Block;
         return runBlock(block);
+    }
+    else if (statement instanceof IfStatement) {
+        let clauses = statement.children[0].children as Array<IfClause>;
+        for (let clause of clauses) {
+            let condExpr = clause.children[0] as Expr;
+            let value = evaluate(condExpr);
+            if (boolify(value)) {
+                let block = clause.children[1] as Block;
+                return runBlock(block);
+            }
+        }
+        if (statement.children.length > 1) {
+            let elseBlock = statement.children[1] as Block;
+            return runBlock(elseBlock);
+        }
+        else {
+            return new NoneValue();
+        }
     }
     else {
         throw new Error(

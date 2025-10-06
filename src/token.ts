@@ -36,6 +36,8 @@ export class TokenKind {
     static BraceL = new TokenKind("BraceL");
     static BraceR = new TokenKind("BraceR");
     static DoKeyword = new TokenKind("DoKeyword");
+    static IfKeyword = new TokenKind("IfKeyword");
+    static ElseKeyword = new TokenKind("ElseKeyword");
     static Eof = new TokenKind("Eof");
 }
 

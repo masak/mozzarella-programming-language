@@ -9,6 +9,8 @@ import {
     EmptyStatement,
     Expr,
     ExprStatement,
+    IfClause,
+    IfStatement,
     InfixOpExpr,
     IntLitExpr,
     NoneLitExpr,
@@ -148,7 +150,7 @@ export class Parser {
 
     private seeingStartOfStatement(): boolean {
         return this.seeingStartOfExpr() || this.seeing(TokenKind.Semi) ||
-            this.seeing(TokenKind.BraceL);
+            this.seeing(TokenKind.BraceL) || this.seeing(TokenKind.IfKeyword);
     }
 
     private seeingStartOfExpr(): boolean {
@@ -208,6 +210,29 @@ export class Parser {
         else if (this.seeing(TokenKind.BraceL)) {
             let block = this.parseBlock();
             return [new BlockStatement(block), true];
+        }
+        else if (this.accept(TokenKind.IfKeyword)) {
+            let condExpr = this.parseExpr();
+            let thenBlock = this.parseBlock();
+            let clauses: Array<IfClause> = [new IfClause(condExpr, thenBlock)];
+            let elseBlock: Block | null = null;
+            while (this.accept(TokenKind.ElseKeyword)) {
+                if (this.accept(TokenKind.IfKeyword)) {
+                    let condExpr = this.parseExpr();
+                    let thenBlock = this.parseBlock();
+                    clauses.push(new IfClause(condExpr, thenBlock));
+                }
+                else if (this.seeing(TokenKind.BraceL)) {
+                    elseBlock = this.parseBlock();
+                }
+                else {
+                    this.parseFail("'if' or block after 'else'");
+                }
+            }
+            let ifStatement = elseBlock
+                ? new IfStatement(clauses, elseBlock)
+                : new IfStatement(clauses);
+            return [ifStatement, true];
         }
         else {
             this.parseFail("statement");

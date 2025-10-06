@@ -43,6 +43,23 @@ export class BlockStatement extends Statement {
     }
 }
 
+export class IfClause extends SyntaxNode {
+    constructor(condExpr: Expr, block: Block) {
+        super([condExpr, block]);
+    }
+}
+
+class IfClauseList extends SyntaxNode {
+}
+
+export class IfStatement extends Statement {
+    constructor(clauses: Array<IfClause>, elseBlock?: Block) {
+        super(elseBlock
+          ? [new IfClauseList(clauses), elseBlock]
+          : [new IfClauseList(clauses)]);
+    }
+}
+
 export abstract class Expr extends SyntaxNode {
 }
 
