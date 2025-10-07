@@ -38,6 +38,9 @@ export class TokenKind {
     static DoKeyword = new TokenKind("DoKeyword");
     static IfKeyword = new TokenKind("IfKeyword");
     static ElseKeyword = new TokenKind("ElseKeyword");
+    static SquareL = new TokenKind("SquareL");
+    static SquareR = new TokenKind("SquareR");
+    static Comma = new TokenKind("Comma");
     static Eof = new TokenKind("Eof");
 }
 

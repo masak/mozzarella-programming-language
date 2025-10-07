@@ -111,3 +111,9 @@ export class DoExpr extends Expr {
     }
 }
 
+export class ArrayInitializerExpr extends Expr {
+    constructor(elements: Array<Expr>) {
+        super(elements);
+    }
+}
+

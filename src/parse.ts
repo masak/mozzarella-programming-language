@@ -2,6 +2,7 @@ import {
     Lexer,
 } from "./lex";
 import {
+    ArrayInitializerExpr,
     Block,
     BlockStatement,
     BoolLitExpr,
@@ -126,6 +127,7 @@ const termStartTokens = new Set([
     TokenKind.ParenL,
     ...prefixOps,
     TokenKind.DoKeyword,
+    TokenKind.SquareL,
 ]);
 
 export class Parser {
@@ -345,6 +347,19 @@ export class Parser {
                         this.parseFail("semicolon or closing curly brace");
                     }
                     termStack.push(new DoExpr(statement));
+                    expectation = "operator";
+                }
+                else if (token = this.accept(TokenKind.SquareL)!) {
+                    let elements: Array<Expr> = [];
+                    while (!this.seeing(TokenKind.SquareR)) {
+                        let expr = this.parseExpr();
+                        elements.push(expr);
+                        if (!this.accept(TokenKind.Comma)) {
+                            break;
+                        }
+                    }
+                    this.advanceOver(TokenKind.SquareR);
+                    termStack.push(new ArrayInitializerExpr(elements));
                     expectation = "operator";
                 }
                 else {

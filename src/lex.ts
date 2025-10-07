@@ -257,6 +257,18 @@ export class Lexer {
             this.lookaheadPos = this.pos + 1;
             return new Token(TokenKind.BraceR);
         }
+        else if (this.seeingChar("[", this.pos)) {
+            this.lookaheadPos = this.pos + 1;
+            return new Token(TokenKind.SquareL);
+        }
+        else if (this.seeingChar("]", this.pos)) {
+            this.lookaheadPos = this.pos + 1;
+            return new Token(TokenKind.SquareR);
+        }
+        else if (this.seeingChar(",", this.pos)) {
+            this.lookaheadPos = this.pos + 1;
+            return new Token(TokenKind.Comma);
+        }
         else {
             let tokenGuess = this.input
                 .substring(this.pos, this.pos + 10)

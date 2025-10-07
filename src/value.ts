@@ -68,3 +68,16 @@ export class NoneValue {
     }
 }
 
+export class ArrayValue {
+    elements: Array<Value>;
+
+    constructor(elements: Array<Value>) {
+        this.elements = elements;
+    }
+
+    toString(): string {
+        let elements = this.elements.map((v) => v.toString()).join(", ");
+        return ["[", elements, "]"].join("");
+    }
+}
+

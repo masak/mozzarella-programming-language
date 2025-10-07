@@ -1,11 +1,5 @@
 import {
-    BoolValue,
-    IntValue,
-    NoneValue,
-    StrValue,
-    Value,
-} from "./value";
-import {
+    ArrayInitializerExpr,
     Block,
     BlockStatement,
     BoolLitExpr,
@@ -28,6 +22,14 @@ import {
     Token,
     TokenKind,
 } from "./token";
+import {
+    ArrayValue,
+    BoolValue,
+    IntValue,
+    NoneValue,
+    StrValue,
+    Value,
+} from "./value";
 
 function stringify(value: Value): StrValue {
     if (value instanceof IntValue) {
@@ -41,6 +43,10 @@ function stringify(value: Value): StrValue {
     }
     else if (value instanceof NoneValue) {
         return new StrValue("none");
+    }
+    else if (value instanceof ArrayValue) {
+        let elements = value.elements.map((v) => v.toString()).join(", ");
+        return new StrValue(["[", elements, "]"].join(""));
     }
     else { // generic fallback
         let typeName = value.constructor.name;
@@ -65,6 +71,9 @@ function boolify(value: Value): boolean {
     else if (value instanceof NoneValue) {
         return false;
     }
+    else if (value instanceof ArrayValue) {
+        return value.elements.length !== 0;
+    }
     else { // generic fallback
         return true;
     }
@@ -72,7 +81,8 @@ function boolify(value: Value): boolean {
 
 function isComparable(value: Value): boolean {
     return value instanceof IntValue ||
-        value instanceof StrValue;
+        value instanceof StrValue ||
+        value instanceof ArrayValue;
 }
 
 function isLessThan(left: Value, right: Value): boolean {
@@ -94,6 +104,29 @@ function isLessThan(left: Value, right: Value): boolean {
             throw new Error("Precondition failed: not a Str");
         }
         return left.payload < right.payload;
+    }
+    else if (left instanceof ArrayValue) {
+        if (!(right instanceof ArrayValue)) {
+            throw new Error("Precondition failed: not an Array");
+        }
+        for (let i = 0; i < left.elements.length; i++) {
+            if (i >= right.elements.length) {   // left array longer
+                return false;
+            }
+            let l = left.elements[i];
+            let r = right.elements[i];
+            if (isLessThan(l, r)) {
+                return true;
+            }
+            else if (areEqual(l, r)) {
+                continue;
+            }
+            else {  // different types, or l > r
+                return false;
+            }
+        }
+        // For the length of the left array, the elements are pairwise equal
+        return left.elements.length < right.elements.length;
     }
     else {
         throw new Error("Precondition failed: unrecognized comparable type");
@@ -125,10 +158,29 @@ function areEqual(left: Value, right: Value): boolean {
         }
         return true;
     }
+    else if (left instanceof ArrayValue) {
+        if (!(right instanceof ArrayValue)) {
+            return false;
+        }
+        return left.elements.length === right.elements.length &&
+            pairwise(areEqual, left.elements, right.elements);
+    }
     else {
         // Generic fallback: reference equality
         return left === right;
     }
+}
+
+function pairwise<T>(fn: (x: T, y: T) => boolean, xs: Array<T>, ys: Array<T>) {
+    if (xs.length !== ys.length) {
+        throw new Error("Precondition failed: lists are of unequal length");
+    }
+    for (let i = 0; i < xs.length; i++) {
+        if (!fn(xs[i], ys[i])) {
+            return false;
+        }
+    }
+    return true;
 }
 
 const comparisonOps = new Set([
@@ -401,6 +453,14 @@ function evaluate(expr: Expr): Value {
         let statement = expr.children[0] as Statement;
         let value = executeStatement(statement);
         return value;
+    }
+    else if (expr instanceof ArrayInitializerExpr) {
+        let elements: Array<Value> = [];
+        for (let element of expr.children) {
+            let value = evaluate(element);
+            elements.push(value);
+        }
+        return new ArrayValue(elements);
     }
     else {
         throw new Error(`Unknown expr type ${expr.constructor.name}`);
