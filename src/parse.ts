@@ -152,7 +152,7 @@ export class Parser {
 
     private seeingStartOfStatement(): boolean {
         return this.seeingStartOfExpr() || this.seeing(TokenKind.Semi) ||
-            this.seeing(TokenKind.BraceL) || this.seeing(TokenKind.IfKeyword);
+            this.seeing(TokenKind.CurlyL) || this.seeing(TokenKind.IfKeyword);
     }
 
     private seeingStartOfExpr(): boolean {
@@ -214,7 +214,7 @@ export class Parser {
             let sawSemi = Boolean(this.accept(TokenKind.Semi));
             return [new ExprStatement(expr), sawSemi];
         }
-        else if (this.seeing(TokenKind.BraceL)) {
+        else if (this.seeing(TokenKind.CurlyL)) {
             let block = this.parseBlock();
             return [new BlockStatement(block), true];
         }
@@ -229,7 +229,7 @@ export class Parser {
                     let thenBlock = this.parseBlock();
                     clauses.push(new IfClause(condExpr, thenBlock));
                 }
-                else if (this.seeing(TokenKind.BraceL)) {
+                else if (this.seeing(TokenKind.CurlyL)) {
                     elseBlock = this.parseBlock();
                 }
                 else {
@@ -247,7 +247,7 @@ export class Parser {
     }
 
     parseBlock(): Block {
-        this.advanceOver(TokenKind.BraceL);
+        this.advanceOver(TokenKind.CurlyL);
         let statements: Array<Statement> = [];
         while (this.seeingStartOfStatement()) {
             let [statement, sawSemi] = this.parseStatement();
@@ -256,7 +256,7 @@ export class Parser {
                 break;
             }
         }
-        this.advanceOver(TokenKind.BraceR);
+        this.advanceOver(TokenKind.CurlyR);
         return new Block(statements);
     }
 
@@ -343,7 +343,7 @@ export class Parser {
                 else if (token = this.accept(TokenKind.DoKeyword)!) {
                     let [statement, sawSemi] = this.parseStatement();
                     if (!sawSemi && !this.seeing(TokenKind.Eof)
-                       && !this.seeing(TokenKind.BraceR)) {
+                       && !this.seeing(TokenKind.CurlyR)) {
                         this.parseFail("semicolon or closing curly brace");
                     }
                     termStack.push(new DoExpr(statement));

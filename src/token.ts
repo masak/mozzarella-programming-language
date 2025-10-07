@@ -33,8 +33,8 @@ export class TokenKind {
     static ParenL = new TokenKind("ParenL");
     static ParenR = new TokenKind("ParenR");
     static Semi = new TokenKind("Semi");
-    static BraceL = new TokenKind("BraceL");
-    static BraceR = new TokenKind("BraceR");
+    static CurlyL = new TokenKind("CurlyL");
+    static CurlyR = new TokenKind("CurlyR");
     static DoKeyword = new TokenKind("DoKeyword");
     static IfKeyword = new TokenKind("IfKeyword");
     static ElseKeyword = new TokenKind("ElseKeyword");

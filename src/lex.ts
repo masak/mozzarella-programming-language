@@ -251,11 +251,11 @@ export class Lexer {
         }
         else if (this.seeingChar("{", this.pos)) {
             this.lookaheadPos = this.pos + 1;
-            return new Token(TokenKind.BraceL);
+            return new Token(TokenKind.CurlyL);
         }
         else if (this.seeingChar("}", this.pos)) {
             this.lookaheadPos = this.pos + 1;
-            return new Token(TokenKind.BraceR);
+            return new Token(TokenKind.CurlyR);
         }
         else if (this.seeingChar("[", this.pos)) {
             this.lookaheadPos = this.pos + 1;
