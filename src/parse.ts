@@ -12,6 +12,7 @@ import {
     ExprStatement,
     IfClause,
     IfStatement,
+    IndexingExpr,
     InfixOpExpr,
     IntLitExpr,
     NoneLitExpr,
@@ -39,6 +40,15 @@ class PrefixOp extends Op {
 }
 
 class InfixOp extends Op {
+    token: Token;
+
+    constructor(token: Token) {
+        super();
+        this.token = token;
+    }
+}
+
+class PostfixOp extends Op {
     token: Token;
 
     constructor(token: Token) {
@@ -276,6 +286,9 @@ export class Parser {
             else if (topOfStack instanceof ParenOp) { // not really an op
                 return false;
             }
+            else if (topOfStack instanceof PostfixOp) {
+                throw new Error("Precondition failed: postfix op on stack");
+            }
             if (!(topOfStack instanceof InfixOp)) {
                 throw new Error("Precondition failed: unknown op type");
             }
@@ -300,6 +313,16 @@ export class Parser {
                 let rhs = termStack.pop()!;
                 let lhs = termStack.pop()!;
                 termStack.push(new InfixOpExpr(lhs, op.token, rhs));
+            }
+            else if (op instanceof PostfixOp) {
+                if (op.token.kind === TokenKind.SquareL) {
+                    let index = termStack.pop()!;
+                    let array = termStack.pop()!;
+                    termStack.push(new IndexingExpr(array, index));
+                }
+                else {
+                    throw new Error("Unknown postfix op");
+                }
             }
             else {
                 throw new Error("Unknown kind of op during reduce");
@@ -384,6 +407,14 @@ export class Parser {
                     opStack.pop();  // the ParenL
                     let inner = termStack.pop()!;
                     termStack.push(new ParenExpr(inner));
+                    expectation = "operator";
+                }
+                else if (token = this.accept(TokenKind.SquareL)!) {
+                    let indexExpr = this.parseExpr();
+                    this.advanceOver(TokenKind.SquareR);
+                    opStack.push(new PostfixOp(token));
+                    termStack.push(indexExpr);
+                    reduce();
                     expectation = "operator";
                 }
                 else if (termStartTokens.has(token)) {

@@ -21,6 +21,7 @@ import {
     ExprStatement,
     IfClause,
     IfStatement,
+    IndexingExpr,
     InfixOpExpr,
     IntLitExpr,
     NoneLitExpr,
@@ -222,6 +223,22 @@ function evaluate(expr: Expr): Value {
             elements.push(value);
         }
         return new ArrayValue(elements);
+    }
+    else if (expr instanceof IndexingExpr) {
+        let arrayExpr = expr.children[0] as Expr;
+        let indexExpr = expr.children[1] as Expr;
+        let array = evaluate(arrayExpr);
+        if (!(array instanceof ArrayValue)) {
+            throw new Error("Can only index an Array");
+        }
+        let index = evaluate(indexExpr);
+        if (!(index instanceof IntValue)) {
+            throw new Error("Can only index using an Int");
+        }
+        if (index.payload < 0 || index.payload >= array.elements.length) {
+            throw new Error("Index out of bounds");
+        }
+        return array.elements[Number(index.payload)];
     }
     else {
         throw new Error(`Unknown expr type ${expr.constructor.name}`);

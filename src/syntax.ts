@@ -117,3 +117,9 @@ export class ArrayInitializerExpr extends Expr {
     }
 }
 
+export class IndexingExpr extends Expr {
+    constructor(array: Expr, index: Expr) {
+        super([array, index]);
+    }
+}
+
