@@ -183,6 +183,11 @@ export class Parser {
         return null;
     }
 
+    private advanceOver(kind: TokenKind): void {
+        this.expect(kind);
+        this.lexer.advance();
+    }
+
     // parse methods:
 
     parseProgram(): Program {
@@ -240,7 +245,7 @@ export class Parser {
     }
 
     parseBlock(): Block {
-        this.accept(TokenKind.BraceL);
+        this.advanceOver(TokenKind.BraceL);
         let statements: Array<Statement> = [];
         while (this.seeingStartOfStatement()) {
             let [statement, sawSemi] = this.parseStatement();
@@ -249,7 +254,7 @@ export class Parser {
                 break;
             }
         }
-        this.accept(TokenKind.BraceR);
+        this.advanceOver(TokenKind.BraceR);
         return new Block(statements);
     }
 
