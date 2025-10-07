@@ -1,4 +1,7 @@
 import {
+    boolify,
+} from "./boolify";
+import {
     stringify,
 } from "./stringify";
 import {
@@ -33,27 +36,6 @@ import {
     StrValue,
     Value,
 } from "./value";
-
-function boolify(value: Value): boolean {
-    if (value instanceof IntValue) {
-        return value.payload !== 0n;
-    }
-    else if (value instanceof StrValue) {
-        return value.payload !== "";
-    }
-    else if (value instanceof BoolValue) {
-        return value.payload;
-    }
-    else if (value instanceof NoneValue) {
-        return false;
-    }
-    else if (value instanceof ArrayValue) {
-        return value.elements.length !== 0;
-    }
-    else { // generic fallback
-        return true;
-    }
-}
 
 function isComparable(value: Value): boolean {
     return value instanceof IntValue ||
