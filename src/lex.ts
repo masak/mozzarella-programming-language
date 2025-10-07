@@ -31,7 +31,7 @@ export class Lexer {
     }
 
     private seeingLetter(pos: number): boolean {
-        return pos < this.input.length && /^[a-zA-z]/.test(this.charAt(pos));
+        return pos < this.input.length && /^[a-zA-Z]/.test(this.charAt(pos));
     }
 
     private seeingChar(char: string, pos: number): boolean {
