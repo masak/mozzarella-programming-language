@@ -5,6 +5,23 @@ import {
 
 const WHITESPACE = /^\s*/;
 
+const oneCharacterTokens = new Map([
+    ["+", TokenKind.Plus],
+    ["-", TokenKind.Minus],
+    ["*", TokenKind.Mult],
+    ["%", TokenKind.Mod],
+    ["~", TokenKind.Tilde],
+    ["?", TokenKind.Quest],
+    ["(", TokenKind.ParenL],
+    [")", TokenKind.ParenR],
+    [";", TokenKind.Semi],
+    ["{", TokenKind.CurlyL],
+    ["}", TokenKind.CurlyR],
+    ["[", TokenKind.SquareL],
+    ["]", TokenKind.SquareR],
+    [",", TokenKind.Comma],
+]);
+
 export class Lexer {
     input: string;
     pos: number = 0;
@@ -58,8 +75,13 @@ export class Lexer {
 
     lookahead(): Token {
         this.skipWhitespace();
+        let tokenKind: TokenKind;
         if (this.seeingEof(this.pos)) {
             return new Token(TokenKind.Eof);
+        }
+        else if (tokenKind = oneCharacterTokens.get(this.charAt(this.pos))!) {
+            this.lookaheadPos = this.pos + 1;
+            return new Token(tokenKind);
         }
         else if (this.seeingDigit(this.pos)) {
             let pos = this.pos;
@@ -147,18 +169,6 @@ export class Lexer {
                 throw new Error("Identifiers not supported yet");
             }
         }
-        else if (this.seeingChar("+", this.pos)) {
-            this.lookaheadPos = this.pos + 1;
-            return new Token(TokenKind.Plus);
-        }
-        else if (this.seeingChar("-", this.pos)) {
-            this.lookaheadPos = this.pos + 1;
-            return new Token(TokenKind.Minus);
-        }
-        else if (this.seeingChar("*", this.pos)) {
-            this.lookaheadPos = this.pos + 1;
-            return new Token(TokenKind.Mult);
-        }
         else if (this.seeingChar("/", this.pos)) {
             let pos = this.pos + 1;
             if (!this.seeingChar("/", pos)) {
@@ -167,18 +177,6 @@ export class Lexer {
             pos += 1;
             this.lookaheadPos = pos;
             return new Token(TokenKind.FloorDiv);
-        }
-        else if (this.seeingChar("%", this.pos)) {
-            this.lookaheadPos = this.pos + 1;
-            return new Token(TokenKind.Mod);
-        }
-        else if (this.seeingChar("~", this.pos)) {
-            this.lookaheadPos = this.pos + 1;
-            return new Token(TokenKind.Tilde);
-        }
-        else if (this.seeingChar("?", this.pos)) {
-            this.lookaheadPos = this.pos + 1;
-            return new Token(TokenKind.Quest);
         }
         else if (this.seeingChar("!", this.pos)) {
             let pos = this.pos + 1;
@@ -236,38 +234,6 @@ export class Lexer {
             pos += 1;
             this.lookaheadPos = pos;
             return new Token(TokenKind.EqEq);
-        }
-        else if (this.seeingChar("(", this.pos)) {
-            this.lookaheadPos = this.pos + 1;
-            return new Token(TokenKind.ParenL);
-        }
-        else if (this.seeingChar(")", this.pos)) {
-            this.lookaheadPos = this.pos + 1;
-            return new Token(TokenKind.ParenR);
-        }
-        else if (this.seeingChar(";", this.pos)) {
-            this.lookaheadPos = this.pos + 1;
-            return new Token(TokenKind.Semi);
-        }
-        else if (this.seeingChar("{", this.pos)) {
-            this.lookaheadPos = this.pos + 1;
-            return new Token(TokenKind.CurlyL);
-        }
-        else if (this.seeingChar("}", this.pos)) {
-            this.lookaheadPos = this.pos + 1;
-            return new Token(TokenKind.CurlyR);
-        }
-        else if (this.seeingChar("[", this.pos)) {
-            this.lookaheadPos = this.pos + 1;
-            return new Token(TokenKind.SquareL);
-        }
-        else if (this.seeingChar("]", this.pos)) {
-            this.lookaheadPos = this.pos + 1;
-            return new Token(TokenKind.SquareR);
-        }
-        else if (this.seeingChar(",", this.pos)) {
-            this.lookaheadPos = this.pos + 1;
-            return new Token(TokenKind.Comma);
         }
         else {
             let tokenGuess = this.input
