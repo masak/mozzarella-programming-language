@@ -5,21 +5,37 @@ import {
 
 const WHITESPACE = /^\s*/;
 
-const oneCharacterTokens = new Map([
-    ["+", TokenKind.Plus],
-    ["-", TokenKind.Minus],
-    ["*", TokenKind.Mult],
-    ["%", TokenKind.Mod],
-    ["~", TokenKind.Tilde],
-    ["?", TokenKind.Quest],
-    ["(", TokenKind.ParenL],
-    [")", TokenKind.ParenR],
-    [";", TokenKind.Semi],
-    ["{", TokenKind.CurlyL],
-    ["}", TokenKind.CurlyR],
-    ["[", TokenKind.SquareL],
-    ["]", TokenKind.SquareR],
-    [",", TokenKind.Comma],
+type ChoiceTree = Map<string, [TokenKind | null, [string, TokenKind] | null]>;
+
+const choiceTree: ChoiceTree = new Map([
+    ["+", [TokenKind.Plus, null]],
+    ["-", [TokenKind.Minus, null]],
+    ["*", [TokenKind.Mult, null]],
+    ["/", [null,
+        ["/", TokenKind.FloorDiv]]],
+    ["%", [TokenKind.Mod, null]],
+    ["~", [TokenKind.Tilde, null]],
+    ["?", [TokenKind.Quest, null]],
+    ["!", [TokenKind.Bang,
+        ["=", TokenKind.BangEq]]],
+    ["&", [null,
+        ["&", TokenKind.AmpAmp]]],
+    ["|", [null,
+        ["|", TokenKind.PipePipe]]],
+    ["<", [TokenKind.Less,
+        ["=", TokenKind.LessEq]]],
+    [">", [TokenKind.Greater,
+        ["=", TokenKind.GreaterEq]]],
+    ["=", [null,
+        ["=", TokenKind.EqEq]]],
+    ["(", [TokenKind.ParenL, null]],
+    [")", [TokenKind.ParenR, null]],
+    [";", [TokenKind.Semi, null]],
+    ["{", [TokenKind.CurlyL, null]],
+    ["}", [TokenKind.CurlyR, null]],
+    ["[", [TokenKind.SquareL, null]],
+    ["]", [TokenKind.SquareR, null]],
+    [",", [TokenKind.Comma, null]],
 ]);
 
 export class Lexer {
@@ -75,13 +91,46 @@ export class Lexer {
 
     lookahead(): Token {
         this.skipWhitespace();
-        let tokenKind: TokenKind;
+        let choice: [TokenKind | null, [string, TokenKind] | null];
         if (this.seeingEof(this.pos)) {
             return new Token(TokenKind.Eof);
         }
-        else if (tokenKind = oneCharacterTokens.get(this.charAt(this.pos))!) {
-            this.lookaheadPos = this.pos + 1;
-            return new Token(tokenKind);
+        else if (choice = choiceTree.get(this.charAt(this.pos))!) {
+            let pos = this.pos + 1;
+            let [tokenKind1, ch2Info] = choice;
+            if (tokenKind1 === null) {
+                if (ch2Info === null) {
+                    throw new Error(
+                        "Precondition failed: both components null"
+                    );
+                }
+                let [ch2, tokenKind2] = ch2Info;
+                if (!this.seeingChar(ch2, pos)) {
+                    throw new Error(
+                        "Unrecognized character after '" +
+                            this.charAt(this.pos) + "'"
+                    );
+                }
+                pos += 1;
+                this.lookaheadPos = pos;
+                return new Token(tokenKind2);
+            }
+            else {
+                if (ch2Info === null) {
+                    this.lookaheadPos = pos;
+                    return new Token(tokenKind1);
+                }
+                else {
+                    let [ch2, tokenKind2] = ch2Info;
+                    if (this.seeingChar(ch2, pos)) {
+                        pos += 1;
+                        this.lookaheadPos = pos;
+                        return new Token(tokenKind2);
+                    }
+                    this.lookaheadPos = pos;
+                    return new Token(tokenKind1);
+                }
+            }
         }
         else if (this.seeingDigit(this.pos)) {
             let pos = this.pos;
@@ -168,72 +217,6 @@ export class Lexer {
             else {
                 throw new Error("Identifiers not supported yet");
             }
-        }
-        else if (this.seeingChar("/", this.pos)) {
-            let pos = this.pos + 1;
-            if (!this.seeingChar("/", pos)) {
-                throw new Error("Unrecognized character after '/'");
-            }
-            pos += 1;
-            this.lookaheadPos = pos;
-            return new Token(TokenKind.FloorDiv);
-        }
-        else if (this.seeingChar("!", this.pos)) {
-            let pos = this.pos + 1;
-            if (this.seeingChar("=", pos)) {
-                pos += 1;
-                this.lookaheadPos = pos;
-                return new Token(TokenKind.BangEq);
-            }
-            this.lookaheadPos = pos;
-            return new Token(TokenKind.Bang);
-        }
-        else if (this.seeingChar("&", this.pos)) {
-            let pos = this.pos + 1;
-            if (!this.seeingChar("&", pos)) {
-                throw new Error("Unrecognized character after '&'");
-            }
-            pos += 1;
-            this.lookaheadPos = pos;
-            return new Token(TokenKind.AmpAmp);
-        }
-        else if (this.seeingChar("|", this.pos)) {
-            let pos = this.pos + 1;
-            if (!this.seeingChar("|", pos)) {
-                throw new Error("Unrecognized character after '|'");
-            }
-            pos += 1;
-            this.lookaheadPos = pos;
-            return new Token(TokenKind.PipePipe);
-        }
-        else if (this.seeingChar("<", this.pos)) {
-            let pos = this.pos + 1;
-            if (this.seeingChar("=", pos)) {
-                pos += 1;
-                this.lookaheadPos = pos;
-                return new Token(TokenKind.LessEq);
-            }
-            this.lookaheadPos = pos;
-            return new Token(TokenKind.Less);
-        }
-        else if (this.seeingChar(">", this.pos)) {
-            let pos = this.pos + 1;
-            if (this.seeingChar("=", pos)) {
-                pos += 1;
-                this.lookaheadPos = pos;
-                return new Token(TokenKind.GreaterEq);
-            }
-            this.lookaheadPos = pos;
-            return new Token(TokenKind.Greater);
-        }
-        else if (this.seeingChar("=", this.pos)) {
-            let pos = this.pos + 1;
-            if (!this.seeingChar("=", pos)) {
-                throw new Error("Unrecognized character after '='");
-            }
-            pos += 1;
-            this.lookaheadPos = pos;
-            return new Token(TokenKind.EqEq);
         }
         else {
             let tokenGuess = this.input
