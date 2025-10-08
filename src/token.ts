@@ -41,6 +41,9 @@ export class TokenKind {
     static SquareL = new TokenKind("SquareL");
     static SquareR = new TokenKind("SquareR");
     static Comma = new TokenKind("Comma");
+    static MyKeyword = new TokenKind("MyKeyword");
+    static Assign = new TokenKind("Assign");
+    static Identifier = new TokenKind("Identifier");
     static Eof = new TokenKind("Eof");
 }
 

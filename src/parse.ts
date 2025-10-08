@@ -6,6 +6,7 @@ import {
     Block,
     BlockStatement,
     BoolLitExpr,
+    Decl,
     DoExpr,
     EmptyStatement,
     Expr,
@@ -21,6 +22,7 @@ import {
     Program,
     Statement,
     StrLitExpr,
+    VarDecl,
 } from "./syntax";
 import {
     Token,
@@ -160,9 +162,17 @@ export class Parser {
         return this.lexer.lookahead().kind === kind;
     }
 
+    private seeingStartOfStatementOrDecl(): boolean {
+        return this.seeingStartOfStatement() || this.seeingStartOfDecl();
+    }
+
     private seeingStartOfStatement(): boolean {
         return this.seeingStartOfExpr() || this.seeing(TokenKind.Semi) ||
             this.seeing(TokenKind.CurlyL) || this.seeing(TokenKind.IfKeyword);
+    }
+
+    private seeingStartOfDecl(): boolean {
+        return this.seeing(TokenKind.MyKeyword);
     }
 
     private seeingStartOfExpr(): boolean {
@@ -203,12 +213,21 @@ export class Parser {
     // parse methods:
 
     parseProgram(): Program {
-        let statements: Array<Statement> = [];
-        while (this.seeingStartOfStatement()) {
-            let [statement, sawSemi] = this.parseStatement();
-            statements.push(statement);
-            if (!sawSemi) {
-                break;
+        let statements: Array<Statement | Decl> = [];
+        while (this.seeingStartOfStatementOrDecl()) {
+            if (this.seeingStartOfStatement()) {
+                let [statement, sawSemi] = this.parseStatement();
+                statements.push(statement);
+                if (!sawSemi) {
+                    break;
+                }
+            }
+            else {  // declaration
+                let [decl, sawSemi] = this.parseDecl();
+                statements.push(decl);
+                if (!sawSemi) {
+                    break;
+                }
             }
         }
         this.expect(TokenKind.Eof);
@@ -258,16 +277,44 @@ export class Parser {
 
     parseBlock(): Block {
         this.advanceOver(TokenKind.CurlyL);
-        let statements: Array<Statement> = [];
-        while (this.seeingStartOfStatement()) {
-            let [statement, sawSemi] = this.parseStatement();
-            statements.push(statement);
-            if (!sawSemi) {
-                break;
+        let statements: Array<Statement | Decl> = [];
+        while (this.seeingStartOfStatementOrDecl()) {
+            if (this.seeingStartOfStatement()) {
+                let [statement, sawSemi] = this.parseStatement();
+                statements.push(statement);
+                if (!sawSemi) {
+                    break;
+                }
+            }
+            else {  // declaration
+                let [decl, sawSemi] = this.parseDecl();
+                statements.push(decl);
+                if (!sawSemi) {
+                    break;
+                }
             }
         }
         this.advanceOver(TokenKind.CurlyR);
         return new Block(statements);
+    }
+
+    parseDecl(): [Decl, boolean] {
+        if (this.accept(TokenKind.MyKeyword)) {
+            this.expect(TokenKind.Identifier);
+            let nameToken = this.accept(TokenKind.Identifier)!;
+            if (this.accept(TokenKind.Assign)) {
+                let initExpr = this.parseExpr();
+                let sawSemi = Boolean(this.accept(TokenKind.Semi));
+                return [new VarDecl(nameToken, initExpr), sawSemi];
+            }
+            else {
+                let sawSemi = Boolean(this.accept(TokenKind.Semi));
+                return [new VarDecl(nameToken), sawSemi];
+            }
+        }
+        else {
+            this.parseFail("declaration");
+        }
     }
 
     parseExpr(): Expr {

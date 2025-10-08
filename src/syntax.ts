@@ -11,13 +11,13 @@ export abstract class SyntaxNode {
 }
 
 export class Program extends SyntaxNode {
-    constructor(statements: Array<Statement>) {
+    constructor(statements: Array<Statement | Decl>) {
         super(statements);
     }
 }
 
 export class Block extends SyntaxNode {
-    constructor(statements: Array<Statement>) {
+    constructor(statements: Array<Statement | Decl>) {
         super(statements);
     }
 }
@@ -57,6 +57,17 @@ export class IfStatement extends Statement {
         super(elseBlock
           ? [new IfClauseList(clauses), elseBlock]
           : [new IfClauseList(clauses)]);
+    }
+}
+
+export abstract class Decl extends SyntaxNode {
+}
+
+export class VarDecl extends Decl {
+    constructor(name: Token, initExpr?: Expr) {
+        super(initExpr
+            ? [name, initExpr]
+            : [name]);
     }
 }
 

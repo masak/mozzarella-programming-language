@@ -26,7 +26,7 @@ const choiceTree: ChoiceTree = new Map([
         ["=", TokenKind.LessEq]]],
     [">", [TokenKind.Greater,
         ["=", TokenKind.GreaterEq]]],
-    ["=", [null,
+    ["=", [TokenKind.Assign,
         ["=", TokenKind.EqEq]]],
     ["(", [TokenKind.ParenL, null]],
     [")", [TokenKind.ParenR, null]],
@@ -214,8 +214,11 @@ export class Lexer {
             else if (name === "else") {
                 return new Token(TokenKind.ElseKeyword);
             }
+            else if (name === "my") {
+                return new Token(TokenKind.MyKeyword);
+            }
             else {
-                throw new Error("Identifiers not supported yet");
+                return new Token(TokenKind.Identifier, name);
             }
         }
         else {

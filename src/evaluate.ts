@@ -15,6 +15,7 @@ import {
     Block,
     BlockStatement,
     BoolLitExpr,
+    Decl,
     DoExpr,
     EmptyStatement,
     Expr,
@@ -30,6 +31,7 @@ import {
     Program,
     Statement,
     StrLitExpr,
+    VarDecl,
 } from "./syntax";
 import {
     Token,
@@ -284,19 +286,45 @@ function executeStatement(statement: Statement): Value {
 }
 
 function runBlock(block: Block): Value {
-    let statements = block.children as Array<Statement>;
+    let statements = block.children as Array<Statement | Decl>;
     let lastValue = new NoneValue();
-    for (let statement of statements) {
-        lastValue = executeStatement(statement);
+    for (let statementOrDecl of statements) {
+        if (statementOrDecl instanceof Statement) {
+            let statement = statementOrDecl;
+            lastValue = executeStatement(statement);
+        }
+        else {  // Decl
+            let decl = statementOrDecl;
+            if (decl instanceof VarDecl) {
+                if (decl.children.length >= 2) {
+                    let initExpr = decl.children[1] as Expr;
+                    evaluate(initExpr);
+                }
+            }
+            lastValue = new NoneValue();
+        }
     }
     return lastValue;
 }
 
 export function runProgram(program: Program): Value {
-    let statements = program.children as Array<Statement>;
+    let statements = program.children as Array<Statement | Decl>;
     let lastValue = new NoneValue();
-    for (let statement of statements) {
-        lastValue = executeStatement(statement);
+    for (let statementOrDecl of statements) {
+        if (statementOrDecl instanceof Statement) {
+            let statement = statementOrDecl;
+            lastValue = executeStatement(statement);
+        }
+        else {  // Decl
+            let decl = statementOrDecl;
+            if (decl instanceof VarDecl) {
+                if (decl.children.length >= 2) {
+                    let initExpr = decl.children[1] as Expr;
+                    evaluate(initExpr);
+                }
+            }
+            lastValue = new NoneValue();
+        }
     }
     return lastValue;
 }
