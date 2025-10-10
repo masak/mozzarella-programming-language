@@ -23,6 +23,7 @@ import {
     Statement,
     StrLitExpr,
     VarDecl,
+    VarRefExpr,
 } from "./syntax";
 import {
     Token,
@@ -140,6 +141,7 @@ const termStartTokens = new Set([
     ...prefixOps,
     TokenKind.DoKeyword,
     TokenKind.SquareL,
+    TokenKind.Identifier,
 ]);
 
 export class Parser {
@@ -430,6 +432,10 @@ export class Parser {
                     }
                     this.advanceOver(TokenKind.SquareR);
                     termStack.push(new ArrayInitializerExpr(elements));
+                    expectation = "operator";
+                }
+                else if (token = this.accept(TokenKind.Identifier)!) {
+                    termStack.push(new VarRefExpr(token));
                     expectation = "operator";
                 }
                 else {

@@ -134,3 +134,9 @@ export class IndexingExpr extends Expr {
     }
 }
 
+export class VarRefExpr extends Expr {
+    constructor(token: Token) {
+        super([token]);
+    }
+}
+

@@ -81,3 +81,9 @@ export class ArrayValue {
     }
 }
 
+export class UninitValue {
+    toString(): string {
+        throw new Error("Precondition failed: uninitialized pseudo-value");
+    }
+}
+

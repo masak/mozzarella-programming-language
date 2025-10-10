@@ -20,12 +20,18 @@ import {
     Statement,
     StrLitExpr,
     VarDecl,
+    VarRefExpr,
 } from "./syntax";
 import {
     Token,
 } from "./token";
 
-type Context = Set<string>;
+class VarState {
+    static declared = new VarState();
+    static accessed = new VarState();
+}
+
+type Context = Map<string, VarState>;
 
 function validateExpr(expr: Expr, contextStack: Array<Context>): void {
     if (expr instanceof IntLitExpr) {
@@ -69,13 +75,25 @@ function validateExpr(expr: Expr, contextStack: Array<Context>): void {
         let indexExpr = expr.children[1] as Expr;
         validateExpr(indexExpr, contextStack);
     }
+    else if (expr instanceof VarRefExpr) {
+        let name = (expr.children[0] as Token).payload as string;
+        for (let i = contextStack.length - 1; i >= 0; i--) {
+            let context = contextStack[i];
+            if (context.has(name)) {
+                break;
+            }
+            else {
+                context.set(name, VarState.accessed);
+            }
+        }
+    }
     else {
         throw new Error(`Unknown expr type ${expr.constructor.name}`);
     }
 }
 
 function validateBlock(block: Block, contextStack: Array<Context>): void {
-    contextStack.push(new Set());
+    contextStack.push(new Map());
     let statements = block.children as Array<Statement | Decl>;
     for (let statementOrDecl of statements) {
         if (statementOrDecl instanceof Statement) {
@@ -133,10 +151,15 @@ function validateDecl(
         let nameToken = decl.children[0] as Token;
         let name = nameToken.payload as string;
         let context = contextStack[contextStack.length - 1];
-        if (context.has(name)) {
+        if (context.get(name) === VarState.declared) {
             throw new Error(`Redeclaration of name '${name}'`);
         }
-        context.add(name);
+        else if (context.get(name) === VarState.accessed) {
+            throw new Error(`Use of variable '${name}' before declaration`);
+        }
+        else {
+            context.set(name, VarState.declared);
+        }
     }
     else {
         throw new Error(
@@ -146,7 +169,7 @@ function validateDecl(
 }
 
 export function validateProgram(program: Program): void {
-    let contextStack: Array<Context> = [new Set()];
+    let contextStack: Array<Context> = [new Map()];
     let statements = program.children as Array<Statement | Decl>;
     for (let statementOrDecl of statements) {
         if (statementOrDecl instanceof Statement) {
