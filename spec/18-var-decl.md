@@ -3,7 +3,9 @@
 **New tokens**: `MyKeyword` (`my`), `Assign` (`=`), `Identifier` (with a string
 payload for the name).
 
-**Lexical syntax**: `Identifier`: one or more ASCII letters.
+**Lexical syntax**: `Identifier`: an ASCII letter, followed by one or more
+ASCII letters or digits. No underscores. Alternatively, the identifier could
+be a single underscore. `/[A-Za-z][A-Za-z0-9]*|_/`
 
 **Context-free syntax**: `VarDecl ::= "my" Identifier ("=" Expr)? ;`
 

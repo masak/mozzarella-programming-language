@@ -187,16 +187,24 @@ export class Lexer {
             this.lookaheadPos = pos;
             return new Token(TokenKind.StrLit, s);
         }
-        else if (this.seeingLetter(this.pos)) {
+        else if (this.seeingLetter(this.pos)
+                    || this.seeingChar("_", this.pos)) {
             let pos = this.pos;
             let characters: Array<string> = [];
-            while (this.seeingLetter(pos)) {
+            while (this.seeingLetter(pos) || this.seeingDigit(pos)
+                    || this.seeingChar("_", pos)) {
                 characters.push(this.charAt(pos));
                 pos += 1;
             }
             this.lookaheadPos = pos;
             let name = characters.join("");
-            if (name === "true") {
+            if (name === "_") {
+                return new Token(TokenKind.Identifier, name);
+            }
+            else if (name.match(/_/)) {
+                throw new Error("Illegal identifier");
+            }
+            else if (name === "true") {
                 return new Token(TokenKind.TrueKeyword, true);
             }
             else if (name === "false") {
