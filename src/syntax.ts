@@ -60,6 +60,12 @@ export class IfStatement extends Statement {
     }
 }
 
+export class ForStatement extends Statement {
+    constructor(name: Token, arrayExpr: Expr, block: Block) {
+        super([name, arrayExpr, block]);
+    }
+}
+
 export abstract class Decl extends SyntaxNode {
 }
 

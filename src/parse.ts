@@ -11,6 +11,7 @@ import {
     EmptyStatement,
     Expr,
     ExprStatement,
+    ForStatement,
     IfClause,
     IfStatement,
     IndexingExpr,
@@ -144,6 +145,14 @@ const termStartTokens = new Set([
     TokenKind.Identifier,
 ]);
 
+const statementStartTokens = new Set([
+    ...termStartTokens,
+    TokenKind.Semi,
+    TokenKind.CurlyL,
+    TokenKind.IfKeyword,
+    TokenKind.ForKeyword,
+]);
+
 export class Parser {
     lexer: Lexer;
 
@@ -169,8 +178,8 @@ export class Parser {
     }
 
     private seeingStartOfStatement(): boolean {
-        return this.seeingStartOfExpr() || this.seeing(TokenKind.Semi) ||
-            this.seeing(TokenKind.CurlyL) || this.seeing(TokenKind.IfKeyword);
+        let lookahead = this.lexer.lookahead().kind;
+        return statementStartTokens.has(lookahead);
     }
 
     private seeingStartOfDecl(): boolean {
@@ -271,6 +280,13 @@ export class Parser {
                 ? new IfStatement(clauses, elseBlock)
                 : new IfStatement(clauses);
             return [ifStatement, true];
+        }
+        else if (this.accept(TokenKind.ForKeyword)) {
+            let nameToken = this.accept(TokenKind.Identifier)!;
+            this.advanceOver(TokenKind.InKeyword);
+            let arrayExpr = this.parseExpr();
+            let block = this.parseBlock();
+            return [new ForStatement(nameToken, arrayExpr, block), true];
         }
         else {
             this.parseFail("statement");

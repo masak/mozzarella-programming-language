@@ -27,6 +27,7 @@ import {
     EmptyStatement,
     Expr,
     ExprStatement,
+    ForStatement,
     IfClause,
     IfStatement,
     IndexingExpr,
@@ -291,6 +292,23 @@ function executeStatement(statement: Statement, env: Env): Value {
         else {
             return new NoneValue();
         }
+    }
+    else if (statement instanceof ForStatement) {
+        env = extend(env);
+        let name = (statement.children[0] as Token).payload as string;
+        bind(env, name, new UninitValue());
+        let arrayExpr = statement.children[1] as Expr;
+        let arrayValue = evaluate(arrayExpr, env);
+        if (!(arrayValue instanceof ArrayValue)) {
+            throw new Error("Type error: not an array");
+        }
+        let body = statement.children[2] as Block;
+        for (let element of arrayValue.elements) {
+            let bodyEnv = extend(env);
+            bind(bodyEnv, name, element);
+            runBlock(body, bodyEnv);
+        }
+        return new NoneValue();
     }
     else {
         throw new Error(

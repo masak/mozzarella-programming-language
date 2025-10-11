@@ -217,6 +217,12 @@ export class Lexer {
             else if (name === "my") {
                 return new Token(TokenKind.MyKeyword);
             }
+            else if (name === "for") {
+                return new Token(TokenKind.ForKeyword);
+            }
+            else if (name === "in") {
+                return new Token(TokenKind.InKeyword);
+            }
             else {
                 return new Token(TokenKind.Identifier, name);
             }

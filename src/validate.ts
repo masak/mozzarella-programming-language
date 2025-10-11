@@ -8,6 +8,7 @@ import {
     EmptyStatement,
     Expr,
     ExprStatement,
+    ForStatement,
     IfClause,
     IfStatement,
     IndexingExpr,
@@ -135,6 +136,12 @@ function validateStatement(
             let elseBlock = statement.children[1] as Block;
             validateBlock(elseBlock, contextStack);
         }
+    }
+    else if (statement instanceof ForStatement) {
+        let arrayExpr = statement.children[1] as Expr;
+        validateExpr(arrayExpr, contextStack);
+        let block = statement.children[2] as Block;
+        validateBlock(block, contextStack);
     }
     else {
         throw new Error(
