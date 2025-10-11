@@ -4,7 +4,7 @@
 
 **Context-free syntax**:
 
-`IfExpr ::= "if" Expr Block ("else" "if" Expr Block)* ("else" Block)? ;`
+`IfStatement ::= "if" Expr Block ("else" "if" Expr Block)* ("else" Block)? ;`
 
 Parentheses are not necessary around the conditional expressions. Blocks are
 necessary, and there's no single-statement form. (As a result, there is also
