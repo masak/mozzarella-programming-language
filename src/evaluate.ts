@@ -56,7 +56,7 @@ import {
     Value,
 } from "./value";
 
-function evaluate(expr: Expr, env: Env): Value {
+function evaluateExpr(expr: Expr, env: Env): Value {
     if (expr instanceof IntLitExpr) {
         let payload = (expr.children[0] as Token).payload as bigint;
         return new IntValue(payload);
@@ -76,29 +76,29 @@ function evaluate(expr: Expr, env: Env): Value {
         let token = expr.children[0] as Token;
         let operand = expr.children[1] as Expr;
         if (token.kind === TokenKind.Plus) {
-            let operandValue = evaluate(operand, env);
+            let operandValue = evaluateExpr(operand, env);
             if (!(operandValue instanceof IntValue)) {
                 throw new Error("Expected Int as operand of +");
             }
             return new IntValue(operandValue.payload);
         }
         else if (token.kind === TokenKind.Minus) {
-            let operandValue = evaluate(operand, env);
+            let operandValue = evaluateExpr(operand, env);
             if (!(operandValue instanceof IntValue)) {
                 throw new Error("Expected Int as operand of -");
             }
             return new IntValue(-operandValue.payload);
         }
         else if (token.kind === TokenKind.Tilde) {
-            let operandValue = evaluate(operand, env);
+            let operandValue = evaluateExpr(operand, env);
             return stringify(operandValue);
         }
         else if (token.kind === TokenKind.Quest) {
-            let operandValue = evaluate(operand, env);
+            let operandValue = evaluateExpr(operand, env);
             return new BoolValue(boolify(operandValue));
         }
         else if (token.kind === TokenKind.Bang) {
-            let operandValue = evaluate(operand, env);
+            let operandValue = evaluateExpr(operand, env);
             return new BoolValue(!boolify(operandValue));
         }
         else {
@@ -110,44 +110,44 @@ function evaluate(expr: Expr, env: Env): Value {
         let token = expr.children[1] as Token;
         let rhs = expr.children[2] as Expr;
         if (token.kind === TokenKind.Plus) {
-            let left = evaluate(lhs, env);
+            let left = evaluateExpr(lhs, env);
             if (!(left instanceof IntValue)) {
                 throw new Error("Expected Int as lhs of +");
             }
-            let right = evaluate(rhs, env);
+            let right = evaluateExpr(rhs, env);
             if (!(right instanceof IntValue)) {
                 throw new Error("Expected Int as rhs of +");
             }
             return new IntValue(left.payload + right.payload);
         }
         else if (token.kind === TokenKind.Minus) {
-            let left = evaluate(lhs, env);
+            let left = evaluateExpr(lhs, env);
             if (!(left instanceof IntValue)) {
                 throw new Error("Expected Int as lhs of -");
             }
-            let right = evaluate(rhs, env);
+            let right = evaluateExpr(rhs, env);
             if (!(right instanceof IntValue)) {
                 throw new Error("Expected Int as rhs of -");
             }
             return new IntValue(left.payload - right.payload);
         }
         else if (token.kind === TokenKind.Mult) {
-            let left = evaluate(lhs, env);
+            let left = evaluateExpr(lhs, env);
             if (!(left instanceof IntValue)) {
                 throw new Error("Expected Int as lhs of *");
             }
-            let right = evaluate(rhs, env);
+            let right = evaluateExpr(rhs, env);
             if (!(right instanceof IntValue)) {
                 throw new Error("Expected Int as rhs of *");
             }
             return new IntValue(left.payload * right.payload);
         }
         else if (token.kind === TokenKind.FloorDiv) {
-            let left = evaluate(lhs, env);
+            let left = evaluateExpr(lhs, env);
             if (!(left instanceof IntValue)) {
                 throw new Error("Expected Int as lhs of //");
             }
-            let right = evaluate(rhs, env);
+            let right = evaluateExpr(rhs, env);
             if (!(right instanceof IntValue)) {
                 throw new Error("Expected Int as rhs of //");
             }
@@ -160,11 +160,11 @@ function evaluate(expr: Expr, env: Env): Value {
             return new IntValue(left.payload / right.payload - diff);
         }
         else if (token.kind === TokenKind.Mod) {
-            let left = evaluate(lhs, env);
+            let left = evaluateExpr(lhs, env);
             if (!(left instanceof IntValue)) {
                 throw new Error("Expected Int as lhs of %");
             }
-            let right = evaluate(rhs, env);
+            let right = evaluateExpr(rhs, env);
             if (!(right instanceof IntValue)) {
                 throw new Error("Expected Int as rhs of %");
             }
@@ -174,37 +174,37 @@ function evaluate(expr: Expr, env: Env): Value {
             return new IntValue(left.payload % right.payload);
         }
         else if (token.kind === TokenKind.Tilde) {
-            let left = evaluate(lhs, env);
+            let left = evaluateExpr(lhs, env);
             let strLeft = stringify(left);
-            let right = evaluate(rhs, env);
+            let right = evaluateExpr(rhs, env);
             let strRight = stringify(right);
             return new StrValue(strLeft.payload + strRight.payload);
         }
         else if (token.kind === TokenKind.AmpAmp) {
-            let left = evaluate(lhs, env);
+            let left = evaluateExpr(lhs, env);
             if (boolify(left)) {
-                return evaluate(rhs, env);
+                return evaluateExpr(rhs, env);
             }
             else {
                 return left;
             }
         }
         else if (token.kind === TokenKind.PipePipe) {
-            let left = evaluate(lhs, env);
+            let left = evaluateExpr(lhs, env);
             if (boolify(left)) {
                 return left;
             }
             else {
-                return evaluate(rhs, env);
+                return evaluateExpr(rhs, env);
             }
         }
         else if (comparisonOps.has(token.kind)) {
             let [exprs, ops] = findAllChainedOps(expr);
             checkForUnchainableOps(ops);
             let success = true; // until proven false
-            let prev = evaluate(exprs[0], env);
+            let prev = evaluateExpr(exprs[0], env);
             for (let i = 0; i < ops.length; i++) {
-                let next = evaluate(exprs[i + 1], env);
+                let next = evaluateExpr(exprs[i + 1], env);
                 let op = ops[i];
                 success = evaluateComparison(prev, op, next);
                 if (!success) {
@@ -220,7 +220,7 @@ function evaluate(expr: Expr, env: Env): Value {
     }
     else if (expr instanceof ParenExpr) {
         let inner = expr.children[0] as Expr;
-        let value = evaluate(inner, env);
+        let value = evaluateExpr(inner, env);
         return value;
     }
     else if (expr instanceof DoExpr) {
@@ -231,7 +231,7 @@ function evaluate(expr: Expr, env: Env): Value {
     else if (expr instanceof ArrayInitializerExpr) {
         let elements: Array<Value> = [];
         for (let element of expr.children) {
-            let value = evaluate(element, env);
+            let value = evaluateExpr(element, env);
             elements.push(value);
         }
         return new ArrayValue(elements);
@@ -239,11 +239,11 @@ function evaluate(expr: Expr, env: Env): Value {
     else if (expr instanceof IndexingExpr) {
         let arrayExpr = expr.children[0] as Expr;
         let indexExpr = expr.children[1] as Expr;
-        let array = evaluate(arrayExpr, env);
+        let array = evaluateExpr(arrayExpr, env);
         if (!(array instanceof ArrayValue)) {
             throw new Error("Can only index an Array");
         }
-        let index = evaluate(indexExpr, env);
+        let index = evaluateExpr(indexExpr, env);
         if (!(index instanceof IntValue)) {
             throw new Error("Can only index using an Int");
         }
@@ -265,7 +265,7 @@ function evaluate(expr: Expr, env: Env): Value {
 function executeStatement(statement: Statement, env: Env): Value {
     if (statement instanceof ExprStatement) {
         let expr = statement.children[0] as Expr;
-        let value = evaluate(expr, env);
+        let value = evaluateExpr(expr, env);
         return value;
     }
     else if (statement instanceof EmptyStatement) {
@@ -279,7 +279,7 @@ function executeStatement(statement: Statement, env: Env): Value {
         let clauses = statement.children[0].children as Array<IfClause>;
         for (let clause of clauses) {
             let condExpr = clause.children[0] as Expr;
-            let value = evaluate(condExpr, env);
+            let value = evaluateExpr(condExpr, env);
             if (boolify(value)) {
                 let block = clause.children[1] as Block;
                 return runBlock(block, env);
@@ -298,7 +298,7 @@ function executeStatement(statement: Statement, env: Env): Value {
         let name = (statement.children[0] as Token).payload as string;
         bind(env, name, new UninitValue());
         let arrayExpr = statement.children[1] as Expr;
-        let arrayValue = evaluate(arrayExpr, env);
+        let arrayValue = evaluateExpr(arrayExpr, env);
         if (!(arrayValue instanceof ArrayValue)) {
             throw new Error("Type error: not an array");
         }
@@ -340,7 +340,7 @@ function runBlock(block: Block, env: Env): Value {
                 if (decl.children.length >= 2) {
                     let name = (decl.children[0] as Token).payload as string;
                     let initExpr = decl.children[1] as Expr;
-                    let value = evaluate(initExpr, env);
+                    let value = evaluateExpr(initExpr, env);
                     bind(env, name, value);
                 }
             }
@@ -373,7 +373,7 @@ export function runProgram(program: Program): Value {
                 if (decl.children.length >= 2) {
                     let name = (decl.children[0] as Token).payload as string;
                     let initExpr = decl.children[1] as Expr;
-                    let value = evaluate(initExpr, env);
+                    let value = evaluateExpr(initExpr, env);
                     bind(env, name, value);
                 }
             }
