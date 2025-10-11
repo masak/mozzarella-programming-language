@@ -1,15 +1,15 @@
 import {
-    runProgram,
-} from "./evaluate";
-import {
     Lexer,
-} from "./lex";
+} from "./compiler/lex";
 import {
     Parser,
-} from "./parse";
+} from "./compiler/parse";
 import {
     validateProgram,
-} from "./validate";
+} from "./compiler/validate";
+import {
+    runProgram,
+} from "./runtime/evaluate";
 
 export function run(source: string): string {
     let lexer = new Lexer(source);

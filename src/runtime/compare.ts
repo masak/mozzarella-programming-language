@@ -1,11 +1,11 @@
 import {
     Expr,
     InfixOpExpr,
-} from "./syntax";
+} from "../compiler/syntax";
 import {
     Token,
     TokenKind,
-} from "./token";
+} from "../compiler/token";
 import {
     ArrayValue,
     BoolValue,

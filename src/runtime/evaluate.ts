@@ -1,23 +1,4 @@
 import {
-    boolify,
-} from "./boolify";
-import {
-    checkForUnchainableOps,
-    comparisonOps,
-    evaluateComparison,
-    findAllChainedOps,
-} from "./compare";
-import {
-    bind,
-    emptyEnv,
-    Env,
-    extend,
-    lookup,
-} from "./env";
-import {
-    stringify,
-} from "./stringify";
-import {
     ArrayInitializerExpr,
     Block,
     BlockStatement,
@@ -41,11 +22,30 @@ import {
     StrLitExpr,
     VarDecl,
     VarRefExpr,
-} from "./syntax";
+} from "../compiler/syntax";
 import {
     Token,
     TokenKind,
-} from "./token";
+} from "../compiler/token";
+import {
+    boolify,
+} from "./boolify";
+import {
+    checkForUnchainableOps,
+    comparisonOps,
+    evaluateComparison,
+    findAllChainedOps,
+} from "./compare";
+import {
+    bind,
+    emptyEnv,
+    Env,
+    extend,
+    lookup,
+} from "./env";
+import {
+    stringify,
+} from "./stringify";
 import {
     ArrayValue,
     BoolValue,
