@@ -42,6 +42,7 @@ export class Lexer {
     input: string;
     pos: number = 0;
     lookaheadPos: number = 0;
+    cachedLookahead: Token = new Token(TokenKind.Eof);
 
     constructor(input: string) {
         this.input = input;
@@ -90,10 +91,18 @@ export class Lexer {
     // lex methods:
 
     lookahead(): Token {
+        if (this.lookaheadPos === this.pos) {
+            [this.lookaheadPos, this.cachedLookahead] =
+                this.computeLookahead();
+        }
+        return this.cachedLookahead;
+    }
+
+    private computeLookahead(): [number, Token] {
         this.skipWhitespace();
         let choice: [TokenKind | null, [string, TokenKind] | null];
         if (this.seeingEof(this.pos)) {
-            return new Token(TokenKind.Eof);
+            return [this.pos, new Token(TokenKind.Eof)];
         }
         else if (choice = choiceTree.get(this.charAt(this.pos))!) {
             let pos = this.pos + 1;
@@ -112,23 +121,19 @@ export class Lexer {
                     );
                 }
                 pos += 1;
-                this.lookaheadPos = pos;
-                return new Token(tokenKind2);
+                return [pos, new Token(tokenKind2)];
             }
             else {
                 if (ch2Info === null) {
-                    this.lookaheadPos = pos;
-                    return new Token(tokenKind1);
+                    return [pos, new Token(tokenKind1)];
                 }
                 else {
                     let [ch2, tokenKind2] = ch2Info;
                     if (this.seeingChar(ch2, pos)) {
                         pos += 1;
-                        this.lookaheadPos = pos;
-                        return new Token(tokenKind2);
+                        return [pos, new Token(tokenKind2)];
                     }
-                    this.lookaheadPos = pos;
-                    return new Token(tokenKind1);
+                    return [pos, new Token(tokenKind1)];
                 }
             }
         }
@@ -146,8 +151,7 @@ export class Lexer {
                 pos += 1;
             }
             let n = BigInt(digits.join(""));
-            this.lookaheadPos = pos;
-            return new Token(TokenKind.IntLit, n);
+            return [pos, new Token(TokenKind.IntLit, n)];
         }
         else if (this.seeingChar('"', this.pos)) {
             let pos = this.pos + 1;
@@ -184,8 +188,7 @@ export class Lexer {
             }
             pos += 1;
             let s = characters.join("");
-            this.lookaheadPos = pos;
-            return new Token(TokenKind.StrLit, s);
+            return [pos, new Token(TokenKind.StrLit, s)];
         }
         else if (this.seeingLetter(this.pos)
                     || this.seeingChar("_", this.pos)) {
@@ -196,43 +199,42 @@ export class Lexer {
                 characters.push(this.charAt(pos));
                 pos += 1;
             }
-            this.lookaheadPos = pos;
             let name = characters.join("");
             if (name === "_") {
-                return new Token(TokenKind.Identifier, name);
+                return [pos, new Token(TokenKind.Identifier, name)];
             }
             else if (name.match(/_/)) {
                 throw new Error("Illegal identifier");
             }
             else if (name === "true") {
-                return new Token(TokenKind.TrueKeyword, true);
+                return [pos, new Token(TokenKind.TrueKeyword, true)];
             }
             else if (name === "false") {
-                return new Token(TokenKind.FalseKeyword, false);
+                return [pos, new Token(TokenKind.FalseKeyword, false)];
             }
             else if (name === "none") {
-                return new Token(TokenKind.NoneKeyword);
+                return [pos, new Token(TokenKind.NoneKeyword)];
             }
             else if (name === "do") {
-                return new Token(TokenKind.DoKeyword);
+                return [pos, new Token(TokenKind.DoKeyword)];
             }
             else if (name === "if") {
-                return new Token(TokenKind.IfKeyword);
+                return [pos, new Token(TokenKind.IfKeyword)];
             }
             else if (name === "else") {
-                return new Token(TokenKind.ElseKeyword);
+                return [pos, new Token(TokenKind.ElseKeyword)];
             }
             else if (name === "my") {
-                return new Token(TokenKind.MyKeyword);
+                return [pos, new Token(TokenKind.MyKeyword)];
             }
             else if (name === "for") {
-                return new Token(TokenKind.ForKeyword);
+                return [pos, new Token(TokenKind.ForKeyword)];
             }
             else if (name === "in") {
-                return new Token(TokenKind.InKeyword);
+                return [pos, new Token(TokenKind.InKeyword)];
             }
             else {
-                return new Token(TokenKind.Identifier, name);
+                return [pos, new Token(TokenKind.Identifier, name)];
             }
         }
         else {
@@ -245,7 +247,7 @@ export class Lexer {
     }
 
     advance(): void {
-        if (this.pos === this.lookaheadPos) {
+        if (this.pos >= this.lookaheadPos) {
             throw new Error("Trying to advance but nothing to advance to");
         }
         this.pos = this.lookaheadPos;
