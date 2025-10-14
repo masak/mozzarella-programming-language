@@ -20,5 +20,5 @@ deeper.
               outer environment and continue to the next iteration.
             * Otherwise, issue a runtime error about an undeclared variable.
     * Evaluate `initExpr` to `v`.
-    * In the current environment, bind `<name>` to `v`.
+    * In `env`, bind `<name>` to `v`.
 
