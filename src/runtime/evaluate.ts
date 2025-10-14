@@ -41,6 +41,7 @@ import {
     emptyEnv,
     Env,
     extend,
+    findEnvOfName,
     lookup,
 } from "./env";
 import {
@@ -55,6 +56,48 @@ import {
     UninitValue,
     Value,
 } from "./value";
+
+abstract class Location {
+}
+
+class VarLocation extends Location {
+    varEnv: Env;
+    name: string;
+
+    constructor(varEnv: Env, name: string) {
+        super();
+        this.varEnv = varEnv;
+        this.name = name;
+    }
+}
+
+class ArrayElementLocation extends Location {
+    array: ArrayValue;
+    index: number;
+
+    constructor(array: ArrayValue, index: number) {
+        super();
+        this.array = array;
+        this.index = index;
+    }
+}
+
+function assign(location: Location, value: Value): void {
+    if (location instanceof VarLocation) {
+        bind(location.varEnv, location.name, value);
+    }
+    else if (location instanceof ArrayElementLocation) {
+        let array = location.array;
+        let index = location.index;
+        if (index < 0 || index >= array.elements.length) {
+            throw new Error("Index out of bounds");
+        }
+        array.elements[index] = value;
+    }
+    else {
+        throw new Error("Precondition failed: unrecognized Location");
+    }
+}
 
 function evaluateExpr(expr: Expr, env: Env): Value {
     if (expr instanceof IntLitExpr) {
@@ -198,6 +241,12 @@ function evaluateExpr(expr: Expr, env: Env): Value {
                 return evaluateExpr(rhs, env);
             }
         }
+        else if (token.kind === TokenKind.Assign) {
+            let location = evaluateExprForLocation(lhs, env);
+            let value = evaluateExpr(rhs, env);
+            assign(location, value);
+            return value;
+        }
         else if (comparisonOps.has(token.kind)) {
             let [exprs, ops] = findAllChainedOps(expr);
             checkForUnchainableOps(ops);
@@ -262,6 +311,40 @@ function evaluateExpr(expr: Expr, env: Env): Value {
     }
 }
 
+function evaluateExprForLocation(expr: Expr, env: Env): Location {
+    if (expr instanceof ParenExpr) {
+        let inner = expr.children[0] as Expr;
+        let location = evaluateExprForLocation(inner, env);
+        return location;
+    }
+    else if (expr instanceof DoExpr) {
+        let statement = expr.children[0] as Statement;
+        let location = executeStatementForLocation(statement, env);
+        return location;
+    }
+    else if (expr instanceof IndexingExpr) {
+        let arrayExpr = expr.children[0] as Expr;
+        let indexExpr = expr.children[1] as Expr;
+        let array = evaluateExpr(arrayExpr, env);
+        if (!(array instanceof ArrayValue)) {
+            throw new Error("Can only index an Array");
+        }
+        let index = evaluateExpr(indexExpr, env);
+        if (!(index instanceof IntValue)) {
+            throw new Error("Can only index using an Int");
+        }
+        return new ArrayElementLocation(array, Number(index.payload));
+    }
+    else if (expr instanceof VarRefExpr) {
+        let name = (expr.children[0] as Token).payload as string;
+        let varEnv = findEnvOfName(env, name);
+        return new VarLocation(varEnv, name);
+    }
+    else {
+        throw new Error(`Cannot assign to a ${expr.constructor.name}`);
+    }
+}
+
 function executeStatement(statement: Statement, env: Env): Value {
     if (statement instanceof ExprStatement) {
         let expr = statement.children[0] as Expr;
@@ -317,6 +400,45 @@ function executeStatement(statement: Statement, env: Env): Value {
     }
 }
 
+function executeStatementForLocation(
+    statement: Statement,
+    env: Env,
+): Location {
+    if (statement instanceof ExprStatement) {
+        let expr = statement.children[0] as Expr;
+        let location = evaluateExprForLocation(expr, env);
+        return location;
+    }
+    else if (statement instanceof BlockStatement) {
+        let block = statement.children[0] as Block;
+        return runBlockForLocation(block, env);
+    }
+    else if (statement instanceof IfStatement) {
+        let clauses = statement.children[0].children as Array<IfClause>;
+        for (let clause of clauses) {
+            let condExpr = clause.children[0] as Expr;
+            let value = evaluateExpr(condExpr, env);
+            if (boolify(value)) {
+                let block = clause.children[1] as Block;
+                return runBlockForLocation(block, env);
+            }
+        }
+        if (statement.children.length > 1) {
+            let elseBlock = statement.children[1] as Block;
+            return runBlockForLocation(elseBlock, env);
+        }
+        else {
+            throw new Error(
+                "Attempt to assign to 'if' statement that fell off the end "
+                + "without 'else' clause."
+            );
+        }
+    }
+    else {
+        throw new Error(`Cannot assign to a ${statement.constructor.name}`);
+    }
+}
+
 function runBlock(block: Block, env: Env): Value {
     env = extend(env);
     let statements = block.children as Array<Statement | Decl>;
@@ -348,6 +470,51 @@ function runBlock(block: Block, env: Env): Value {
         }
     }
     return lastValue;
+}
+
+function runBlockForLocation(block: Block, env: Env): Value {
+    env = extend(env);
+    let statements = block.children as Array<Statement | Decl>;
+    for (let statementOrDecl of statements) {
+        if (statementOrDecl instanceof VarDecl) {
+            let varDecl = statementOrDecl;
+            let name = (varDecl.children[0] as Token).payload as string;
+            bind(env, name, new UninitValue());
+        }
+    }
+
+    for (let [index, statementOrDecl] of statements.entries()) {
+        if (index < statements.length - 1) {
+            if (statementOrDecl instanceof Statement) {
+                let statement = statementOrDecl;
+                executeStatement(statement, env);
+            }
+            else {  // Decl
+                let decl = statementOrDecl;
+                if (decl instanceof VarDecl) {
+                    if (decl.children.length >= 2) {
+                        let name =
+                            (decl.children[0] as Token).payload as string;
+                        let initExpr = decl.children[1] as Expr;
+                        let value = evaluateExpr(initExpr, env);
+                        bind(env, name, value);
+                    }
+                }
+            }
+        }
+        else {  // last statement
+            if (statementOrDecl instanceof Statement) {
+                let statement = statementOrDecl;
+                return executeStatementForLocation(statement, env);
+            }
+            else {  // Decl
+                throw new Error(
+                    "Cannot assign to declaration last in a block"
+                );
+            }
+        }
+    }
+    throw new Error("Precondition failed: fell off the end of statement list");
 }
 
 export function runProgram(program: Program): Value {

@@ -8,6 +8,9 @@ import {
     validateProgram,
 } from "./compiler/validate";
 import {
+    displayValue,
+} from "./runtime/display";
+import {
     runProgram,
 } from "./runtime/evaluate";
 
@@ -17,6 +20,6 @@ export function run(source: string): string {
     let program = parser.parseProgram();
     validateProgram(program);
     let value = runProgram(program);
-    return value.toString();
+    return displayValue(value, new Set());
 }
 

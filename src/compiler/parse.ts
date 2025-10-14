@@ -79,6 +79,7 @@ const concatenativeStrength = 70;
 const comparativeStrength = 60;
 const conjunctiveStrength = 50;
 const disjunctiveStrength = 40;
+const assignmentStrength = 30;
 
 // Binding strength of an infix token. Higher means tighter.
 function strength(infixToken: Token): number {
@@ -101,6 +102,9 @@ function strength(infixToken: Token): number {
     else if (kind === TokenKind.PipePipe) {
         return disjunctiveStrength;
     }
+    else if (kind === TokenKind.Assign) {
+        return assignmentStrength;
+    }
     else {
         throw new Error("Precondition error: unrecognized infix token");
     }
@@ -109,7 +113,7 @@ function strength(infixToken: Token): number {
 // Returns whether this precedence level/strength has operators associating to
 // the left or to the right. Currently we only have left-associating operators.
 function associativity(strength: number): "left" | "right" {
-    return "left";
+    return strength === assignmentStrength ? "right" : "left";
 }
 
 const prefixOps = new Set([
@@ -129,6 +133,7 @@ const infixOps = new Set([
     TokenKind.Tilde,
     TokenKind.AmpAmp,
     TokenKind.PipePipe,
+    TokenKind.Assign,
     ...comparisonOps,
 ]);
 

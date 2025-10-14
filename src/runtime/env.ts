@@ -35,6 +35,16 @@ export function lookup(env: Env | null, name: string): Value {
     throw new Error(`Undeclared variable '${name}'`);
 }
 
+export function findEnvOfName(env: Env | null, name: string): Env {
+    while (env != null) {
+        if (env.bindings.has(name)) {
+            return env;
+        }
+        env = env.outer;
+    }
+    throw new Error(`Undeclared variable '${name}'`);
+}
+
 export function bind(env: Env, name: string, value: Value): void {
     env.bindings.set(name, value);
 }

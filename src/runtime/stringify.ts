@@ -1,4 +1,7 @@
 import {
+    displayValue,
+} from "./display";
+import {
     ArrayValue,
     BoolValue,
     IntValue,
@@ -21,7 +24,10 @@ export function stringify(value: Value): StrValue {
         return new StrValue("none");
     }
     else if (value instanceof ArrayValue) {
-        let elements = value.elements.map((v) => v.toString()).join(", ");
+        let seen = new Set([value]);
+        let elements = value.elements.map(
+            (v) => displayValue(v, seen)
+        ).join(", ");
         return new StrValue(["[", elements, "]"].join(""));
     }
     else { // generic fallback
