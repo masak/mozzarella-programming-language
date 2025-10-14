@@ -22,6 +22,7 @@ import {
     StrLitExpr,
     VarDecl,
     VarRefExpr,
+    WhileStatement,
 } from "./syntax";
 import {
     Token,
@@ -141,6 +142,12 @@ function validateStatement(
         let arrayExpr = statement.children[1] as Expr;
         validateExpr(arrayExpr, contextStack);
         let block = statement.children[2] as Block;
+        validateBlock(block, contextStack);
+    }
+    else if (statement instanceof WhileStatement) {
+        let condExpr = statement.children[0] as Expr;
+        validateExpr(condExpr, contextStack);
+        let block = statement.children[1] as Block;
         validateBlock(block, contextStack);
     }
     else {

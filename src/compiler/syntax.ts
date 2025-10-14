@@ -66,6 +66,12 @@ export class ForStatement extends Statement {
     }
 }
 
+export class WhileStatement extends Statement {
+    constructor(condExpr: Expr, block: Block) {
+        super([condExpr, block]);
+    }
+}
+
 export abstract class Decl extends SyntaxNode {
 }
 

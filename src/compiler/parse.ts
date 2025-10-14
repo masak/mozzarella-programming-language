@@ -25,6 +25,7 @@ import {
     StrLitExpr,
     VarDecl,
     VarRefExpr,
+    WhileStatement,
 } from "./syntax";
 import {
     Token,
@@ -156,6 +157,7 @@ const statementStartTokens = new Set([
     TokenKind.CurlyL,
     TokenKind.IfKeyword,
     TokenKind.ForKeyword,
+    TokenKind.WhileKeyword,
 ]);
 
 export class Parser {
@@ -292,6 +294,11 @@ export class Parser {
             let arrayExpr = this.parseExpr();
             let block = this.parseBlock();
             return [new ForStatement(nameToken, arrayExpr, block), true];
+        }
+        else if (this.accept(TokenKind.WhileKeyword)) {
+            let condExpr = this.parseExpr();
+            let block = this.parseBlock();
+            return [new WhileStatement(condExpr, block), true];
         }
         else {
             this.parseFail("statement");

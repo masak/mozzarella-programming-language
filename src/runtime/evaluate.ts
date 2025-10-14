@@ -22,6 +22,7 @@ import {
     StrLitExpr,
     VarDecl,
     VarRefExpr,
+    WhileStatement,
 } from "../compiler/syntax";
 import {
     Token,
@@ -390,6 +391,16 @@ function executeStatement(statement: Statement, env: Env): Value {
             let bodyEnv = extend(env);
             bind(bodyEnv, name, element);
             runBlock(body, bodyEnv);
+        }
+        return new NoneValue();
+    }
+    else if (statement instanceof WhileStatement) {
+        let condExpr = statement.children[0] as Expr;
+        let value = evaluateExpr(condExpr, env);
+        while (boolify(value)) {
+            let block = statement.children[1] as Block;
+            runBlock(block, env);
+            value = evaluateExpr(condExpr, env);
         }
         return new NoneValue();
     }

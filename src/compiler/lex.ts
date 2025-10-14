@@ -233,6 +233,9 @@ export class Lexer {
             else if (name === "in") {
                 return [pos, new Token(TokenKind.InKeyword)];
             }
+            else if (name === "while") {
+                return [pos, new Token(TokenKind.WhileKeyword)];
+            }
             else {
                 return [pos, new Token(TokenKind.Identifier, name)];
             }
