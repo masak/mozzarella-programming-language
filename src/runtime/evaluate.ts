@@ -461,11 +461,13 @@ function runBlock(block: Block, env: Env): Value {
         }
     }
 
-    let lastValue = new NoneValue();
-    for (let statementOrDecl of statements) {
+    for (let [index, statementOrDecl] of statements.entries()) {
         if (statementOrDecl instanceof Statement) {
             let statement = statementOrDecl;
-            lastValue = executeStatement(statement, env);
+            let value = executeStatement(statement, env);
+            if (index === statements.length - 1) {
+                return value;
+            }
         }
         else {  // Decl
             let decl = statementOrDecl;
@@ -477,10 +479,9 @@ function runBlock(block: Block, env: Env): Value {
                     bind(env, name, value);
                 }
             }
-            lastValue = new NoneValue();
         }
     }
-    return lastValue;
+    return new NoneValue();
 }
 
 function runBlockForLocation(block: Block, env: Env): Value {
@@ -539,11 +540,13 @@ export function runProgram(program: Program): Value {
         }
     }
 
-    let lastValue = new NoneValue();
-    for (let statementOrDecl of statements) {
+    for (let [index, statementOrDecl] of statements.entries()) {
         if (statementOrDecl instanceof Statement) {
             let statement = statementOrDecl;
-            lastValue = executeStatement(statement, env);
+            let value = executeStatement(statement, env);
+            if (index === statements.length - 1) {
+                return value;
+            }
         }
         else {  // Decl
             let decl = statementOrDecl;
@@ -555,9 +558,8 @@ export function runProgram(program: Program): Value {
                     bind(env, name, value);
                 }
             }
-            lastValue = new NoneValue();
         }
     }
-    return lastValue;
+    return new NoneValue();
 }
 
