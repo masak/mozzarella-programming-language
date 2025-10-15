@@ -484,9 +484,7 @@ function runBlock(block: Block, env: Env): Value {
     return new NoneValue();
 }
 
-function runBlockForLocation(block: Block, env: Env): Value {
-    env = extend(env);
-    let statements = block.children as Array<Statement | Decl>;
+function initializeEnv(env: Env, statements: Array<Statement | Decl>): Env {
     for (let statementOrDecl of statements) {
         if (statementOrDecl instanceof VarDecl) {
             let varDecl = statementOrDecl;
@@ -494,6 +492,13 @@ function runBlockForLocation(block: Block, env: Env): Value {
             bind(env, name, new UninitValue());
         }
     }
+
+    return env;
+}
+
+function runBlockForLocation(block: Block, env: Env): Value {
+    let statements = block.children as Array<Statement | Decl>;
+    env = initializeEnv(extend(env), statements);
 
     for (let [index, statementOrDecl] of statements.entries()) {
         if (index < statements.length - 1) {
@@ -530,15 +535,8 @@ function runBlockForLocation(block: Block, env: Env): Value {
 }
 
 export function runProgram(program: Program): Value {
-    let env = emptyEnv();
     let statements = program.children as Array<Statement | Decl>;
-    for (let statementOrDecl of statements) {
-        if (statementOrDecl instanceof VarDecl) {
-            let varDecl = statementOrDecl;
-            let name = (varDecl.children[0] as Token).payload as string;
-            bind(env, name, new UninitValue());
-        }
-    }
+    let env = initializeEnv(emptyEnv(), statements);
 
     for (let [index, statementOrDecl] of statements.entries()) {
         if (statementOrDecl instanceof Statement) {
@@ -560,6 +558,7 @@ export function runProgram(program: Program): Value {
             }
         }
     }
+
     return new NoneValue();
 }
 
