@@ -46,6 +46,12 @@ import {
     lookup,
 } from "./env";
 import {
+    ArrayElementLocation,
+    assign,
+    Location,
+    VarLocation,
+} from "./location";
+import {
     stringify,
 } from "./stringify";
 import {
@@ -57,48 +63,6 @@ import {
     UninitValue,
     Value,
 } from "./value";
-
-abstract class Location {
-}
-
-class VarLocation extends Location {
-    varEnv: Env;
-    name: string;
-
-    constructor(varEnv: Env, name: string) {
-        super();
-        this.varEnv = varEnv;
-        this.name = name;
-    }
-}
-
-class ArrayElementLocation extends Location {
-    array: ArrayValue;
-    index: number;
-
-    constructor(array: ArrayValue, index: number) {
-        super();
-        this.array = array;
-        this.index = index;
-    }
-}
-
-function assign(location: Location, value: Value): void {
-    if (location instanceof VarLocation) {
-        bind(location.varEnv, location.name, value);
-    }
-    else if (location instanceof ArrayElementLocation) {
-        let array = location.array;
-        let index = location.index;
-        if (index < 0 || index >= array.elements.length) {
-            throw new Error("Index out of bounds");
-        }
-        array.elements[index] = value;
-    }
-    else {
-        throw new Error("Precondition failed: unrecognized Location");
-    }
-}
 
 function evaluateExpr(expr: Expr, env: Env): Value {
     if (expr instanceof IntLitExpr) {
