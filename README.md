@@ -68,6 +68,41 @@ enough provenance to know they are from a certain macro activation. When it
 is expanded into the calling code, the names won't collide even if the "short
 names" happen to coincide.
 
+## Features
+
+- [x] Integers
+- [x] Strings
+- [x] Booleans
+- [x] None
+- [x] Integer operations
+- [x] String operations
+- [x] Boolean operations
+- [x] Comparison operations
+- [x] Parentheses
+- [x] Expression statement
+- [x] Empty statement
+- [x] Statement list
+- [x] Block statement
+- [x] `do` expression
+- [x] `if` statement
+- [x] Arrays
+- [x] Array indexing
+- [x] Variable declaration
+- [x] Variable access
+- [x] `for` statement
+- [x] Assignment
+- [x] `while` statement
+- [ ] `last` statement
+- [ ] `next` statement
+- [ ] Functions
+- [ ] Parameters
+- [ ] `return` statement
+- [ ] Function calls
+- [ ] Macros
+- [ ] Code quotation
+- [ ] Quote interpolation
+- [ ] Macro hygiene
+
 ## Code quoting
 
 **Code quoting**, also known as quasiquotation, converts some actual source
