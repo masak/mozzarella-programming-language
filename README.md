@@ -234,6 +234,11 @@ PrimaryExpr -> CodeQuote .
 PrimaryExpr -> CodeUnquote .
 PrimaryExpr -> DoExpr .
 PrimaryExpr -> "(" Expr ")" .
+PrimaryExpr -> "[" "]" .
+PrimaryExpr -> "[" ElementList "]" .
+
+ElementList -> Expr .
+ElementList -> ElementList "," Expr .
 
 VarRef -> identifier .
 
