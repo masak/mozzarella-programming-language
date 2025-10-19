@@ -10,7 +10,7 @@ Take the traditional swap macro as an example.
 ```
 macro swap(x, y) {
     code`
-        let temp = ${x};
+        my temp = ${x};
         ${x} = ${y};
         ${y} = temp;
     `;
@@ -22,8 +22,8 @@ trouble if there's already another `temp` declaration in the caller's scope:
 
 ```
 {
-    let temp = "25 degrees";
-    let angle = "60 degrees";
+    my temp = "25 degrees";
+    my angle = "60 degrees";
     swap(temp, angle);
 }
 ```
@@ -32,9 +32,9 @@ Picture the result of the macro expansion:
 
 ```diff
  {
-     let temp = "25 degrees";
-     let angle = "60 degrees";
-+    let temp = temp;    // error: redeclaration of `temp`
+     my temp = "25 degrees";
+     my angle = "60 degrees";
++    my temp = temp;    // error: redeclaration of `temp`
 +    temp = angle;
 +    angle = temp;
  }
@@ -50,9 +50,9 @@ something that led to the following expanded code:
 
 ```
 {
-    let temp = "25 degrees";
-    let angle = "60 degrees";
-    let a001::temp = temp;
+    my temp = "25 degrees";
+    my angle = "60 degrees";
+    my a001::temp = temp;
     temp = angle;
     angle = a001::temp;
 }
