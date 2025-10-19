@@ -103,6 +103,31 @@ names" happen to coincide.
 - [ ] Quote interpolation
 - [ ] Macro hygiene
 
+## Specification
+
+- [integer literals](https://github.com/masak/mozzarella-programming-language/blob/main/spec/01-int.md)
+- [string literals](https://github.com/masak/mozzarella-programming-language/blob/main/spec/02-str.md)
+- [boolean literals](https://github.com/masak/mozzarella-programming-language/blob/main/spec/03-bool.md)
+- [none literals](https://github.com/masak/mozzarella-programming-language/blob/main/spec/04-none.md)
+- [integer operators](https://github.com/masak/mozzarella-programming-language/blob/main/spec/05-int-ops.md)
+- [string operators](https://github.com/masak/mozzarella-programming-language/blob/main/spec/06-str-ops.md)
+- [boolean operators](https://github.com/masak/mozzarella-programming-language/blob/main/spec/07-bool-ops.md)
+- [comparison operators](https://github.com/masak/mozzarella-programming-language/blob/main/spec/08-comparison.md)
+- [parenthesized expressions](https://github.com/masak/mozzarella-programming-language/blob/main/spec/09-parens.md)
+- [expression statements](https://github.com/masak/mozzarella-programming-language/blob/main/spec/10-expr-stmt.md)
+- [empty statements](https://github.com/masak/mozzarella-programming-language/blob/main/spec/11-empty-stmt.md)
+- [statement lists](https://github.com/masak/mozzarella-programming-language/blob/main/spec/12-statement-list.md)
+- [block statements](https://github.com/masak/mozzarella-programming-language/blob/main/spec/13-block-stmt.md)
+- ['do' expressions](https://github.com/masak/mozzarella-programming-language/blob/main/spec/14-do-expr.md)
+- ['if' statements](https://github.com/masak/mozzarella-programming-language/blob/main/spec/15-if-stmt.md)
+- [array initializer expressions](https://github.com/masak/mozzarella-programming-language/blob/main/spec/16-array.md)
+- [indexing expressions](https://github.com/masak/mozzarella-programming-language/blob/main/spec/17-indexing.md)
+- [variable declarations](https://github.com/masak/mozzarella-programming-language/blob/main/spec/18-var-decl.md)
+- [variablel reference expressions](https://github.com/masak/mozzarella-programming-language/blob/main/spec/19-var-ref.md)
+- ['for' statements](https://github.com/masak/mozzarella-programming-language/blob/main/spec/20-for-stmt.md)
+- [assignment expressions](https://github.com/masak/mozzarella-programming-language/blob/main/spec/21-assign-expr.md)
+- ['while' statements](https://github.com/masak/mozzarella-programming-language/blob/main/spec/22-while-stmt.md)
+
 ## Code quoting
 
 **Code quoting**, also known as quasiquotation, converts some actual source
