@@ -160,24 +160,47 @@ happen.
 
 ## Grammophone grammar
 
+https://mdaines.github.io/grammophone/ is a good place to confirm that a
+grammar adheres to the LR criterion.
+
 ```
 Program -> .
-Program -> StatementOrDeclarationList .
+Program -> StatementOrDeclList .
+
+StatementOrDeclList -> StatementOrDecl .
+StatementOrDeclList -> StatementOrDeclList StatementOrDecl .
+
+StatementOrDecl -> Statement .
+StatementOrDecl -> Decl .
 
 Statement -> EmptyStatement .
 Statement -> ExprStatement .
+Statement -> BlockStatement .
+Statement -> IfStatement .
 
 EmptyStatement -> ";" .
 
 ExprStatement -> Expr ";" .
 
-Declaration -> LetDeclaration .
-Declaration -> MacroDeclaration .
+BlockStatement -> Block .
 
-LetDeclaration -> "let" identifier "=" Expr ";" .
+IfStatement -> "if" Expr Block .
+IfStatement -> "if" Expr Block "else" Block .
+IfStatement -> "if" Expr Block ElseIfClauses .
+IfStatement -> "if" Expr Block ElseIfClauses "else" Block .
 
-MacroDeclaration -> "macro" identifier "(" ")" Block .
-MacroDeclaration -> "macro" identifier "(" ParameterList ")" Block .
+Decl -> VarDecl .
+Decl -> FuncDecl .
+Decl -> MacroDecl .
+
+VarDecl -> "my" identifier ";" .
+VarDecl -> "my" identifier "=" Expr ";" .
+
+FuncDecl -> "func" identifier "(" ")" Block .
+FuncDecl -> "func" identifier "(" ParameterList ")" Block .
+
+MacroDecl -> "macro" identifier "(" ")" Block .
+MacroDecl -> "macro" identifier "(" ParameterList ")" Block .
 
 ParameterList -> Parameter .
 ParameterList -> ParameterList "," Parameter .
@@ -186,12 +209,6 @@ Parameter -> identifier .
 
 Block -> "{" "}" .
 Block -> "{" StatementOrDeclarationList "}" .
-
-StatementOrDeclarationList -> StatementOrDeclaration .
-StatementOrDeclarationList -> StatementOrDeclarationList StatementOrDeclaration .
-
-StatementOrDeclaration -> Statement .
-StatementOrDeclaration -> Declaration .
 
 Expr -> AssignmentExpr .
 
@@ -207,29 +224,28 @@ ArgumentList -> ArgumentList "," Argument .
 
 Argument -> Expr .
 
-PrimaryExpr -> StrLiteral .
-PrimaryExpr -> IntLiteral .
-PrimaryExpr -> TrueLiteral .
-PrimaryExpr -> FalseLiteral .
-PrimaryExpr -> NoneLiteral .
-PrimaryExpr -> VariableRef .
+PrimaryExpr -> StrLit .
+PrimaryExpr -> IntLit .
+PrimaryExpr -> "true" .
+PrimaryExpr -> "false" .
+PrimaryExpr -> "none" .
+PrimaryExpr -> VarRef .
 PrimaryExpr -> CodeQuote .
 PrimaryExpr -> CodeUnquote .
 PrimaryExpr -> DoExpr .
 PrimaryExpr -> "(" Expr ")" .
 
-VariableRef -> identifier .
+VarRef -> identifier .
 
-CodeQuote -> "code`" "`" .
-CodeQuote -> "code`" StatementOrDeclarationList "`" .
+CodeQuote -> "code" "`" "`" .
+CodeQuote -> "code" "`" StatementOrDeclList "`" .
 
 CodeUnquote -> "${" Expr "}" .
 
 DoExpr -> "do" Statement .
-DoExpr -> "do" Block .
 ```
 
-For the above grammar, the LALR parser has 60 states.
+For the above grammar, the LALR parser has 91 states.
 
 ## Types
 
