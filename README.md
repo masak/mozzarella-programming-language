@@ -269,26 +269,38 @@ On the right is for each concrete node type a list of the types of its children.
 Currently, where it says `name`, we assume it's actually a `Str`, but it could also be something more general which includes a gensym type.
 
 ```
-Program                     -- Array<Statement | Declaration>
+Program                     -- (Statement | Decl)*
 Statement
   EmptyStatement            -- (none)
   ExprStatement             -- Expr
-Declaration
-  LetDeclaration            -- Variable, Expr
-  MacroDeclaration          -- Variable, ParameterList, Block
-Variable                    -- name
-ParameterList               -- Array<Parameter>
-Parameter                   -- Variable
-Block                       -- Array<Statement | Declaration>
+  BlockStatement            -- Block
+  IfStatement               -- IfClause, Block?
+IfClause                    -- Expr, Block
+Decl
+  VarDecl                   -- identifier, Expr?
+  FuncDecl                  -- identifier, ParamList, Block
+  MacroDecl                 -- identifier, ParamList, Block
+ParamList                   -- Param*
+Param                       -- identifier
+Block                       -- (Statement | Decl)*
 Expr
-  AssignmentExpr            -- VariableRef, Expr
+  AssignExpr                -- Expr, Expr
+  IndexingExpr              -- Expr, Expr
   CallExpr                  -- Expr, ArgumentList
   PrimaryExpr
-    Literal                 -- Token
-    VariableRef             -- name
+    IntLitExpr              -- intLit
+    StrLitExpr              -- strLit
+    BoolLitExpr             -- "true" | "false"
+    NoneLitExpr             -- (none)
+    PrefixOpExpr            -- opToken, Expr
+    InfixOpExpr             -- Expr, opToken, Expr
+    ArrayInitializerExpr    -- Expr*
+    VarRef                  -- identifier
     CodeQuote               -- Block
     CodeUnquote             -- Expr
     DoExpr                  -- Block
+    ParenExpr               -- Expr
 ArgumentList                -- Array<Argument>
 Argument                    -- Expr
 ```
+
