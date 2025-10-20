@@ -123,7 +123,7 @@ names" happen to coincide.
 - [array initializer expressions](https://github.com/masak/mozzarella-programming-language/blob/main/spec/16-array.md)
 - [indexing expressions](https://github.com/masak/mozzarella-programming-language/blob/main/spec/17-indexing.md)
 - [variable declarations](https://github.com/masak/mozzarella-programming-language/blob/main/spec/18-var-decl.md)
-- [variablel reference expressions](https://github.com/masak/mozzarella-programming-language/blob/main/spec/19-var-ref.md)
+- [variable reference expressions](https://github.com/masak/mozzarella-programming-language/blob/main/spec/19-var-ref.md)
 - ['for' statements](https://github.com/masak/mozzarella-programming-language/blob/main/spec/20-for-stmt.md)
 - [assignment expressions](https://github.com/masak/mozzarella-programming-language/blob/main/spec/21-assign-expr.md)
 - ['while' statements](https://github.com/masak/mozzarella-programming-language/blob/main/spec/22-while-stmt.md)
