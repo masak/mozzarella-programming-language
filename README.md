@@ -360,7 +360,7 @@ Expr
     CodeUnquote             -- Expr
     DoExpr                  -- Block
     ParenExpr               -- Expr
-ArgumentList                -- Array<Argument>
+ArgumentList                -- Argument*
 Argument                    -- Expr
 ```
 
