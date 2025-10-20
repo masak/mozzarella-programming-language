@@ -70,63 +70,38 @@ names" happen to coincide.
 
 ## Features
 
-- [x] Integers
-- [x] Strings
-- [x] Booleans
-- [x] None
-- [x] Integer operations
-- [x] String operations
-- [x] Boolean operations
-- [x] Comparison operations
-- [x] Parentheses
-- [x] Expression statement
-- [x] Empty statement
-- [x] Statement list
-- [x] Block statement
-- [x] `do` expression
-- [x] `if` statement
-- [x] Arrays
-- [x] Array indexing
-- [x] Variable declaration
-- [x] Variable access
-- [x] `for` statement
-- [x] Assignment
-- [x] `while` statement
-- [ ] `last` statement
-- [ ] `next` statement
-- [ ] Functions
-- [ ] Parameters
-- [ ] `return` statement
-- [ ] Function calls
-- [ ] Macros
-- [ ] Code quotation
-- [ ] Quote interpolation
-- [ ] Macro hygiene
-
-## Specification
-
-- [integer literals](https://github.com/masak/mozzarella-programming-language/blob/main/spec/01-int.md)
-- [string literals](https://github.com/masak/mozzarella-programming-language/blob/main/spec/02-str.md)
-- [boolean literals](https://github.com/masak/mozzarella-programming-language/blob/main/spec/03-bool.md)
-- [none literals](https://github.com/masak/mozzarella-programming-language/blob/main/spec/04-none.md)
-- [integer operators](https://github.com/masak/mozzarella-programming-language/blob/main/spec/05-int-ops.md)
-- [string operators](https://github.com/masak/mozzarella-programming-language/blob/main/spec/06-str-ops.md)
-- [boolean operators](https://github.com/masak/mozzarella-programming-language/blob/main/spec/07-bool-ops.md)
-- [comparison operators](https://github.com/masak/mozzarella-programming-language/blob/main/spec/08-comparison.md)
-- [parenthesized expressions](https://github.com/masak/mozzarella-programming-language/blob/main/spec/09-parens.md)
-- [expression statements](https://github.com/masak/mozzarella-programming-language/blob/main/spec/10-expr-stmt.md)
-- [empty statements](https://github.com/masak/mozzarella-programming-language/blob/main/spec/11-empty-stmt.md)
-- [statement lists](https://github.com/masak/mozzarella-programming-language/blob/main/spec/12-statement-list.md)
-- [block statements](https://github.com/masak/mozzarella-programming-language/blob/main/spec/13-block-stmt.md)
-- ['do' expressions](https://github.com/masak/mozzarella-programming-language/blob/main/spec/14-do-expr.md)
-- ['if' statements](https://github.com/masak/mozzarella-programming-language/blob/main/spec/15-if-stmt.md)
-- [array initializer expressions](https://github.com/masak/mozzarella-programming-language/blob/main/spec/16-array.md)
-- [indexing expressions](https://github.com/masak/mozzarella-programming-language/blob/main/spec/17-indexing.md)
-- [variable declarations](https://github.com/masak/mozzarella-programming-language/blob/main/spec/18-var-decl.md)
-- [variable reference expressions](https://github.com/masak/mozzarella-programming-language/blob/main/spec/19-var-ref.md)
-- ['for' statements](https://github.com/masak/mozzarella-programming-language/blob/main/spec/20-for-stmt.md)
-- [assignment expressions](https://github.com/masak/mozzarella-programming-language/blob/main/spec/21-assign-expr.md)
-- ['while' statements](https://github.com/masak/mozzarella-programming-language/blob/main/spec/22-while-stmt.md)
+- [x] [integers](https://github.com/masak/mozzarella-programming-language/blob/main/spec/01-int.md)
+- [x] [strings](https://github.com/masak/mozzarella-programming-language/blob/main/spec/02-str.md)
+- [x] [booleans](https://github.com/masak/mozzarella-programming-language/blob/main/spec/03-bool.md)
+- [x] [none](https://github.com/masak/mozzarella-programming-language/blob/main/spec/04-none.md)
+- [x] [integer operators](https://github.com/masak/mozzarella-programming-language/blob/main/spec/05-int-ops.md)
+- [x] [string operators](https://github.com/masak/mozzarella-programming-language/blob/main/spec/06-str-ops.md)
+- [x] [boolean operators](https://github.com/masak/mozzarella-programming-language/blob/main/spec/07-bool-ops.md)
+- [x] [comparison operators](https://github.com/masak/mozzarella-programming-language/blob/main/spec/08-comparison.md)
+- [x] [parentheses](https://github.com/masak/mozzarella-programming-language/blob/main/spec/09-parens.md)
+- [x] [expression statements](https://github.com/masak/mozzarella-programming-language/blob/main/spec/10-expr-stmt.md)
+- [x] [empty statements](https://github.com/masak/mozzarella-programming-language/blob/main/spec/11-empty-stmt.md)
+- [x] [statement lists](https://github.com/masak/mozzarella-programming-language/blob/main/spec/12-statement-list.md)
+- [x] [block statements](https://github.com/masak/mozzarella-programming-language/blob/main/spec/13-block-stmt.md)
+- [x] [`do` expressions](https://github.com/masak/mozzarella-programming-language/blob/main/spec/14-do-expr.md)
+- [x] [`if` statements](https://github.com/masak/mozzarella-programming-language/blob/main/spec/15-if-stmt.md)
+- [x] [arrays](https://github.com/masak/mozzarella-programming-language/blob/main/spec/16-array.md)
+- [x] [indexing](https://github.com/masak/mozzarella-programming-language/blob/main/spec/17-indexing.md)
+- [x] [variable declarations](https://github.com/masak/mozzarella-programming-language/blob/main/spec/18-var-decl.md)
+- [x] [variable reference](https://github.com/masak/mozzarella-programming-language/blob/main/spec/19-var-ref.md)
+- [x] [`for` statements](https://github.com/masak/mozzarella-programming-language/blob/main/spec/20-for-stmt.md)
+- [x] [assignments](https://github.com/masak/mozzarella-programming-language/blob/main/spec/21-assign-expr.md)
+- [x] [`while` statements](https://github.com/masak/mozzarella-programming-language/blob/main/spec/22-while-stmt.md)
+- [ ] `last` statements
+- [ ] `next` statements
+- [ ] functions
+- [ ] parameters
+- [ ] `return` statements
+- [ ] calls
+- [ ] macros
+- [ ] code quotation
+- [ ] quote interpolation
+- [ ] macro hygiene
 
 ## Code quoting
 
