@@ -321,7 +321,7 @@ Block                       -- (Statement | Decl)*
 Expr
   AssignExpr                -- Expr, Expr
   IndexingExpr              -- Expr, Expr
-  CallExpr                  -- Expr, ArgumentList
+  CallExpr                  -- Expr, Argument*
   PrimaryExpr
     IntLitExpr              -- intLit
     StrLitExpr              -- strLit
@@ -335,7 +335,6 @@ Expr
     CodeUnquote             -- Expr
     DoExpr                  -- Block
     ParenExpr               -- Expr
-ArgumentList                -- Argument*
 Argument                    -- Expr
 ```
 
