@@ -283,9 +283,7 @@ export class Parser {
                     this.parseFail("'if' or block after 'else'");
                 }
             }
-            let ifStatement = elseBlock
-                ? new IfStatement(clauses, elseBlock)
-                : new IfStatement(clauses);
+            let ifStatement = new IfStatement(clauses, elseBlock);
             return [ifStatement, true];
         }
         else if (this.accept(TokenKind.ForKeyword)) {
@@ -339,7 +337,7 @@ export class Parser {
             }
             else {
                 let sawSemi = Boolean(this.accept(TokenKind.Semi));
-                return [new VarDecl(nameToken), sawSemi];
+                return [new VarDecl(nameToken, null), sawSemi];
             }
         }
         else {

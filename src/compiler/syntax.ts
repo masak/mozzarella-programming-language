@@ -3,9 +3,9 @@ import {
 } from "./token";
 
 export abstract class SyntaxNode {
-    children: Array<SyntaxNode>;
+    children: Array<SyntaxNode | null>;
 
-    constructor(children: Array<SyntaxNode>) {
+    constructor(children: Array<SyntaxNode | null>) {
         this.children = children;
     }
 }
@@ -49,14 +49,12 @@ export class IfClause extends SyntaxNode {
     }
 }
 
-class IfClauseList extends SyntaxNode {
+export class IfClauseList extends SyntaxNode {
 }
 
 export class IfStatement extends Statement {
-    constructor(clauses: Array<IfClause>, elseBlock?: Block) {
-        super(elseBlock
-          ? [new IfClauseList(clauses), elseBlock]
-          : [new IfClauseList(clauses)]);
+    constructor(clauses: Array<IfClause>, elseBlock: Block | null) {
+        super([new IfClauseList(clauses), elseBlock]);
     }
 }
 
@@ -76,10 +74,8 @@ export abstract class Decl extends SyntaxNode {
 }
 
 export class VarDecl extends Decl {
-    constructor(name: Token, initExpr?: Expr) {
-        super(initExpr
-            ? [name, initExpr]
-            : [name]);
+    constructor(name: Token, initExpr: Expr | null) {
+        super([name, initExpr]);
     }
 }
 

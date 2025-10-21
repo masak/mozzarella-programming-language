@@ -10,6 +10,7 @@ import {
     ExprStatement,
     ForStatement,
     IfClause,
+    IfClauseList,
     IfStatement,
     IndexingExpr,
     InfixOpExpr,
@@ -68,7 +69,7 @@ function validateExpr(expr: Expr, contextStack: Array<Context>): void {
     }
     else if (expr instanceof ArrayInitializerExpr) {
         for (let element of expr.children) {
-            validateExpr(element, contextStack);
+            validateExpr(element as Expr, contextStack);
         }
     }
     else if (expr instanceof IndexingExpr) {
@@ -126,14 +127,15 @@ function validateStatement(
         validateBlock(block, contextStack);
     }
     else if (statement instanceof IfStatement) {
-        let clauses = statement.children[0].children as Array<IfClause>;
+        let clauseList = statement.children[0] as IfClauseList;
+        let clauses = clauseList.children as Array<IfClause>;
         for (let clause of clauses) {
             let condExpr = clause.children[0] as Expr;
             validateExpr(condExpr, contextStack);
             let block = clause.children[1] as Block;
             validateBlock(block, contextStack);
         }
-        if (statement.children.length > 1) {
+        if (statement.children[1] !== null) {
             let elseBlock = statement.children[1] as Block;
             validateBlock(elseBlock, contextStack);
         }
