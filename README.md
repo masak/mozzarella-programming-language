@@ -3,6 +3,15 @@
 An unassuming language with a way to create code in macros using hygienic
 string interpolation.
 
+## Installation
+
+```
+$ git clone git@github.com:masak/mozzarella-programming-language.git
+$ cd mozzarella-programming-language
+$ npm install
+$ npm test
+```
+
 ## Example
 
 Take the traditional swap macro as an example.
