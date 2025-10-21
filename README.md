@@ -273,9 +273,9 @@ PrimaryExpr -> IntLit .
 PrimaryExpr -> "true" .
 PrimaryExpr -> "false" .
 PrimaryExpr -> "none" .
-PrimaryExpr -> VarRef .
-PrimaryExpr -> CodeQuote .
-PrimaryExpr -> CodeUnquote .
+PrimaryExpr -> VarRefExpr .
+PrimaryExpr -> CodeQuoteExpr .
+PrimaryExpr -> CodeUnquoteExpr .
 PrimaryExpr -> DoExpr .
 PrimaryExpr -> "(" Expr ")" .
 PrimaryExpr -> "[" "]" .
@@ -284,12 +284,12 @@ PrimaryExpr -> "[" ElementList "]" .
 ElementList -> Expr .
 ElementList -> ElementList "," Expr .
 
-VarRef -> identifier .
+VarRefExpr -> identifier .
 
-CodeQuote -> "code" "`" "`" .
-CodeQuote -> "code" "`" StatementOrDeclList "`" .
+CodeQuoteExpr -> "code" "`" "`" .
+CodeQuoteExpr -> "code" "`" StatementOrDeclList "`" .
 
-CodeUnquote -> "${" Expr "}" .
+CodeUnquoteExpr -> "${" Expr "}" .
 
 DoExpr -> "do" Statement .
 ```
@@ -339,9 +339,9 @@ Expr
     PrefixOpExpr            -- opToken, Expr
     InfixOpExpr             -- Expr, opToken, Expr
     ArrayInitializerExpr    -- Expr*
-    VarRef                  -- identifier
-    CodeQuote               -- Block
-    CodeUnquote             -- Expr
+    VarRefExpr              -- identifier
+    CodeQuoteExpr           -- Block
+    CodeUnquoteExpr         -- Expr
     DoExpr                  -- Block
     ParenExpr               -- Expr
 Argument                    -- Expr
