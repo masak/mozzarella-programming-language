@@ -19,7 +19,7 @@ then the runtime.
 +-------------------------+
 ```
 
-## The compiler
+## Compiler
 
 * The _lexer_ takes a source string and (lazily) produces a sequence of tokens
     * It depends on `tokens.ts`, which declares all the token types
