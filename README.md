@@ -79,6 +79,13 @@ names" happen to coincide.
 
 ## Features
 
+There's a
+[spec/](https://github.com/masak/mozzarella-programming-language/tree/main/spec)
+directory with individual specification files describing each incremental
+feature in fairly-precise human-targeted prose. The specification text in those
+files is not meant to be completely formal, but enough for a human implementor
+to be able to correctly guess the intended implementation.
+
 - [x] [integers](https://github.com/masak/mozzarella-programming-language/blob/main/spec/01-int.md)
 - [x] [strings](https://github.com/masak/mozzarella-programming-language/blob/main/spec/02-str.md)
 - [x] [booleans](https://github.com/masak/mozzarella-programming-language/blob/main/spec/03-bool.md)
