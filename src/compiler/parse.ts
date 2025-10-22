@@ -6,6 +6,7 @@ import {
     Block,
     BlockStatement,
     BoolLitExpr,
+    CompUnit,
     Decl,
     DoExpr,
     EmptyStatement,
@@ -20,7 +21,6 @@ import {
     NoneLitExpr,
     ParenExpr,
     PrefixOpExpr,
-    Program,
     Statement,
     StrLitExpr,
     VarDecl,
@@ -230,7 +230,7 @@ export class Parser {
 
     // parse methods:
 
-    parseProgram(): Program {
+    parseProgram(): CompUnit {
         let statements: Array<Statement | Decl> = [];
         while (this.seeingStartOfStatementOrDecl()) {
             if (this.seeingStartOfStatement()) {
@@ -249,7 +249,7 @@ export class Parser {
             }
         }
         this.expect(TokenKind.Eof);
-        return new Program(statements);
+        return new CompUnit(statements);
     }
 
     parseStatement(): [Statement, boolean] {

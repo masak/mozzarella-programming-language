@@ -3,6 +3,7 @@ import {
     Block,
     BlockStatement,
     BoolLitExpr,
+    CompUnit,
     Decl,
     DoExpr,
     EmptyStatement,
@@ -18,7 +19,6 @@ import {
     NoneLitExpr,
     ParenExpr,
     PrefixOpExpr,
-    Program,
     Statement,
     StrLitExpr,
     SyntaxNode,
@@ -477,7 +477,7 @@ class RetState {
     }
 }
 
-function load(program: Program): State {
+function load(program: CompUnit): State {
     let statements = program.children as Array<Statement | Decl>;
     let env = initializeEnv(emptyEnv(), statements);
 
@@ -498,7 +498,7 @@ function initializeEnv(env: Env, statements: Array<Statement | Decl>): Env {
 
 function reducePState({ code: [mode, syntaxNode], env, kont }: PState): State {
     if (mode === Mode.GetValue) {
-        if (syntaxNode instanceof Program) {
+        if (syntaxNode instanceof CompUnit) {
             let statements = syntaxNode.children as Array<Statement | Decl>;
             if (statements.length === 0) {
                 return new RetState(new NoneValue(), kont);
@@ -1327,7 +1327,7 @@ function unload(kont: RetState): Value {
     return kont.value;
 }
 
-export function runProgram(program: Program): Value {
+export function runProgram(program: CompUnit): Value {
     let state = load(program);
 
     while (state instanceof PState || !(state.kont instanceof HaltKont)) {

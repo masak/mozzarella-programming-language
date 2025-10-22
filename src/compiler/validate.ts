@@ -3,6 +3,7 @@ import {
     Block,
     BlockStatement,
     BoolLitExpr,
+    CompUnit,
     Decl,
     DoExpr,
     EmptyStatement,
@@ -18,7 +19,6 @@ import {
     NoneLitExpr,
     ParenExpr,
     PrefixOpExpr,
-    Program,
     Statement,
     StrLitExpr,
     VarDecl,
@@ -184,7 +184,7 @@ function validateDecl(
     }
 }
 
-export function validateProgram(program: Program): void {
+export function validateProgram(program: CompUnit): void {
     let contextStack: Array<Context> = [new Map()];
     let statements = program.children as Array<Statement | Decl>;
     for (let statementOrDecl of statements) {

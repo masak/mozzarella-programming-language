@@ -10,7 +10,7 @@ export abstract class SyntaxNode {
     }
 }
 
-export class Program extends SyntaxNode {
+export class CompUnit extends SyntaxNode {
     constructor(statements: Array<Statement | Decl>) {
         super(statements);
     }

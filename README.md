@@ -215,8 +215,8 @@ https://mdaines.github.io/grammophone/ is a good place to confirm that a
 grammar adheres to the LR criterion.
 
 ```
-Program -> .
-Program -> StatementOrDeclList .
+CompUnit -> .
+CompUnit -> StatementOrDeclList .
 
 StatementOrDeclList -> StatementOrDecl .
 StatementOrDeclList -> StatementOrDeclList StatementOrDecl .
@@ -320,7 +320,7 @@ On the right is for each concrete node type a list of the types of its children.
 Currently, where it says `name`, we assume it's actually a `Str`, but it could also be something more general which includes a gensym type.
 
 ```
-Program                     -- (Statement | Decl)*
+CompUnit                    -- (Statement | Decl)*
 Statement
   EmptyStatement            -- (none)
   ExprStatement             -- Expr
