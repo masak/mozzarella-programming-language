@@ -485,7 +485,7 @@ function initializeEnv(env: Env, statements: Array<Statement | Decl>): Env {
     for (let statementOrDecl of statements) {
         if (statementOrDecl instanceof VarDecl) {
             let varDecl = statementOrDecl;
-            let name = varDecl.name.payload as string;
+            let name = varDecl.nameToken.payload as string;
             bind(env, name, new UninitValue());
         }
     }
@@ -513,50 +513,52 @@ function reducePState({ code: [mode, syntaxNode], env, kont }: PState): State {
             return new PState([Mode.GetValue, syntaxNode.expr], env, kont);
         }
         else if (syntaxNode instanceof IntLitExpr) {
-            let payload = syntaxNode.token.payload as bigint;
+            let payload = syntaxNode.valueToken.payload as bigint;
             return new RetState(new IntValue(payload), kont);
         }
         else if (syntaxNode instanceof StrLitExpr) {
-            let payload = syntaxNode.token.payload as string;
+            let payload = syntaxNode.valueToken.payload as string;
             return new RetState(new StrValue(payload), kont);
         }
         else if (syntaxNode instanceof BoolLitExpr) {
-            let payload = syntaxNode.token.payload as boolean;
+            let payload = syntaxNode.valueToken.payload as boolean;
             return new RetState(new BoolValue(payload), kont);
         }
         else if (syntaxNode instanceof NoneLitExpr) {
             return new RetState(new NoneValue(), kont);
         }
         else if (syntaxNode instanceof PrefixOpExpr) {
-            let token = syntaxNode.token;
+            let opToken = syntaxNode.opToken;
             let operand = syntaxNode.operand;
-            if (token.kind === TokenKind.Plus || token.kind === TokenKind.Minus
-                || token.kind === TokenKind.Tilde
-                || token.kind === TokenKind.Quest
-                || token.kind === TokenKind.Bang) {
-                let prefixOpKont = new PrefixOpKont(token, kont);
+            if (opToken.kind === TokenKind.Plus
+                || opToken.kind === TokenKind.Minus
+                || opToken.kind === TokenKind.Tilde
+                || opToken.kind === TokenKind.Quest
+                || opToken.kind === TokenKind.Bang) {
+                let prefixOpKont = new PrefixOpKont(opToken, kont);
                 return new PState([Mode.GetValue, operand], env, prefixOpKont);
             }
             else {
-                throw new Error(`Unknown prefix op type ${token.kind.kind}`);
+                throw new Error(`Unknown prefix op type ${opToken.kind.kind}`);
             }
         }
         else if (syntaxNode instanceof InfixOpExpr) {
             let lhs = syntaxNode.lhs;
-            let token = syntaxNode.token;
+            let opToken = syntaxNode.opToken;
             let rhs = syntaxNode.rhs;
-            if (token.kind === TokenKind.Plus || token.kind === TokenKind.Minus
-                    || token.kind === TokenKind.Mult
-                    || token.kind === TokenKind.FloorDiv
-                    || token.kind === TokenKind.Mod
-                    || token.kind === TokenKind.Tilde
-                    || token.kind === TokenKind.AmpAmp
-                    || token.kind === TokenKind.PipePipe) {
+            if (opToken.kind === TokenKind.Plus
+                || opToken.kind === TokenKind.Minus
+                || opToken.kind === TokenKind.Mult
+                || opToken.kind === TokenKind.FloorDiv
+                || opToken.kind === TokenKind.Mod
+                || opToken.kind === TokenKind.Tilde
+                || opToken.kind === TokenKind.AmpAmp
+                || opToken.kind === TokenKind.PipePipe) {
                 let infixOpKont1
-                    = new InfixOp1Kont(token, rhs, env, kont);
+                    = new InfixOp1Kont(opToken, rhs, env, kont);
                 return new PState([Mode.GetValue, lhs], env, infixOpKont1);
             }
-            else if (comparisonOps.has(token.kind)) {
+            else if (comparisonOps.has(opToken.kind)) {
                 let [exprs, ops] = findAllChainedOps(syntaxNode);
                 checkForUnchainableOps(ops);
                 let comparisonOp1Kont = new ComparisonOp1Kont(
@@ -571,16 +573,17 @@ function reducePState({ code: [mode, syntaxNode], env, kont }: PState): State {
                     comparisonOp1Kont,
                 );
             }
-            else if (token.kind === TokenKind.Assign) {
+            else if (opToken.kind === TokenKind.Assign) {
                 let assign1Kont = new Assign1Kont(rhs, env, kont);
                 return new PState([Mode.GetLocation, lhs], env, assign1Kont);
             }
             else {
-                throw new Error(`Unknown infix op type ${token.kind.kind}`);
+                throw new Error(`Unknown infix op type ${opToken.kind.kind}`);
             }
         }
         else if (syntaxNode instanceof ParenExpr) {
-            return new PState([Mode.GetValue, syntaxNode.inner], env, kont);
+            let innerExpr = syntaxNode.innerExpr;
+            return new PState([Mode.GetValue, innerExpr], env, kont);
         }
         else if (syntaxNode instanceof EmptyStatement) {
             return new RetState(new NoneValue(), kont);
@@ -634,15 +637,15 @@ function reducePState({ code: [mode, syntaxNode], env, kont }: PState): State {
             }
         }
         else if (syntaxNode instanceof IndexingExpr) {
-            let arrayExpr = syntaxNode.array;
-            let indexExpr = syntaxNode.index;
+            let arrayExpr = syntaxNode.arrayExpr;
+            let indexExpr = syntaxNode.indexExpr;
             let indexing1Kont = new Indexing1Kont(indexExpr, env, kont);
             return new PState([Mode.GetValue, arrayExpr], env, indexing1Kont);
         }
         else if (syntaxNode instanceof VarDecl) {
             let initExpr = syntaxNode.initExpr;
             if (initExpr !== null) {
-                let name = syntaxNode.name.payload as string;
+                let name = syntaxNode.nameToken.payload as string;
                 let varKont = new VarKont(name, env, kont);
                 return new PState([Mode.GetValue, initExpr], env, varKont);
             }
@@ -651,13 +654,13 @@ function reducePState({ code: [mode, syntaxNode], env, kont }: PState): State {
             }
         }
         else if (syntaxNode instanceof VarRefExpr) {
-            let name = syntaxNode.token.payload as string;
+            let name = syntaxNode.nameToken.payload as string;
             let value = lookup(env, name);
             return new RetState(value, kont);
         }
         else if (syntaxNode instanceof ForStatement) {
             env = extend(env);
-            let name = syntaxNode.name.payload as string;
+            let name = syntaxNode.nameToken.payload as string;
             bind(env, name, new UninitValue());
             let arrayExpr = syntaxNode.arrayExpr;
             let body = syntaxNode.body;
@@ -678,8 +681,8 @@ function reducePState({ code: [mode, syntaxNode], env, kont }: PState): State {
     }
     else if (mode === Mode.GetLocation) {
         if (syntaxNode instanceof IndexingExpr) {
-            let arrayExpr = syntaxNode.array;
-            let indexExpr = syntaxNode.index;
+            let arrayExpr = syntaxNode.arrayExpr;
+            let indexExpr = syntaxNode.indexExpr;
             let indexingLoc1Kont = new IndexingLoc1Kont(indexExpr, env, kont);
             return new PState(
                 [Mode.GetValue, arrayExpr],
@@ -688,12 +691,13 @@ function reducePState({ code: [mode, syntaxNode], env, kont }: PState): State {
             );
         }
         else if (syntaxNode instanceof VarRefExpr) {
-            let name = syntaxNode.token.payload as string;
+            let name = syntaxNode.nameToken.payload as string;
             let varEnv = findEnvOfName(env, name);
             return new RetState(new VarLocation(varEnv, name), kont);
         }
         else if (syntaxNode instanceof ParenExpr) {
-            return new PState([Mode.GetLocation, syntaxNode.inner], env, kont);
+            let innerExpr = syntaxNode.innerExpr;
+            return new PState([Mode.GetLocation, innerExpr], env, kont);
         }
         else if (syntaxNode instanceof DoExpr) {
             let statement = syntaxNode.statement;

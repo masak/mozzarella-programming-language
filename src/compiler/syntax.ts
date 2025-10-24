@@ -94,11 +94,11 @@ export class IfStatement extends Statement {
 }
 
 export class ForStatement extends Statement {
-    constructor(name: Token, arrayExpr: Expr, body: Block) {
-        super([name, arrayExpr, body]);
+    constructor(nameToken: Token, arrayExpr: Expr, body: Block) {
+        super([nameToken, arrayExpr, body]);
     }
 
-    get name(): Token {
+    get nameToken(): Token {
         return this.children[0] as Token;
     }
 
@@ -129,11 +129,11 @@ export abstract class Decl extends SyntaxNode {
 }
 
 export class VarDecl extends Decl {
-    constructor(name: Token, initExpr: Expr | null) {
-        super([name, initExpr]);
+    constructor(nameToken: Token, initExpr: Expr | null) {
+        super([nameToken, initExpr]);
     }
 
-    get name(): Token {
+    get nameToken(): Token {
         return this.children[0] as Token;
     }
 
@@ -146,31 +146,31 @@ export abstract class Expr extends SyntaxNode {
 }
 
 export class IntLitExpr extends Expr {
-    constructor(token: Token) {
-        super([token]);
+    constructor(valueToken: Token) {
+        super([valueToken]);
     }
 
-    get token(): Token {
+    get valueToken(): Token {
         return this.children[0] as Token;
     }
 }
 
 export class StrLitExpr extends Expr {
-    constructor(token: Token) {
-        super([token]);
+    constructor(valueToken: Token) {
+        super([valueToken]);
     }
 
-    get token(): Token {
+    get valueToken(): Token {
         return this.children[0] as Token;
     }
 }
 
 export class BoolLitExpr extends Expr {
-    constructor(token: Token) {
-        super([token]);
+    constructor(valueToken: Token) {
+        super([valueToken]);
     }
 
-    get token(): Token {
+    get valueToken(): Token {
         return this.children[0] as Token;
     }
 }
@@ -182,11 +182,11 @@ export class NoneLitExpr extends Expr {
 }
 
 export class PrefixOpExpr extends Expr {
-    constructor(token: Token, operand: Expr) {
-        super([token, operand]);
+    constructor(opToken: Token, operand: Expr) {
+        super([opToken, operand]);
     }
 
-    get token(): Token {
+    get opToken(): Token {
         return this.children[0] as Token;
     }
 
@@ -196,15 +196,15 @@ export class PrefixOpExpr extends Expr {
 }
 
 export class InfixOpExpr extends Expr {
-    constructor(lhs: Expr, token: Token, rhs: Expr) {
-        super([lhs, token, rhs]);
+    constructor(lhs: Expr, opToken: Token, rhs: Expr) {
+        super([lhs, opToken, rhs]);
     }
 
     get lhs(): Expr {
         return this.children[0] as Expr;
     }
 
-    get token(): Token {
+    get opToken(): Token {
         return this.children[1] as Token;
     }
 
@@ -214,11 +214,11 @@ export class InfixOpExpr extends Expr {
 }
 
 export class ParenExpr extends Expr {
-    constructor(inner: Expr) {
-        super([inner]);
+    constructor(innerExpr: Expr) {
+        super([innerExpr]);
     }
 
-    get inner(): Expr {
+    get innerExpr(): Expr {
         return this.children[0] as Expr;
     }
 }
@@ -244,25 +244,25 @@ export class ArrayInitializerExpr extends Expr {
 }
 
 export class IndexingExpr extends Expr {
-    constructor(array: Expr, index: Expr) {
-        super([array, index]);
+    constructor(arrayExpr: Expr, indexExpr: Expr) {
+        super([arrayExpr, indexExpr]);
     }
 
-    get array(): Expr {
+    get arrayExpr(): Expr {
         return this.children[0] as Expr;
     }
 
-    get index(): Expr {
+    get indexExpr(): Expr {
         return this.children[1] as Expr;
     }
 }
 
 export class VarRefExpr extends Expr {
-    constructor(token: Token) {
-        super([token]);
+    constructor(nameToken: Token) {
+        super([nameToken]);
     }
 
-    get token(): Token {
+    get nameToken(): Token {
         return this.children[0] as Token;
     }
 }

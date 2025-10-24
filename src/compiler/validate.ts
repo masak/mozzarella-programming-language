@@ -52,7 +52,7 @@ function validateExpr(expr: Expr, contextStack: Array<Context>): void {
         validateExpr(expr.rhs, contextStack);
     }
     else if (expr instanceof ParenExpr) {
-        validateExpr(expr.inner, contextStack);
+        validateExpr(expr.innerExpr, contextStack);
     }
     else if (expr instanceof DoExpr) {
         validateStatement(expr.statement, contextStack);
@@ -63,11 +63,11 @@ function validateExpr(expr: Expr, contextStack: Array<Context>): void {
         }
     }
     else if (expr instanceof IndexingExpr) {
-        validateExpr(expr.array, contextStack);
-        validateExpr(expr.index, contextStack);
+        validateExpr(expr.arrayExpr, contextStack);
+        validateExpr(expr.indexExpr, contextStack);
     }
     else if (expr instanceof VarRefExpr) {
-        let name = expr.token.payload as string;
+        let name = expr.nameToken.payload as string;
         for (let i = contextStack.length - 1; i >= 0; i--) {
             let context = contextStack[i];
             if (context.has(name)) {
@@ -140,7 +140,7 @@ function validateDecl(
     contextStack: Array<Context>,
 ): void {
     if (decl instanceof VarDecl) {
-        let name = decl.name.payload as string;
+        let name = decl.nameToken.payload as string;
         let context = contextStack[contextStack.length - 1];
         if (context.get(name) === VarState.declared) {
             throw new Error(`Redeclaration of name '${name}'`);
