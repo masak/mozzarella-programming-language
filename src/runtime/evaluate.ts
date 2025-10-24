@@ -11,7 +11,6 @@ import {
     ExprStatement,
     ForStatement,
     IfClause,
-    IfClauseList,
     IfStatement,
     IndexingExpr,
     InfixOpExpr,
@@ -478,9 +477,7 @@ class RetState {
 }
 
 function load(program: CompUnit): State {
-    let statements = program.children as Array<Statement | Decl>;
-    let env = initializeEnv(emptyEnv(), statements);
-
+    let env = initializeEnv(emptyEnv(), program.statements);
     return new PState([Mode.GetValue, program], env, new HaltKont());
 }
 
@@ -488,7 +485,7 @@ function initializeEnv(env: Env, statements: Array<Statement | Decl>): Env {
     for (let statementOrDecl of statements) {
         if (statementOrDecl instanceof VarDecl) {
             let varDecl = statementOrDecl;
-            let name = (varDecl.children[0] as Token).payload as string;
+            let name = varDecl.name.payload as string;
             bind(env, name, new UninitValue());
         }
     }
@@ -499,13 +496,12 @@ function initializeEnv(env: Env, statements: Array<Statement | Decl>): Env {
 function reducePState({ code: [mode, syntaxNode], env, kont }: PState): State {
     if (mode === Mode.GetValue) {
         if (syntaxNode instanceof CompUnit) {
-            let statements = syntaxNode.children as Array<Statement | Decl>;
+            let statements = syntaxNode.statements;
             if (statements.length === 0) {
                 return new RetState(new NoneValue(), kont);
             }
             else {
-                let programKont
-                    = new ProgramKont(statements, 1, env, kont);
+                let programKont = new ProgramKont(statements, 1, env, kont);
                 return new PState(
                     [Mode.GetValue, statements[0]],
                     env,
@@ -514,27 +510,26 @@ function reducePState({ code: [mode, syntaxNode], env, kont }: PState): State {
             }
         }
         else if (syntaxNode instanceof ExprStatement) {
-            let expr = syntaxNode.children[0] as Expr;
-            return new PState([Mode.GetValue, expr], env, kont);
+            return new PState([Mode.GetValue, syntaxNode.expr], env, kont);
         }
         else if (syntaxNode instanceof IntLitExpr) {
-            let payload = (syntaxNode.children[0] as Token).payload as bigint;
+            let payload = syntaxNode.token.payload as bigint;
             return new RetState(new IntValue(payload), kont);
         }
         else if (syntaxNode instanceof StrLitExpr) {
-            let payload = (syntaxNode.children[0] as Token).payload as string;
+            let payload = syntaxNode.token.payload as string;
             return new RetState(new StrValue(payload), kont);
         }
         else if (syntaxNode instanceof BoolLitExpr) {
-            let payload = (syntaxNode.children[0] as Token).payload as boolean;
+            let payload = syntaxNode.token.payload as boolean;
             return new RetState(new BoolValue(payload), kont);
         }
         else if (syntaxNode instanceof NoneLitExpr) {
             return new RetState(new NoneValue(), kont);
         }
         else if (syntaxNode instanceof PrefixOpExpr) {
-            let token = syntaxNode.children[0] as Token;
-            let operand = syntaxNode.children[1] as Expr;
+            let token = syntaxNode.token;
+            let operand = syntaxNode.operand;
             if (token.kind === TokenKind.Plus || token.kind === TokenKind.Minus
                 || token.kind === TokenKind.Tilde
                 || token.kind === TokenKind.Quest
@@ -547,9 +542,9 @@ function reducePState({ code: [mode, syntaxNode], env, kont }: PState): State {
             }
         }
         else if (syntaxNode instanceof InfixOpExpr) {
-            let lhs = syntaxNode.children[0] as Expr;
-            let token = syntaxNode.children[1] as Token;
-            let rhs = syntaxNode.children[2] as Expr;
+            let lhs = syntaxNode.lhs;
+            let token = syntaxNode.token;
+            let rhs = syntaxNode.rhs;
             if (token.kind === TokenKind.Plus || token.kind === TokenKind.Minus
                     || token.kind === TokenKind.Mult
                     || token.kind === TokenKind.FloorDiv
@@ -585,18 +580,16 @@ function reducePState({ code: [mode, syntaxNode], env, kont }: PState): State {
             }
         }
         else if (syntaxNode instanceof ParenExpr) {
-            let inner = syntaxNode.children[0] as Expr;
-            return new PState([Mode.GetValue, inner], env, kont);
+            return new PState([Mode.GetValue, syntaxNode.inner], env, kont);
         }
         else if (syntaxNode instanceof EmptyStatement) {
             return new RetState(new NoneValue(), kont);
         }
         else if (syntaxNode instanceof BlockStatement) {
-            let block = syntaxNode.children[0] as Block;
-            return new PState([Mode.GetValue, block], env, kont);
+            return new PState([Mode.GetValue, syntaxNode.block], env, kont);
         }
         else if (syntaxNode instanceof Block) {
-            let statements = syntaxNode.children as Array<Statement | Decl>;
+            let statements = syntaxNode.statements;
             env = initializeEnv(extend(env), statements);
             if (statements.length === 0) {
                 return new RetState(new NoneValue(), kont);
@@ -611,25 +604,24 @@ function reducePState({ code: [mode, syntaxNode], env, kont }: PState): State {
             }
         }
         else if (syntaxNode instanceof DoExpr) {
-            let statement = syntaxNode.children[0] as Statement;
+            let statement = syntaxNode.statement;
             return new PState([Mode.GetValue, statement], env, kont);
         }
         else if (syntaxNode instanceof IfStatement) {
-            let clauseList = syntaxNode.children[0] as IfClauseList;
-            let clauses = clauseList.children as Array<IfClause>;
-            let elseBlock: Block | null = syntaxNode.children[1];
-            let condExpr = clauses[0].children[0] as Expr;
+            let clauses = syntaxNode.clauseList.clauses;
+            let elseBlock = syntaxNode.elseBlock;
+            let condExpr = clauses[0].condExpr;
             let ifKont = new IfKont(clauses, elseBlock, 0, env, kont);
             return new PState([Mode.GetValue, condExpr], env, ifKont);
         }
         else if (syntaxNode instanceof ArrayInitializerExpr) {
-            if (syntaxNode.children.length === 0) {
+            if (syntaxNode.elements.length === 0) {
                 return new RetState(new ArrayValue([]), kont);
             }
             else {
                 let arrayInitializerKont = new ArrayInitializerKont(
-                    new Array(syntaxNode.children.length),
-                    syntaxNode.children as Array<Expr>,
+                    new Array(syntaxNode.elements.length),
+                    syntaxNode.elements,
                     0,
                     env,
                     kont,
@@ -642,15 +634,15 @@ function reducePState({ code: [mode, syntaxNode], env, kont }: PState): State {
             }
         }
         else if (syntaxNode instanceof IndexingExpr) {
-            let arrayExpr = syntaxNode.children[0] as Expr;
-            let indexExpr = syntaxNode.children[1] as Expr;
+            let arrayExpr = syntaxNode.array;
+            let indexExpr = syntaxNode.index;
             let indexing1Kont = new Indexing1Kont(indexExpr, env, kont);
             return new PState([Mode.GetValue, arrayExpr], env, indexing1Kont);
         }
         else if (syntaxNode instanceof VarDecl) {
-            if (syntaxNode.children[1] !== null) {
-                let name = (syntaxNode.children[0] as Token).payload as string;
-                let initExpr = syntaxNode.children[1] as Expr;
+            let initExpr = syntaxNode.initExpr;
+            if (initExpr !== null) {
+                let name = syntaxNode.name.payload as string;
                 let varKont = new VarKont(name, env, kont);
                 return new PState([Mode.GetValue, initExpr], env, varKont);
             }
@@ -659,23 +651,23 @@ function reducePState({ code: [mode, syntaxNode], env, kont }: PState): State {
             }
         }
         else if (syntaxNode instanceof VarRefExpr) {
-            let name = (syntaxNode.children[0] as Token).payload as string;
+            let name = syntaxNode.token.payload as string;
             let value = lookup(env, name);
             return new RetState(value, kont);
         }
         else if (syntaxNode instanceof ForStatement) {
             env = extend(env);
-            let name = (syntaxNode.children[0] as Token).payload as string;
+            let name = syntaxNode.name.payload as string;
             bind(env, name, new UninitValue());
-            let arrayExpr = syntaxNode.children[1] as Expr;
-            let body = syntaxNode.children[2] as Block;
+            let arrayExpr = syntaxNode.arrayExpr;
+            let body = syntaxNode.body;
             let for1Kont = new For1Kont(name, body, env, kont);
             return new PState([Mode.GetValue, arrayExpr], env, for1Kont);
         }
         else if (syntaxNode instanceof WhileStatement) {
-            let condExpr = syntaxNode.children[0] as Expr;
-            let block = syntaxNode.children[1] as Block;
-            let while1Kont = new While1Kont(condExpr, block, env, kont);
+            let condExpr = syntaxNode.condExpr;
+            let body = syntaxNode.body;
+            let while1Kont = new While1Kont(condExpr, body, env, kont);
             return new PState([Mode.GetValue, condExpr], env, while1Kont);
         }
         else {
@@ -686,8 +678,8 @@ function reducePState({ code: [mode, syntaxNode], env, kont }: PState): State {
     }
     else if (mode === Mode.GetLocation) {
         if (syntaxNode instanceof IndexingExpr) {
-            let arrayExpr = syntaxNode.children[0] as Expr;
-            let indexExpr = syntaxNode.children[1] as Expr;
+            let arrayExpr = syntaxNode.array;
+            let indexExpr = syntaxNode.index;
             let indexingLoc1Kont = new IndexingLoc1Kont(indexExpr, env, kont);
             return new PState(
                 [Mode.GetValue, arrayExpr],
@@ -696,24 +688,22 @@ function reducePState({ code: [mode, syntaxNode], env, kont }: PState): State {
             );
         }
         else if (syntaxNode instanceof VarRefExpr) {
-            let name = (syntaxNode.children[0] as Token).payload as string;
+            let name = syntaxNode.token.payload as string;
             let varEnv = findEnvOfName(env, name);
             return new RetState(new VarLocation(varEnv, name), kont);
         }
         else if (syntaxNode instanceof ParenExpr) {
-            let inner = syntaxNode.children[0] as Expr;
-            return new PState([Mode.GetLocation, inner], env, kont);
+            return new PState([Mode.GetLocation, syntaxNode.inner], env, kont);
         }
         else if (syntaxNode instanceof DoExpr) {
-            let statement = syntaxNode.children[0] as Statement;
+            let statement = syntaxNode.statement;
             return new PState([Mode.GetLocation, statement], env, kont);
         }
         else if (syntaxNode instanceof BlockStatement) {
-            let block = syntaxNode.children[0] as Block;
-            return new PState([Mode.GetLocation, block], env, kont);
+            return new PState([Mode.GetLocation, syntaxNode.block], env, kont);
         }
         else if (syntaxNode instanceof Block) {
-            let statements = syntaxNode.children as Array<Statement | Decl>;
+            let statements = syntaxNode.statements;
             env = initializeEnv(extend(env), statements);
             if (statements.length === 0) {
                 throw new Error(
@@ -738,14 +728,12 @@ function reducePState({ code: [mode, syntaxNode], env, kont }: PState): State {
             }
         }
         else if (syntaxNode instanceof ExprStatement) {
-            let expr = syntaxNode.children[0] as Expr;
-            return new PState([Mode.GetLocation, expr], env, kont);
+            return new PState([Mode.GetLocation, syntaxNode.expr], env, kont);
         }
         else if (syntaxNode instanceof IfStatement) {
-            let clauseList = syntaxNode.children[0] as IfClauseList;
-            let clauses = clauseList.children as Array<IfClause>;
-            let elseBlock = syntaxNode.children[1] || null;
-            let condExpr = clauses[0].children[0] as Expr;
+            let clauses = syntaxNode.clauseList.clauses;
+            let elseBlock = syntaxNode.elseBlock;
+            let condExpr = clauses[0].condExpr;
             let ifLocKont = new IfLocKont(clauses, elseBlock, 0, env, kont);
             return new PState([Mode.GetValue, condExpr], env, ifLocKont);
         }
@@ -1075,7 +1063,7 @@ function reduceRetState({ value, kont }: RetState): State {
     else if (kont instanceof IfKont) {
         if (boolify(value)) {
             let clause = kont.clauses[kont.index];
-            let block = clause.children[1] as Block;
+            let block = clause.block;
             return new PState([Mode.GetValue, block], kont.env, kont.tail);
         }
         else {
@@ -1092,8 +1080,7 @@ function reduceRetState({ value, kont }: RetState): State {
                 }
             }
             else {
-                let condExpr
-                    = kont.clauses[kont.index + 1].children[0] as Expr;
+                let condExpr = kont.clauses[kont.index + 1].condExpr;
                 let ifKont = new IfKont(
                     kont.clauses,
                     kont.elseBlock,
@@ -1274,8 +1261,7 @@ function reduceRetState({ value, kont }: RetState): State {
                 }
             }
             else {
-                let condExpr
-                    = kont.clauses[kont.index + 1].children[0] as Expr;
+                let condExpr = kont.clauses[kont.index + 1].condExpr;
                 let ifKont = new IfLocKont(
                     kont.clauses,
                     kont.elseBlock,

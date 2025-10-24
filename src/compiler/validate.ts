@@ -10,8 +10,6 @@ import {
     Expr,
     ExprStatement,
     ForStatement,
-    IfClause,
-    IfClauseList,
     IfStatement,
     IndexingExpr,
     InfixOpExpr,
@@ -25,9 +23,6 @@ import {
     VarRefExpr,
     WhileStatement,
 } from "./syntax";
-import {
-    Token,
-} from "./token";
 
 class VarState {
     static declared = new VarState();
@@ -50,36 +45,29 @@ function validateExpr(expr: Expr, contextStack: Array<Context>): void {
         // do nothing
     }
     else if (expr instanceof PrefixOpExpr) {
-        let operand = expr.children[1] as Expr;
-        validateExpr(operand, contextStack);
+        validateExpr(expr.operand, contextStack);
     }
     else if (expr instanceof InfixOpExpr) {
-        let lhs = expr.children[0] as Expr;
-        validateExpr(lhs, contextStack);
-        let rhs = expr.children[2] as Expr;
-        validateExpr(rhs, contextStack);
+        validateExpr(expr.lhs, contextStack);
+        validateExpr(expr.rhs, contextStack);
     }
     else if (expr instanceof ParenExpr) {
-        let inner = expr.children[0] as Expr;
-        validateExpr(inner, contextStack);
+        validateExpr(expr.inner, contextStack);
     }
     else if (expr instanceof DoExpr) {
-        let statement = expr.children[0] as Statement;
-        validateStatement(statement, contextStack);
+        validateStatement(expr.statement, contextStack);
     }
     else if (expr instanceof ArrayInitializerExpr) {
-        for (let element of expr.children) {
-            validateExpr(element as Expr, contextStack);
+        for (let element of expr.elements) {
+            validateExpr(element, contextStack);
         }
     }
     else if (expr instanceof IndexingExpr) {
-        let arrayExpr = expr.children[0] as Expr;
-        validateExpr(arrayExpr, contextStack);
-        let indexExpr = expr.children[1] as Expr;
-        validateExpr(indexExpr, contextStack);
+        validateExpr(expr.array, contextStack);
+        validateExpr(expr.index, contextStack);
     }
     else if (expr instanceof VarRefExpr) {
-        let name = (expr.children[0] as Token).payload as string;
+        let name = expr.token.payload as string;
         for (let i = contextStack.length - 1; i >= 0; i--) {
             let context = contextStack[i];
             if (context.has(name)) {
@@ -97,8 +85,7 @@ function validateExpr(expr: Expr, contextStack: Array<Context>): void {
 
 function validateBlock(block: Block, contextStack: Array<Context>): void {
     contextStack.push(new Map());
-    let statements = block.children as Array<Statement | Decl>;
-    for (let statementOrDecl of statements) {
+    for (let statementOrDecl of block.statements) {
         if (statementOrDecl instanceof Statement) {
             let statement = statementOrDecl;
             validateStatement(statement, contextStack);
@@ -116,41 +103,30 @@ function validateStatement(
     contextStack: Array<Context>,
 ): void {
     if (statement instanceof ExprStatement) {
-        let expr = statement.children[0] as Expr;
-        validateExpr(expr, contextStack);
+        validateExpr(statement.expr, contextStack);
     }
     else if (statement instanceof EmptyStatement) {
         // do nothing
     }
     else if (statement instanceof BlockStatement) {
-        let block = statement.children[0] as Block;
-        validateBlock(block, contextStack);
+        validateBlock(statement.block, contextStack);
     }
     else if (statement instanceof IfStatement) {
-        let clauseList = statement.children[0] as IfClauseList;
-        let clauses = clauseList.children as Array<IfClause>;
-        for (let clause of clauses) {
-            let condExpr = clause.children[0] as Expr;
-            validateExpr(condExpr, contextStack);
-            let block = clause.children[1] as Block;
-            validateBlock(block, contextStack);
+        for (let clause of statement.clauseList.clauses) {
+            validateExpr(clause.condExpr, contextStack);
+            validateBlock(clause.block, contextStack);
         }
-        if (statement.children[1] !== null) {
-            let elseBlock = statement.children[1] as Block;
-            validateBlock(elseBlock, contextStack);
+        if (statement.elseBlock !== null) {
+            validateBlock(statement.elseBlock, contextStack);
         }
     }
     else if (statement instanceof ForStatement) {
-        let arrayExpr = statement.children[1] as Expr;
-        validateExpr(arrayExpr, contextStack);
-        let block = statement.children[2] as Block;
-        validateBlock(block, contextStack);
+        validateExpr(statement.arrayExpr, contextStack);
+        validateBlock(statement.body, contextStack);
     }
     else if (statement instanceof WhileStatement) {
-        let condExpr = statement.children[0] as Expr;
-        validateExpr(condExpr, contextStack);
-        let block = statement.children[1] as Block;
-        validateBlock(block, contextStack);
+        validateExpr(statement.condExpr, contextStack);
+        validateBlock(statement.body, contextStack);
     }
     else {
         throw new Error(
@@ -164,8 +140,7 @@ function validateDecl(
     contextStack: Array<Context>,
 ): void {
     if (decl instanceof VarDecl) {
-        let nameToken = decl.children[0] as Token;
-        let name = nameToken.payload as string;
+        let name = decl.name.payload as string;
         let context = contextStack[contextStack.length - 1];
         if (context.get(name) === VarState.declared) {
             throw new Error(`Redeclaration of name '${name}'`);
@@ -186,8 +161,7 @@ function validateDecl(
 
 export function validateProgram(program: CompUnit): void {
     let contextStack: Array<Context> = [new Map()];
-    let statements = program.children as Array<Statement | Decl>;
-    for (let statementOrDecl of statements) {
+    for (let statementOrDecl of program.statements) {
         if (statementOrDecl instanceof Statement) {
             let statement = statementOrDecl;
             validateStatement(statement, contextStack);
