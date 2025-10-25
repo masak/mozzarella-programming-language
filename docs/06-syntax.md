@@ -1,0 +1,44 @@
+# Syntax node types
+
+Following C#, there is one type `SyntaxNode` for nodes in the syntax tree. The
+below nested list contains the possible values of the `kind` field of syntax
+nodes. On the right is for each concrete node type a list of the types of its
+children. Currently, where it says `name`, we assume it's actually a `Str`, but
+it could also be something more general which includes a gensym type.
+
+```
+CompUnit                    -- (Statement | Decl)*
+Block                       -- (Statement | Decl)*
+ParamList                   -- Param*
+Param                       -- identifier
+Argument                    -- Expr
+IfClause                    -- Expr, Block
+IfClauseList                -- IfClause*
+Statement
+  EmptyStatement            -- (none)
+  ExprStatement             -- Expr
+  BlockStatement            -- Block
+  IfStatement               -- IfClauseList, Block?
+Decl
+  VarDecl                   -- identifier, Expr?
+  FuncDecl                  -- identifier, ParamList, Block
+  MacroDecl                 -- identifier, ParamList, Block
+Expr
+  AssignExpr                -- Expr, Expr
+  IndexingExpr              -- Expr, Expr
+  CallExpr                  -- Expr, Argument*
+  PrimaryExpr
+    IntLitExpr              -- intLit
+    StrLitExpr              -- strLit
+    BoolLitExpr             -- "true" | "false"
+    NoneLitExpr             -- (none)
+    PrefixOpExpr            -- opToken, Expr
+    InfixOpExpr             -- Expr, opToken, Expr
+    ArrayInitializerExpr    -- Expr*
+    VarRefExpr              -- identifier
+    CodeQuoteExpr           -- Block
+    CodeUnquoteExpr         -- Expr
+    DoExpr                  -- Block
+    ParenExpr               -- Expr
+```
+
