@@ -62,4 +62,5 @@ to be able to correctly guess the intended implementation.
 - [Grammophone grammar](https://github.com/masak/mozzarella-programming-language/blob/main/docs/04-grammar.md)
 - [Types](https://github.com/masak/mozzarella-programming-language/blob/main/docs/05-types.md)
 - [Syntax node types](https://github.com/masak/mozzarella-programming-language/blob/main/docs/06-syntax.md)
+- [Near-future plans](https://github.com/masak/mozzarella-programming-language/blob/main/docs/07-plans.md)
 
