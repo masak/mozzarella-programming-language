@@ -19,6 +19,10 @@ Statement
   ExprStatement             -- Expr
   BlockStatement            -- Block
   IfStatement               -- IfClauseList, Block?
+  ForStatement              -- identifier, Expr, Block
+  WhileStatement            -- Expr, Block
+  LastStatement             -- (none)
+  NextStatement             -- (none)
 Decl
   VarDecl                   -- identifier, Expr?
   FuncDecl                  -- identifier, ParamList, Block

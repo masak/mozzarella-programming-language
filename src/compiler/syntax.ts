@@ -125,6 +125,12 @@ export class WhileStatement extends Statement {
     }
 }
 
+export class LastStatement extends Statement {
+    constructor() {
+        super([]);
+    }
+}
+
 export abstract class Decl extends SyntaxNode {
 }
 

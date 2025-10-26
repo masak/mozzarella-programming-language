@@ -43,7 +43,7 @@ to be able to correctly guess the intended implementation.
 - [x] [`for` statements](https://github.com/masak/mozzarella-programming-language/blob/main/spec/20-for-stmt.md)
 - [x] [assignments](https://github.com/masak/mozzarella-programming-language/blob/main/spec/21-assign-expr.md)
 - [x] [`while` statements](https://github.com/masak/mozzarella-programming-language/blob/main/spec/22-while-stmt.md)
-- [ ] `last` statements
+- [x] [`last` statements](https://github.com/masak/mozzarella-programming-language/blob/main/spec/23-last-stmt.md)
 - [ ] `next` statements
 - [ ] functions
 - [ ] parameters

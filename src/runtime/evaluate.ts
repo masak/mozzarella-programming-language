@@ -15,6 +15,7 @@ import {
     IndexingExpr,
     InfixOpExpr,
     IntLitExpr,
+    LastStatement,
     NoneLitExpr,
     ParenExpr,
     PrefixOpExpr,
@@ -672,6 +673,20 @@ function reducePState({ code: [mode, syntaxNode], env, kont }: PState): State {
             let body = syntaxNode.body;
             let while1Kont = new While1Kont(condExpr, body, env, kont);
             return new PState([Mode.GetValue, condExpr], env, while1Kont);
+        }
+        else if (syntaxNode instanceof LastStatement) {
+            while (true) {
+                if (kont instanceof While2Kont || kont instanceof For2Kont) {
+                    return new RetState(new NoneValue(), kont.tail);
+                }
+                else if (kont instanceof HaltKont) {
+                    break;
+                }
+                else {
+                    kont = kont.tail;
+                }
+            }
+            throw new Error("'last' outside of any loop");
         }
         else {
             throw new Error(

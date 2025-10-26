@@ -17,6 +17,10 @@ Statement -> EmptyStatement .
 Statement -> ExprStatement .
 Statement -> BlockStatement .
 Statement -> IfStatement .
+Statement -> ForStatement .
+Statement -> WhileStatement .
+Statement -> LastStatement .
+Statement -> NextStatement .
 
 EmptyStatement -> ";" .
 
@@ -28,6 +32,14 @@ IfStatement -> "if" Expr Block .
 IfStatement -> "if" Expr Block "else" Block .
 IfStatement -> "if" Expr Block ElseIfClauses .
 IfStatement -> "if" Expr Block ElseIfClauses "else" Block .
+
+ForStatement -> "for" identifier "in" Expr Block .
+
+WhileStatement -> "while" Expr Block .
+
+LastStatement -> "last" ";" .
+
+NextStatement -> "next" ";" .
 
 Decl -> VarDecl .
 Decl -> FuncDecl .
@@ -48,7 +60,7 @@ ParameterList -> ParameterList "," Parameter .
 Parameter -> identifier .
 
 Block -> "{" "}" .
-Block -> "{" StatementOrDeclarationList "}" .
+Block -> "{" StatementOrDeclList "}" .
 
 Expr -> AssignmentExpr .
 
@@ -90,5 +102,5 @@ CodeUnquoteExpr -> "${" Expr "}" .
 DoExpr -> "do" Statement .
 ```
 
-For the above grammar, the LALR parser has 91 states.
+For the above grammar, the LALR parser has 115 states.
 

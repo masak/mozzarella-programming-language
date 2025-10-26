@@ -14,6 +14,7 @@ import {
     IndexingExpr,
     InfixOpExpr,
     IntLitExpr,
+    LastStatement,
     NoneLitExpr,
     ParenExpr,
     PrefixOpExpr,
@@ -127,6 +128,9 @@ function validateStatement(
     else if (statement instanceof WhileStatement) {
         validateExpr(statement.condExpr, contextStack);
         validateBlock(statement.body, contextStack);
+    }
+    else if (statement instanceof LastStatement) {
+        // do nothing
     }
     else {
         throw new Error(

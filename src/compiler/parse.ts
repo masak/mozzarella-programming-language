@@ -18,6 +18,7 @@ import {
     IndexingExpr,
     InfixOpExpr,
     IntLitExpr,
+    LastStatement,
     NoneLitExpr,
     ParenExpr,
     PrefixOpExpr,
@@ -158,6 +159,7 @@ const statementStartTokens = new Set([
     TokenKind.IfKeyword,
     TokenKind.ForKeyword,
     TokenKind.WhileKeyword,
+    TokenKind.LastKeyword,
 ]);
 
 export class Parser {
@@ -297,6 +299,10 @@ export class Parser {
             let condExpr = this.parseExpr();
             let block = this.parseBlock();
             return [new WhileStatement(condExpr, block), true];
+        }
+        else if (this.accept(TokenKind.LastKeyword)) {
+            let sawSemi = Boolean(this.accept(TokenKind.Semi));
+            return [new LastStatement(), sawSemi];
         }
         else {
             this.parseFail("statement");
