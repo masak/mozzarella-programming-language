@@ -131,6 +131,12 @@ export class LastStatement extends Statement {
     }
 }
 
+export class NextStatement extends Statement {
+    constructor() {
+        super([]);
+    }
+}
+
 export abstract class Decl extends SyntaxNode {
 }
 

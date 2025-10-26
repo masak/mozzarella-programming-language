@@ -15,6 +15,7 @@ import {
     InfixOpExpr,
     IntLitExpr,
     LastStatement,
+    NextStatement,
     NoneLitExpr,
     ParenExpr,
     PrefixOpExpr,
@@ -130,6 +131,9 @@ function validateStatement(
         validateBlock(statement.body, contextStack);
     }
     else if (statement instanceof LastStatement) {
+        // do nothing
+    }
+    else if (statement instanceof NextStatement) {
         // do nothing
     }
     else {

@@ -19,6 +19,7 @@ import {
     InfixOpExpr,
     IntLitExpr,
     LastStatement,
+    NextStatement,
     NoneLitExpr,
     ParenExpr,
     PrefixOpExpr,
@@ -160,6 +161,7 @@ const statementStartTokens = new Set([
     TokenKind.ForKeyword,
     TokenKind.WhileKeyword,
     TokenKind.LastKeyword,
+    TokenKind.NextKeyword,
 ]);
 
 export class Parser {
@@ -303,6 +305,10 @@ export class Parser {
         else if (this.accept(TokenKind.LastKeyword)) {
             let sawSemi = Boolean(this.accept(TokenKind.Semi));
             return [new LastStatement(), sawSemi];
+        }
+        else if (this.accept(TokenKind.NextKeyword)) {
+            let sawSemi = Boolean(this.accept(TokenKind.Semi));
+            return [new NextStatement(), sawSemi];
         }
         else {
             this.parseFail("statement");

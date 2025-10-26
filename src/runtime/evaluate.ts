@@ -16,6 +16,7 @@ import {
     InfixOpExpr,
     IntLitExpr,
     LastStatement,
+    NextStatement,
     NoneLitExpr,
     ParenExpr,
     PrefixOpExpr,
@@ -687,6 +688,56 @@ function reducePState({ code: [mode, syntaxNode], env, kont }: PState): State {
                 }
             }
             throw new Error("'last' outside of any loop");
+        }
+        else if (syntaxNode instanceof NextStatement) {
+            while (true) {
+                if (kont instanceof While2Kont) {
+                    let condExpr = kont.condExpr;
+                    let body = kont.body;
+                    let while1Kont = new While1Kont(
+                        condExpr,
+                        body,
+                        kont.env,
+                        kont.tail,
+                    );
+                    return new PState(
+                        [Mode.GetValue, condExpr],
+                        kont.env,
+                        while1Kont,
+                    );
+                }
+                else if (kont instanceof For2Kont) {
+                    let arrayValue = kont.arrayValue;
+                    if (kont.nextIndex >= arrayValue.elements.length) {
+                        return new RetState(new NoneValue(), kont.tail);
+                    }
+                    else {
+                        let bodyEnv = extend(kont.env);
+                        let element = arrayValue.elements[kont.nextIndex];
+                        bind(bodyEnv, kont.name, element);
+                        let for2Kont = new For2Kont(
+                            arrayValue,
+                            kont.name,
+                            kont.body,
+                            kont.nextIndex + 1,
+                            kont.env,
+                            kont.tail,
+                        );
+                        return new PState(
+                            [Mode.GetValue, kont.body],
+                            bodyEnv,
+                            for2Kont,
+                        );
+                    }
+                }
+                else if (kont instanceof HaltKont) {
+                    break;
+                }
+                else {
+                    kont = kont.tail;
+                }
+            }
+            throw new Error("'next' outside of any loop");
         }
         else {
             throw new Error(

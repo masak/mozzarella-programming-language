@@ -239,6 +239,9 @@ export class Lexer {
             else if (name === "last") {
                 return [pos, new Token(TokenKind.LastKeyword)];
             }
+            else if (name === "next") {
+                return [pos, new Token(TokenKind.NextKeyword)];
+            }
             else {
                 return [pos, new Token(TokenKind.Identifier, name)];
             }

@@ -48,6 +48,7 @@ export class TokenKind {
     static InKeyword = new TokenKind("InKeyword");
     static WhileKeyword = new TokenKind("WhileKeyword");
     static LastKeyword = new TokenKind("LastKeyword");
+    static NextKeyword = new TokenKind("NextKeyword");
     static Eof = new TokenKind("Eof");
 }
 
