@@ -5,5 +5,7 @@
 * `Bool`
 * `None`
 * `Array`
+* `Func`
+* `Macro`
 * `SyntaxNode`
 
