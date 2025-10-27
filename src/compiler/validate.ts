@@ -167,9 +167,9 @@ function validateDecl(
     }
 }
 
-export function validateProgram(program: CompUnit): void {
+export function validateCompUnit(compUnit: CompUnit): void {
     let contextStack: Array<Context> = [new Map()];
-    for (let statementOrDecl of program.statements) {
+    for (let statementOrDecl of compUnit.statements) {
         if (statementOrDecl instanceof Statement) {
             let statement = statementOrDecl;
             validateStatement(statement, contextStack);

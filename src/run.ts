@@ -5,21 +5,21 @@ import {
     Parser,
 } from "./compiler/parse";
 import {
-    validateProgram,
+    validateCompUnit,
 } from "./compiler/validate";
 import {
     displayValue,
 } from "./runtime/display";
 import {
-    runProgram,
+    runCompUnit,
 } from "./runtime/evaluate";
 
 export function run(source: string): string {
     let lexer = new Lexer(source);
     let parser = new Parser(lexer);
-    let program = parser.parseProgram();
-    validateProgram(program);
-    let value = runProgram(program);
+    let compUnit = parser.parseCompUnit();
+    validateCompUnit(compUnit);
+    let value = runCompUnit(compUnit);
     return displayValue(value, new Set());
 }
 

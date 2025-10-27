@@ -234,7 +234,7 @@ export class Parser {
 
     // parse methods:
 
-    parseProgram(): CompUnit {
+    parseCompUnit(): CompUnit {
         let statements: Array<Statement | Decl> = [];
         while (this.seeingStartOfStatementOrDecl()) {
             if (this.seeingStartOfStatement()) {

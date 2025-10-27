@@ -68,7 +68,7 @@ import {
 } from "./value";
 
 type Kont =
-    | ProgramKont
+    | CompUnitKont
     | InfixOp1Kont
     | InfixOp2Kont
     | ComparisonOp1Kont
@@ -92,7 +92,7 @@ type Kont =
     | HaltKont
 ;
 
-class ProgramKont {
+class CompUnitKont {
     statements: Array<Statement | Decl>;
     nextIndex: number;
     env: Env;
@@ -478,9 +478,9 @@ class RetState {
     }
 }
 
-function load(program: CompUnit): State {
-    let env = initializeEnv(emptyEnv(), program.statements);
-    return new PState([Mode.GetValue, program], env, new HaltKont());
+function load(compUnit: CompUnit): State {
+    let env = initializeEnv(emptyEnv(), compUnit.statements);
+    return new PState([Mode.GetValue, compUnit], env, new HaltKont());
 }
 
 function initializeEnv(env: Env, statements: Array<Statement | Decl>): Env {
@@ -503,11 +503,11 @@ function reducePState({ code: [mode, syntaxNode], env, kont }: PState): State {
                 return new RetState(new NoneValue(), kont);
             }
             else {
-                let programKont = new ProgramKont(statements, 1, env, kont);
+                let compUnitKont = new CompUnitKont(statements, 1, env, kont);
                 return new PState(
                     [Mode.GetValue, statements[0]],
                     env,
-                    programKont,
+                    compUnitKont,
                 );
             }
         }
@@ -820,12 +820,12 @@ function reducePState({ code: [mode, syntaxNode], env, kont }: PState): State {
 }
 
 function reduceRetState({ value, kont }: RetState): State {
-    if (kont instanceof ProgramKont) {
+    if (kont instanceof CompUnitKont) {
         if (kont.nextIndex >= kont.statements.length) {
             return new RetState(value, kont.tail);
         }
         else {
-            let programKont = new ProgramKont(
+            let compUnitKont = new CompUnitKont(
                 kont.statements,
                 kont.nextIndex + 1,
                 kont.env,
@@ -834,7 +834,7 @@ function reduceRetState({ value, kont }: RetState): State {
             return new PState(
                 [Mode.GetValue, kont.statements[kont.nextIndex]],
                 kont.env,
-                programKont,
+                compUnitKont,
             );
         }
     }
@@ -1383,8 +1383,8 @@ function unload(kont: RetState): Value {
     return kont.value;
 }
 
-export function runProgram(program: CompUnit): Value {
-    let state = load(program);
+export function runCompUnit(compUnit: CompUnit): Value {
+    let state = load(compUnit);
 
     while (state instanceof PState || !(state.kont instanceof HaltKont)) {
         if (state instanceof PState) {
