@@ -157,42 +157,6 @@ export class VarDecl extends Decl {
 export abstract class Expr extends SyntaxNode {
 }
 
-export class IntLitExpr extends Expr {
-    constructor(valueToken: Token) {
-        super([valueToken]);
-    }
-
-    get valueToken(): Token {
-        return this.children[0] as Token;
-    }
-}
-
-export class StrLitExpr extends Expr {
-    constructor(valueToken: Token) {
-        super([valueToken]);
-    }
-
-    get valueToken(): Token {
-        return this.children[0] as Token;
-    }
-}
-
-export class BoolLitExpr extends Expr {
-    constructor(valueToken: Token) {
-        super([valueToken]);
-    }
-
-    get valueToken(): Token {
-        return this.children[0] as Token;
-    }
-}
-
-export class NoneLitExpr extends Expr {
-    constructor() {
-        super([]);
-    }
-}
-
 export class PrefixOpExpr extends Expr {
     constructor(opToken: Token, operand: Expr) {
         super([opToken, operand]);
@@ -225,36 +189,6 @@ export class InfixOpExpr extends Expr {
     }
 }
 
-export class ParenExpr extends Expr {
-    constructor(innerExpr: Expr) {
-        super([innerExpr]);
-    }
-
-    get innerExpr(): Expr {
-        return this.children[0] as Expr;
-    }
-}
-
-export class DoExpr extends Expr {
-    constructor(statement: Statement) {
-        super([statement]);
-    }
-
-    get statement(): Statement {
-        return this.children[0] as Statement;
-    }
-}
-
-export class ArrayInitializerExpr extends Expr {
-    constructor(elements: Array<Expr>) {
-        super(elements);
-    }
-
-    get elements(): Array<Expr> {
-        return this.children as Array<Expr>;
-    }
-}
-
 export class IndexingExpr extends Expr {
     constructor(arrayExpr: Expr, indexExpr: Expr) {
         super([arrayExpr, indexExpr]);
@@ -269,7 +203,76 @@ export class IndexingExpr extends Expr {
     }
 }
 
-export class VarRefExpr extends Expr {
+abstract class PrimaryExpr extends Expr {
+}
+
+export class IntLitExpr extends PrimaryExpr {
+    constructor(valueToken: Token) {
+        super([valueToken]);
+    }
+
+    get valueToken(): Token {
+        return this.children[0] as Token;
+    }
+}
+
+export class StrLitExpr extends PrimaryExpr {
+    constructor(valueToken: Token) {
+        super([valueToken]);
+    }
+
+    get valueToken(): Token {
+        return this.children[0] as Token;
+    }
+}
+
+export class BoolLitExpr extends PrimaryExpr {
+    constructor(valueToken: Token) {
+        super([valueToken]);
+    }
+
+    get valueToken(): Token {
+        return this.children[0] as Token;
+    }
+}
+
+export class NoneLitExpr extends PrimaryExpr {
+    constructor() {
+        super([]);
+    }
+}
+
+export class ParenExpr extends PrimaryExpr {
+    constructor(innerExpr: Expr) {
+        super([innerExpr]);
+    }
+
+    get innerExpr(): Expr {
+        return this.children[0] as Expr;
+    }
+}
+
+export class DoExpr extends PrimaryExpr {
+    constructor(statement: Statement) {
+        super([statement]);
+    }
+
+    get statement(): Statement {
+        return this.children[0] as Statement;
+    }
+}
+
+export class ArrayInitializerExpr extends PrimaryExpr {
+    constructor(elements: Array<Expr>) {
+        super(elements);
+    }
+
+    get elements(): Array<Expr> {
+        return this.children as Array<Expr>;
+    }
+}
+
+export class VarRefExpr extends PrimaryExpr {
     constructor(nameToken: Token) {
         super([nameToken]);
     }
