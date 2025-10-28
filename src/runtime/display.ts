@@ -1,6 +1,7 @@
 import {
     ArrayValue,
     BoolValue,
+    FuncValue,
     IntValue,
     NoneValue,
     StrValue,
@@ -58,6 +59,9 @@ export function displayValue(value: Value, seen: Set<Value>): string {
             seen.delete(value);
             return ["[", elements, "]"].join("");
         }
+    }
+    else if (value instanceof FuncValue) {
+        return ["<func ", value.name, "()>"].join("");
     }
     else if (value instanceof UninitValue) {
         throw new Error("Precondition failed: uninitialized pseudo-value");

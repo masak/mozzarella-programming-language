@@ -242,6 +242,9 @@ export class Lexer {
             else if (name === "next") {
                 return [pos, new Token(TokenKind.NextKeyword)];
             }
+            else if (name === "func") {
+                return [pos, new Token(TokenKind.FuncKeyword)];
+            }
             else {
                 return [pos, new Token(TokenKind.Identifier, name)];
             }

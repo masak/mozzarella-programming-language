@@ -10,6 +10,7 @@ import {
     Expr,
     ExprStatement,
     ForStatement,
+    FuncDecl,
     IfClause,
     IfStatement,
     IndexingExpr,
@@ -60,6 +61,7 @@ import {
 import {
     ArrayValue,
     BoolValue,
+    FuncValue,
     IntValue,
     NoneValue,
     StrValue,
@@ -490,6 +492,11 @@ function initializeEnv(env: Env, statements: Array<Statement | Decl>): Env {
             let name = varDecl.nameToken.payload as string;
             bind(env, name, new UninitValue());
         }
+        else if (statementOrDecl instanceof FuncDecl) {
+            let funcDecl = statementOrDecl;
+            let name = funcDecl.nameToken.payload as string;
+            bind(env, name, new FuncValue(name));
+        }
     }
 
     return env;
@@ -738,6 +745,9 @@ function reducePState({ code: [mode, syntaxNode], env, kont }: PState): State {
                 }
             }
             throw new Error("'next' outside of any loop");
+        }
+        else if (syntaxNode instanceof FuncDecl) {
+            return new RetState(new NoneValue(), kont);
         }
         else {
             throw new Error(

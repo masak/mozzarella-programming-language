@@ -1,6 +1,7 @@
 import {
     Block,
     CompUnit,
+    FuncDecl,
     SyntaxNode,
     VarDecl,
     VarRefExpr,
@@ -40,6 +41,16 @@ function visitDown(
         }
         else if (context.get(name) === VarState.accessed) {
             throw new Error(`Use of variable '${name}' before declaration`);
+        }
+        else {
+            context.set(name, VarState.declared);
+        }
+    }
+    else if (syntaxNode instanceof FuncDecl) {
+        let name = syntaxNode.nameToken.payload as string;
+        let context = contextStack[contextStack.length - 1];
+        if (context.get(name) === VarState.declared) {
+            throw new Error(`Redeclaration of name '${name}'`);
         }
         else {
             context.set(name, VarState.declared);

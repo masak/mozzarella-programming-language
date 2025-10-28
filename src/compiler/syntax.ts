@@ -154,6 +154,20 @@ export class VarDecl extends Decl {
     }
 }
 
+export class FuncDecl extends Decl {
+    constructor(nameToken: Token, body: Block) {
+        super([nameToken, null, body]);
+    }
+
+    get nameToken(): Token {
+        return this.children[0] as Token;
+    }
+
+    get body(): Block {
+        return this.children[2] as Block;
+    }
+}
+
 export abstract class Expr extends SyntaxNode {
 }
 

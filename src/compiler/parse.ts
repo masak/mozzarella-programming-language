@@ -13,6 +13,7 @@ import {
     Expr,
     ExprStatement,
     ForStatement,
+    FuncDecl,
     IfClause,
     IfStatement,
     IndexingExpr,
@@ -164,6 +165,11 @@ const statementStartTokens = new Set([
     TokenKind.NextKeyword,
 ]);
 
+const declStartTokens = new Set([
+    TokenKind.MyKeyword,
+    TokenKind.FuncKeyword,
+]);
+
 export class Parser {
     lexer: Lexer;
 
@@ -194,7 +200,8 @@ export class Parser {
     }
 
     private seeingStartOfDecl(): boolean {
-        return this.seeing(TokenKind.MyKeyword);
+        let lookahead = this.lexer.lookahead().kind;
+        return declStartTokens.has(lookahead);
     }
 
     private seeingStartOfExpr(): boolean {
@@ -351,6 +358,14 @@ export class Parser {
                 let sawSemi = Boolean(this.accept(TokenKind.Semi));
                 return [new VarDecl(nameToken, null), sawSemi];
             }
+        }
+        else if (this.accept(TokenKind.FuncKeyword)) {
+            this.expect(TokenKind.Identifier);
+            let nameToken = this.accept(TokenKind.Identifier)!;
+            this.advanceOver(TokenKind.ParenL);
+            this.advanceOver(TokenKind.ParenR);
+            let body = this.parseBlock();
+            return [new FuncDecl(nameToken, body), true];
         }
         else {
             this.parseFail("declaration");

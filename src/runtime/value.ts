@@ -36,6 +36,14 @@ export class ArrayValue {
     }
 }
 
+export class FuncValue {
+    name: string;
+
+    constructor(name: string) {
+        this.name = name;
+    }
+}
+
 export class UninitValue {
 }
 
