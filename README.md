@@ -45,7 +45,7 @@ to be able to correctly guess the intended implementation.
 - [x] [`while` statements](https://github.com/masak/mozzarella-programming-language/blob/main/spec/22-while-stmt.md)
 - [x] [`last` statements](https://github.com/masak/mozzarella-programming-language/blob/main/spec/23-last-stmt.md)
 - [x] [`next` statements](https://github.com/masak/mozzarella-programming-language/blob/main/spec/24-next-stmt.md)
-- [ ] functions
+- [x] [functions](https://github.com/masak/mozzarella-programming-language/blob/main/spec/25-func-decl.md)
 - [ ] parameters
 - [ ] `return` statements
 - [ ] calls
