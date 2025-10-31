@@ -98,17 +98,20 @@ type Kont =
 ;
 
 class CompUnitKont {
+    callLevel: number;
     statements: Array<Statement | Decl>;
     nextIndex: number;
     env: Env;
     tail: Kont;
 
     constructor(
+        callLevel: number,
         statements: Array<Statement | Decl>,
         nextIndex: number,
         env: Env,
         tail: Kont,
     ) {
+        this.callLevel = callLevel;
         this.statements = statements;
         this.nextIndex = nextIndex;
         this.env = env;
@@ -117,22 +120,32 @@ class CompUnitKont {
 }
 
 class PrefixOpKont {
+    callLevel: number;
     token: Token;
     tail: Kont;
 
-    constructor(token: Token, tail: Kont) {
+    constructor(callLevel: number, token: Token, tail: Kont) {
+        this.callLevel = callLevel;
         this.token = token;
         this.tail = tail;
     }
 }
 
 class InfixOp1Kont {
+    callLevel: number;
     token: Token;
     rhs: Expr;
     env: Env;
     tail: Kont;
 
-    constructor(token: Token, rhs: Expr, env: Env, tail: Kont) {
+    constructor(
+        callLevel: number,
+        token: Token,
+        rhs: Expr,
+        env: Env,
+        tail: Kont,
+    ) {
+        this.callLevel = callLevel;
         this.token = token;
         this.rhs = rhs;
         this.env = env;
@@ -141,11 +154,13 @@ class InfixOp1Kont {
 }
 
 class InfixOp2Kont {
+    callLevel: number;
     left: Value;
     token: Token;
     tail: Kont;
 
-    constructor(left: Value, token: Token, tail: Kont) {
+    constructor(callLevel: number, left: Value, token: Token, tail: Kont) {
+        this.callLevel = callLevel;
         this.left = left;
         this.token = token;
         this.tail = tail;
@@ -153,17 +168,20 @@ class InfixOp2Kont {
 }
 
 class ComparisonOp1Kont {
+    callLevel: number;
     exprs: Array<Expr>;
     ops: Array<Token>;
     env: Env;
     tail: Kont;
 
     constructor(
+        callLevel: number,
         exprs: Array<Expr>,
         ops: Array<Token>,
         env: Env,
         tail: Kont,
     ) {
+        this.callLevel = callLevel;
         this.exprs = exprs;
         this.ops = ops;
         this.env = env;
@@ -172,6 +190,7 @@ class ComparisonOp1Kont {
 }
 
 class ComparisonOp2Kont {
+    callLevel: number;
     prev: Value;
     exprs: Array<Expr>;
     ops: Array<Token>;
@@ -180,6 +199,7 @@ class ComparisonOp2Kont {
     tail: Kont;
 
     constructor(
+        callLevel: number,
         prev: Value,
         exprs: Array<Expr>,
         ops: Array<Token>,
@@ -187,6 +207,7 @@ class ComparisonOp2Kont {
         env: Env,
         tail: Kont,
     ) {
+        this.callLevel = callLevel;
         this.prev = prev;
         this.exprs = exprs;
         this.ops = ops;
@@ -197,17 +218,20 @@ class ComparisonOp2Kont {
 }
 
 class BlockKont {
+    callLevel: number;
     statements: Array<Statement | Decl>;
     nextIndex: number;
     env: Env;
     tail: Kont;
 
     constructor(
+        callLevel: number,
         statements: Array<Statement | Decl>,
         nextIndex: number,
         env: Env,
         tail: Kont,
     ) {
+        this.callLevel = callLevel;
         this.statements = statements;
         this.nextIndex = nextIndex;
         this.env = env;
@@ -216,6 +240,7 @@ class BlockKont {
 }
 
 class IfKont {
+    callLevel: number;
     clauses: Array<IfClause>;
     elseBlock: Block | null;
     index: number;
@@ -223,12 +248,14 @@ class IfKont {
     tail: Kont;
 
     constructor(
+        callLevel: number,
         clauses: Array<IfClause>,
         elseBlock: Block | null,
         index: number,
         env: Env,
         tail: Kont,
     ) {
+        this.callLevel = callLevel;
         this.clauses = clauses;
         this.elseBlock = elseBlock;
         this.index = index;
@@ -238,6 +265,7 @@ class IfKont {
 }
 
 class ArrayInitializerKont {
+    callLevel: number;
     elemValues: Array<Value>;
     elemExprs: Array<Expr>;
     index: number;
@@ -245,12 +273,14 @@ class ArrayInitializerKont {
     tail: Kont;
 
     constructor(
+        callLevel: number,
         elemValues: Array<Value>,
         elemExprs: Array<Expr>,
         index: number,
         env: Env,
         tail: Kont,
     ) {
+        this.callLevel = callLevel;
         this.elemValues = elemValues;
         this.elemExprs = elemExprs;
         this.index = index;
@@ -260,11 +290,13 @@ class ArrayInitializerKont {
 }
 
 class Indexing1Kont {
+    callLevel: number;
     indexExpr: Expr;
     env: Env;
     tail: Kont;
 
-    constructor(indexExpr: Expr, env: Env, tail: Kont) {
+    constructor(callLevel: number, indexExpr: Expr, env: Env, tail: Kont) {
+        this.callLevel = callLevel;
         this.indexExpr = indexExpr;
         this.env = env;
         this.tail = tail;
@@ -272,21 +304,25 @@ class Indexing1Kont {
 }
 
 class Indexing2Kont {
+    callLevel: number;
     array: ArrayValue;
     tail: Kont;
 
-    constructor(array: ArrayValue, tail: Kont) {
+    constructor(callLevel: number, array: ArrayValue, tail: Kont) {
+        this.callLevel = callLevel;
         this.array = array;
         this.tail = tail;
     }
 }
 
 class VarKont {
+    callLevel: number;
     name: string;
     env: Env;
     tail: Kont;
 
-    constructor(name: string, env: Env, tail: Kont) {
+    constructor(callLevel: number, name: string, env: Env, tail: Kont) {
+        this.callLevel = callLevel;
         this.name = name;
         this.env = env;
         this.tail = tail;
@@ -294,12 +330,20 @@ class VarKont {
 }
 
 class For1Kont {
+    callLevel: number;
     name: string;
     body: Block;
     env: Env;
     tail: Kont;
 
-    constructor(name: string, body: Block, env: Env, tail: Kont) {
+    constructor(
+        callLevel: number,
+        name: string,
+        body: Block,
+        env: Env,
+        tail: Kont,
+    ) {
+        this.callLevel = callLevel;
         this.name = name;
         this.body = body;
         this.env = env;
@@ -308,6 +352,7 @@ class For1Kont {
 }
 
 class For2Kont {
+    callLevel: number;
     arrayValue: ArrayValue;
     name: string;
     body: Block;
@@ -316,6 +361,7 @@ class For2Kont {
     tail: Kont;
 
     constructor(
+        callLevel: number,
         arrayValue: ArrayValue,
         name: string,
         body: Block,
@@ -323,6 +369,7 @@ class For2Kont {
         env: Env,
         tail: Kont,
     ) {
+        this.callLevel = callLevel;
         this.arrayValue = arrayValue;
         this.name = name;
         this.body = body;
@@ -333,11 +380,13 @@ class For2Kont {
 }
 
 class Assign1Kont {
+    callLevel: number;
     rhs: Expr;
     env: Env;
     tail: Kont;
 
-    constructor(rhs: Expr, env: Env, tail: Kont) {
+    constructor(callLevel: number, rhs: Expr, env: Env, tail: Kont) {
+        this.callLevel = callLevel;
         this.rhs = rhs;
         this.env = env;
         this.tail = tail;
@@ -345,21 +394,25 @@ class Assign1Kont {
 }
 
 class Assign2Kont {
+    callLevel: number;
     location: Location;
     tail: Kont;
 
-    constructor(location: Location, tail: Kont) {
+    constructor(callLevel: number, location: Location, tail: Kont) {
+        this.callLevel = callLevel;
         this.location = location;
         this.tail = tail;
     }
 }
 
 class IndexingLoc1Kont {
+    callLevel: number;
     indexExpr: Expr;
     env: Env;
     tail: Kont;
 
-    constructor(indexExpr: Expr, env: Env, tail: Kont) {
+    constructor(callLevel: number, indexExpr: Expr, env: Env, tail: Kont) {
+        this.callLevel = callLevel;
         this.indexExpr = indexExpr;
         this.env = env;
         this.tail = tail;
@@ -367,27 +420,32 @@ class IndexingLoc1Kont {
 }
 
 class IndexingLoc2Kont {
+    callLevel: number;
     array: ArrayValue;
     tail: Kont;
 
-    constructor(array: ArrayValue, tail: Kont) {
+    constructor(callLevel: number, array: ArrayValue, tail: Kont) {
+        this.callLevel = callLevel;
         this.array = array;
         this.tail = tail;
     }
 }
 
 class BlockLocKont {
+    callLevel: number;
     statements: Array<Statement | Decl>;
     nextIndex: number;
     env: Env;
     tail: Kont;
 
     constructor(
+        callLevel: number,
         statements: Array<Statement | Decl>,
         nextIndex: number,
         env: Env,
         tail: Kont,
     ) {
+        this.callLevel = callLevel;
         this.statements = statements;
         this.nextIndex = nextIndex;
         this.env = env;
@@ -396,6 +454,7 @@ class BlockLocKont {
 }
 
 class IfLocKont {
+    callLevel: number;
     clauses: Array<IfClause>;
     elseBlock: Block | null;
     index: number;
@@ -403,12 +462,14 @@ class IfLocKont {
     tail: Kont;
 
     constructor(
+        callLevel: number,
         clauses: Array<IfClause>,
         elseBlock: Block | null,
         index: number,
         env: Env,
         tail: Kont,
     ) {
+        this.callLevel = callLevel;
         this.clauses = clauses;
         this.elseBlock = elseBlock;
         this.index = index;
@@ -418,12 +479,20 @@ class IfLocKont {
 }
 
 class While1Kont {
+    callLevel: number;
     condExpr: Expr;
     body: Block;
     env: Env;
     tail: Kont;
 
-    constructor(condExpr: Expr, body: Block, env: Env, tail: Kont) {
+    constructor(
+        callLevel: number,
+        condExpr: Expr,
+        body: Block,
+        env: Env,
+        tail: Kont,
+    ) {
+        this.callLevel = callLevel;
         this.condExpr = condExpr;
         this.body = body;
         this.env = env;
@@ -432,12 +501,20 @@ class While1Kont {
 }
 
 class While2Kont {
+    callLevel: number;
     condExpr: Expr;
     body: Block;
     env: Env;
     tail: Kont;
 
-    constructor(condExpr: Expr, body: Block, env: Env, tail: Kont) {
+    constructor(
+        callLevel: number,
+        condExpr: Expr,
+        body: Block,
+        env: Env,
+        tail: Kont,
+    ) {
+        this.callLevel = callLevel;
         this.condExpr = condExpr;
         this.body = body;
         this.env = env;
@@ -446,11 +523,13 @@ class While2Kont {
 }
 
 class Call1Kont {
+    callLevel: number;
     args: Array<Expr>;
     env: Env;
     tail: Kont;
 
-    constructor(args: Array<Expr>, env: Env, tail: Kont) {
+    constructor(callLevel: number, args: Array<Expr>, env: Env, tail: Kont) {
+        this.callLevel = callLevel;
         this.args = args;
         this.env = env;
         this.tail = tail;
@@ -458,6 +537,7 @@ class Call1Kont {
 }
 
 class Call2Kont {
+    callLevel: number;
     funcValue: FuncValue;
     argValues: Array<Value>;
     args: Array<Expr>;
@@ -466,6 +546,7 @@ class Call2Kont {
     tail: Kont;
 
     constructor(
+        callLevel: number,
         funcValue: FuncValue,
         argValues: Array<Value>,
         args: Array<Expr>,
@@ -473,6 +554,7 @@ class Call2Kont {
         env: Env,
         tail: Kont,
     ) {
+        this.callLevel = callLevel;
         this.funcValue = funcValue;
         this.argValues = argValues;
         this.args = args;
@@ -483,6 +565,11 @@ class Call2Kont {
 }
 
 class HaltKont {
+    callLevel: number;
+
+    constructor(callLevel: number) {
+        this.callLevel = callLevel;
+    }
 }
 
 class Mode {
@@ -499,11 +586,11 @@ class Mode {
 type State = PState | RetState;
 
 class PState {
-    code: [Mode, SyntaxNode];
+    code: [Mode, number, SyntaxNode];
     env: Env;
     kont: Kont;
 
-    constructor(code: [Mode, SyntaxNode], env: Env, kont: Kont) {
+    constructor(code: [Mode, number, SyntaxNode], env: Env, kont: Kont) {
         this.code = code;
         this.env = env;
         this.kont = kont;
@@ -522,7 +609,7 @@ class RetState {
 
 function load(compUnit: CompUnit): State {
     let env = initializeEnv(emptyEnv(), compUnit.statements);
-    return new PState([Mode.GetValue, compUnit], env, new HaltKont());
+    return new PState([Mode.GetValue, 0, compUnit], env, new HaltKont(0));
 }
 
 function initializeEnv(env: Env, statements: Array<Statement | Decl>): Env {
@@ -542,7 +629,9 @@ function initializeEnv(env: Env, statements: Array<Statement | Decl>): Env {
     return env;
 }
 
-function reducePState({ code: [mode, syntaxNode], env, kont }: PState): State {
+function reducePState(
+    { code: [mode, callLevel, syntaxNode], env, kont }: PState,
+): State {
     if (mode === Mode.GetValue) {
         if (syntaxNode instanceof CompUnit) {
             let statements = syntaxNode.statements;
@@ -550,16 +639,26 @@ function reducePState({ code: [mode, syntaxNode], env, kont }: PState): State {
                 return new RetState(new NoneValue(), kont);
             }
             else {
-                let compUnitKont = new CompUnitKont(statements, 1, env, kont);
+                let compUnitKont = new CompUnitKont(
+                    callLevel,
+                    statements,
+                    1,
+                    env,
+                    kont,
+                );
                 return new PState(
-                    [Mode.GetValue, statements[0]],
+                    [Mode.GetValue, callLevel, statements[0]],
                     env,
                     compUnitKont,
                 );
             }
         }
         else if (syntaxNode instanceof ExprStatement) {
-            return new PState([Mode.GetValue, syntaxNode.expr], env, kont);
+            return new PState(
+                [Mode.GetValue, callLevel, syntaxNode.expr],
+                env,
+                kont,
+            );
         }
         else if (syntaxNode instanceof IntLitExpr) {
             let payload = syntaxNode.valueToken.payload as bigint;
@@ -584,8 +683,12 @@ function reducePState({ code: [mode, syntaxNode], env, kont }: PState): State {
                 || opToken.kind === TokenKind.Tilde
                 || opToken.kind === TokenKind.Quest
                 || opToken.kind === TokenKind.Bang) {
-                let prefixOpKont = new PrefixOpKont(opToken, kont);
-                return new PState([Mode.GetValue, operand], env, prefixOpKont);
+                let prefixOpKont = new PrefixOpKont(callLevel, opToken, kont);
+                return new PState(
+                    [Mode.GetValue, callLevel, operand],
+                    env,
+                    prefixOpKont,
+                );
             }
             else {
                 throw new Error(`Unknown prefix op type ${opToken.kind.kind}`);
@@ -604,27 +707,36 @@ function reducePState({ code: [mode, syntaxNode], env, kont }: PState): State {
                 || opToken.kind === TokenKind.AmpAmp
                 || opToken.kind === TokenKind.PipePipe) {
                 let infixOpKont1
-                    = new InfixOp1Kont(opToken, rhs, env, kont);
-                return new PState([Mode.GetValue, lhs], env, infixOpKont1);
+                    = new InfixOp1Kont(callLevel, opToken, rhs, env, kont);
+                return new PState(
+                    [Mode.GetValue, callLevel, lhs],
+                    env,
+                    infixOpKont1,
+                );
             }
             else if (comparisonOps.has(opToken.kind)) {
                 let [exprs, ops] = findAllChainedOps(syntaxNode);
                 checkForUnchainableOps(ops);
                 let comparisonOp1Kont = new ComparisonOp1Kont(
+                    callLevel,
                     exprs,
                     ops,
                     env,
                     kont,
                 );
                 return new PState(
-                    [Mode.GetValue, exprs[0]],
+                    [Mode.GetValue, callLevel, exprs[0]],
                     env,
                     comparisonOp1Kont,
                 );
             }
             else if (opToken.kind === TokenKind.Assign) {
-                let assign1Kont = new Assign1Kont(rhs, env, kont);
-                return new PState([Mode.GetLocation, lhs], env, assign1Kont);
+                let assign1Kont = new Assign1Kont(callLevel, rhs, env, kont);
+                return new PState(
+                    [Mode.GetLocation, callLevel, lhs],
+                    env,
+                    assign1Kont,
+                );
             }
             else {
                 throw new Error(`Unknown infix op type ${opToken.kind.kind}`);
@@ -632,13 +744,21 @@ function reducePState({ code: [mode, syntaxNode], env, kont }: PState): State {
         }
         else if (syntaxNode instanceof ParenExpr) {
             let innerExpr = syntaxNode.innerExpr;
-            return new PState([Mode.GetValue, innerExpr], env, kont);
+            return new PState(
+                [Mode.GetValue, callLevel, innerExpr],
+                env,
+                kont,
+            );
         }
         else if (syntaxNode instanceof EmptyStatement) {
             return new RetState(new NoneValue(), kont);
         }
         else if (syntaxNode instanceof BlockStatement) {
-            return new PState([Mode.GetValue, syntaxNode.block], env, kont);
+            return new PState(
+                [Mode.GetValue, callLevel, syntaxNode.block],
+                env,
+                kont,
+            );
         }
         else if (syntaxNode instanceof Block) {
             let statements = syntaxNode.statements;
@@ -647,9 +767,15 @@ function reducePState({ code: [mode, syntaxNode], env, kont }: PState): State {
                 return new RetState(new NoneValue(), kont);
             }
             else {
-                let blockKont = new BlockKont(statements, 1, env, kont);
+                let blockKont = new BlockKont(
+                    callLevel,
+                    statements,
+                    1,
+                    env,
+                    kont,
+                );
                 return new PState(
-                    [Mode.GetValue, statements[0]],
+                    [Mode.GetValue, callLevel, statements[0]],
                     env,
                     blockKont,
                 );
@@ -657,14 +783,29 @@ function reducePState({ code: [mode, syntaxNode], env, kont }: PState): State {
         }
         else if (syntaxNode instanceof DoExpr) {
             let statement = syntaxNode.statement;
-            return new PState([Mode.GetValue, statement], env, kont);
+            return new PState(
+                [Mode.GetValue, callLevel, statement],
+                env,
+                kont,
+            );
         }
         else if (syntaxNode instanceof IfStatement) {
             let clauses = syntaxNode.clauseList.clauses;
             let elseBlock = syntaxNode.elseBlock;
             let condExpr = clauses[0].condExpr;
-            let ifKont = new IfKont(clauses, elseBlock, 0, env, kont);
-            return new PState([Mode.GetValue, condExpr], env, ifKont);
+            let ifKont = new IfKont(
+                callLevel,
+                clauses,
+                elseBlock,
+                0,
+                env,
+                kont,
+            );
+            return new PState(
+                [Mode.GetValue, callLevel, condExpr],
+                env,
+                ifKont,
+            );
         }
         else if (syntaxNode instanceof ArrayInitializerExpr) {
             if (syntaxNode.elements.length === 0) {
@@ -672,6 +813,7 @@ function reducePState({ code: [mode, syntaxNode], env, kont }: PState): State {
             }
             else {
                 let arrayInitializerKont = new ArrayInitializerKont(
+                    callLevel,
                     new Array(syntaxNode.elements.length),
                     syntaxNode.elements,
                     0,
@@ -679,7 +821,7 @@ function reducePState({ code: [mode, syntaxNode], env, kont }: PState): State {
                     kont,
                 );
                 return new PState(
-                    [Mode.GetValue, syntaxNode.children[0] as Expr],
+                    [Mode.GetValue, callLevel, syntaxNode.children[0] as Expr],
                     env,
                     arrayInitializerKont,
                 );
@@ -688,15 +830,28 @@ function reducePState({ code: [mode, syntaxNode], env, kont }: PState): State {
         else if (syntaxNode instanceof IndexingExpr) {
             let arrayExpr = syntaxNode.arrayExpr;
             let indexExpr = syntaxNode.indexExpr;
-            let indexing1Kont = new Indexing1Kont(indexExpr, env, kont);
-            return new PState([Mode.GetValue, arrayExpr], env, indexing1Kont);
+            let indexing1Kont = new Indexing1Kont(
+                callLevel,
+                indexExpr,
+                env,
+                kont,
+            );
+            return new PState(
+                [Mode.GetValue, callLevel, arrayExpr],
+                env,
+                indexing1Kont,
+            );
         }
         else if (syntaxNode instanceof VarDecl) {
             let initExpr = syntaxNode.initExpr;
             if (initExpr !== null) {
                 let name = syntaxNode.nameToken.payload as string;
-                let varKont = new VarKont(name, env, kont);
-                return new PState([Mode.GetValue, initExpr], env, varKont);
+                let varKont = new VarKont(callLevel, name, env, kont);
+                return new PState(
+                    [Mode.GetValue, callLevel, initExpr],
+                    env,
+                    varKont,
+                );
             }
             else {
                 return new RetState(new NoneValue(), kont);
@@ -713,18 +868,36 @@ function reducePState({ code: [mode, syntaxNode], env, kont }: PState): State {
             bind(env, name, new UninitValue());
             let arrayExpr = syntaxNode.arrayExpr;
             let body = syntaxNode.body;
-            let for1Kont = new For1Kont(name, body, env, kont);
-            return new PState([Mode.GetValue, arrayExpr], env, for1Kont);
+            let for1Kont = new For1Kont(callLevel, name, body, env, kont);
+            return new PState(
+                [Mode.GetValue, callLevel, arrayExpr],
+                env,
+                for1Kont,
+            );
         }
         else if (syntaxNode instanceof WhileStatement) {
             let condExpr = syntaxNode.condExpr;
             let body = syntaxNode.body;
-            let while1Kont = new While1Kont(condExpr, body, env, kont);
-            return new PState([Mode.GetValue, condExpr], env, while1Kont);
+            let while1Kont = new While1Kont(
+                callLevel,
+                condExpr,
+                body,
+                env,
+                kont,
+            );
+            return new PState(
+                [Mode.GetValue, callLevel, condExpr],
+                env,
+                while1Kont,
+            );
         }
         else if (syntaxNode instanceof LastStatement) {
             while (true) {
-                if (kont instanceof While2Kont || kont instanceof For2Kont) {
+                if (kont.callLevel < callLevel) {
+                    break;
+                }
+                else if (kont instanceof While2Kont
+                    || kont instanceof For2Kont) {
                     return new RetState(new NoneValue(), kont.tail);
                 }
                 else if (kont instanceof HaltKont) {
@@ -734,21 +907,25 @@ function reducePState({ code: [mode, syntaxNode], env, kont }: PState): State {
                     kont = kont.tail;
                 }
             }
-            throw new Error("'last' outside of any loop");
+            throw new Error("'last' outside of loop");
         }
         else if (syntaxNode instanceof NextStatement) {
             while (true) {
-                if (kont instanceof While2Kont) {
+                if (kont.callLevel < callLevel) {
+                    break;
+                }
+                else if (kont instanceof While2Kont) {
                     let condExpr = kont.condExpr;
                     let body = kont.body;
                     let while1Kont = new While1Kont(
+                        callLevel,
                         condExpr,
                         body,
                         kont.env,
                         kont.tail,
                     );
                     return new PState(
-                        [Mode.GetValue, condExpr],
+                        [Mode.GetValue, callLevel, condExpr],
                         kont.env,
                         while1Kont,
                     );
@@ -763,6 +940,7 @@ function reducePState({ code: [mode, syntaxNode], env, kont }: PState): State {
                         let element = arrayValue.elements[kont.nextIndex];
                         bind(bodyEnv, kont.name, element);
                         let for2Kont = new For2Kont(
+                            kont.callLevel,
                             arrayValue,
                             kont.name,
                             kont.body,
@@ -771,7 +949,7 @@ function reducePState({ code: [mode, syntaxNode], env, kont }: PState): State {
                             kont.tail,
                         );
                         return new PState(
-                            [Mode.GetValue, kont.body],
+                            [Mode.GetValue, callLevel, kont.body],
                             bodyEnv,
                             for2Kont,
                         );
@@ -792,8 +970,12 @@ function reducePState({ code: [mode, syntaxNode], env, kont }: PState): State {
         else if (syntaxNode instanceof CallExpr) {
             let funcExpr = syntaxNode.funcExpr;
             let args = syntaxNode.argList.args;
-            let call1Kont = new Call1Kont(args, env, kont);
-            return new PState([Mode.GetValue, funcExpr], env, call1Kont);
+            let call1Kont = new Call1Kont(callLevel, args, env, kont);
+            return new PState(
+                [Mode.GetValue, callLevel, funcExpr],
+                env,
+                call1Kont,
+            );
         }
         else {
             throw new Error(
@@ -805,9 +987,14 @@ function reducePState({ code: [mode, syntaxNode], env, kont }: PState): State {
         if (syntaxNode instanceof IndexingExpr) {
             let arrayExpr = syntaxNode.arrayExpr;
             let indexExpr = syntaxNode.indexExpr;
-            let indexingLoc1Kont = new IndexingLoc1Kont(indexExpr, env, kont);
+            let indexingLoc1Kont = new IndexingLoc1Kont(
+                callLevel,
+                indexExpr,
+                env,
+                kont,
+            );
             return new PState(
-                [Mode.GetValue, arrayExpr],
+                [Mode.GetValue, callLevel, arrayExpr],
                 env,
                 indexingLoc1Kont,
             );
@@ -819,14 +1006,26 @@ function reducePState({ code: [mode, syntaxNode], env, kont }: PState): State {
         }
         else if (syntaxNode instanceof ParenExpr) {
             let innerExpr = syntaxNode.innerExpr;
-            return new PState([Mode.GetLocation, innerExpr], env, kont);
+            return new PState(
+                [Mode.GetLocation, callLevel, innerExpr],
+                env,
+                kont,
+            );
         }
         else if (syntaxNode instanceof DoExpr) {
             let statement = syntaxNode.statement;
-            return new PState([Mode.GetLocation, statement], env, kont);
+            return new PState(
+                [Mode.GetLocation, callLevel, statement],
+                env,
+                kont,
+            );
         }
         else if (syntaxNode instanceof BlockStatement) {
-            return new PState([Mode.GetLocation, syntaxNode.block], env, kont);
+            return new PState(
+                [Mode.GetLocation, callLevel, syntaxNode.block],
+                env,
+                kont,
+            );
         }
         else if (syntaxNode instanceof Block) {
             let statements = syntaxNode.statements;
@@ -838,30 +1037,45 @@ function reducePState({ code: [mode, syntaxNode], env, kont }: PState): State {
             }
             else if (statements.length === 1) {
                 return new PState(
-                    [Mode.GetLocation, statements[0]],
+                    [Mode.GetLocation, callLevel, statements[0]],
                     env,
                     kont,
                 );
             }
             else {
                 let blockLoc1Kont
-                    = new BlockLocKont(statements, 1, env, kont);
+                    = new BlockLocKont(callLevel, statements, 1, env, kont);
                 return new PState(
-                    [Mode.GetValue, statements[0]],
+                    [Mode.GetValue, callLevel, statements[0]],
                     env,
                     blockLoc1Kont,
                 );
             }
         }
         else if (syntaxNode instanceof ExprStatement) {
-            return new PState([Mode.GetLocation, syntaxNode.expr], env, kont);
+            return new PState(
+                [Mode.GetLocation, callLevel, syntaxNode.expr],
+                env,
+                kont,
+            );
         }
         else if (syntaxNode instanceof IfStatement) {
             let clauses = syntaxNode.clauseList.clauses;
             let elseBlock = syntaxNode.elseBlock;
             let condExpr = clauses[0].condExpr;
-            let ifLocKont = new IfLocKont(clauses, elseBlock, 0, env, kont);
-            return new PState([Mode.GetValue, condExpr], env, ifLocKont);
+            let ifLocKont = new IfLocKont(
+                callLevel,
+                clauses,
+                elseBlock,
+                0,
+                env,
+                kont,
+            );
+            return new PState(
+                [Mode.GetValue, callLevel, condExpr],
+                env,
+                ifLocKont,
+            );
         }
         else {
             throw new Error(
@@ -882,13 +1096,18 @@ function reduceRetState({ value, kont }: RetState): State {
         }
         else {
             let compUnitKont = new CompUnitKont(
+                kont.callLevel,
                 kont.statements,
                 kont.nextIndex + 1,
                 kont.env,
                 kont.tail,
             );
             return new PState(
-                [Mode.GetValue, kont.statements[kont.nextIndex]],
+                [
+                    Mode.GetValue,
+                    kont.callLevel,
+                    kont.statements[kont.nextIndex],
+                ],
                 kont.env,
                 compUnitKont,
             );
@@ -941,9 +1160,14 @@ function reduceRetState({ value, kont }: RetState): State {
             if (!(left instanceof IntValue)) {
                 throw new Error("Expected Int as lhs of +");
             }
-            let infixOp2Kont = new InfixOp2Kont(left, token, kont.tail);
+            let infixOp2Kont = new InfixOp2Kont(
+                kont.callLevel,
+                left,
+                token,
+                kont.tail,
+            );
             return new PState(
-                [Mode.GetValue, kont.rhs],
+                [Mode.GetValue, kont.callLevel, kont.rhs],
                 kont.env,
                 infixOp2Kont,
             );
@@ -953,9 +1177,13 @@ function reduceRetState({ value, kont }: RetState): State {
             if (!(left instanceof IntValue)) {
                 throw new Error("Expected Int as lhs of -");
             }
-            let infixOp2Kont = new InfixOp2Kont(left, token, kont.tail);
+            let infixOp2Kont = new InfixOp2Kont(
+                kont.callLevel,
+                left,
+                token,
+                kont.tail);
             return new PState(
-                [Mode.GetValue, kont.rhs],
+                [Mode.GetValue, kont.callLevel, kont.rhs],
                 kont.env,
                 infixOp2Kont,
             );
@@ -965,9 +1193,14 @@ function reduceRetState({ value, kont }: RetState): State {
             if (!(left instanceof IntValue)) {
                 throw new Error("Expected Int as lhs of *");
             }
-            let infixOp2Kont = new InfixOp2Kont(left, token, kont.tail);
+            let infixOp2Kont = new InfixOp2Kont(
+                kont.callLevel,
+                left,
+                token,
+                kont.tail,
+            );
             return new PState(
-                [Mode.GetValue, kont.rhs],
+                [Mode.GetValue, kont.callLevel, kont.rhs],
                 kont.env,
                 infixOp2Kont,
             );
@@ -977,9 +1210,14 @@ function reduceRetState({ value, kont }: RetState): State {
             if (!(left instanceof IntValue)) {
                 throw new Error("Expected Int as lhs of //");
             }
-            let infixOp2Kont = new InfixOp2Kont(left, token, kont.tail);
+            let infixOp2Kont = new InfixOp2Kont(
+                kont.callLevel,
+                left,
+                token,
+                kont.tail,
+            );
             return new PState(
-                [Mode.GetValue, kont.rhs],
+                [Mode.GetValue, kont.callLevel, kont.rhs],
                 kont.env,
                 infixOp2Kont,
             );
@@ -989,9 +1227,14 @@ function reduceRetState({ value, kont }: RetState): State {
             if (!(left instanceof IntValue)) {
                 throw new Error("Expected Int as lhs of %");
             }
-            let infixOp2Kont = new InfixOp2Kont(left, token, kont.tail);
+            let infixOp2Kont = new InfixOp2Kont(
+                kont.callLevel,
+                left,
+                token,
+                kont.tail,
+            );
             return new PState(
-                [Mode.GetValue, kont.rhs],
+                [Mode.GetValue, kont.callLevel, kont.rhs],
                 kont.env,
                 infixOp2Kont,
             );
@@ -999,9 +1242,14 @@ function reduceRetState({ value, kont }: RetState): State {
         else if (token.kind === TokenKind.Tilde) {
             let left = value;
             let strLeft = stringify(left);
-            let infixOp2Kont = new InfixOp2Kont(strLeft, token, kont.tail);
+            let infixOp2Kont = new InfixOp2Kont(
+                kont.callLevel,
+                strLeft,
+                token,
+                kont.tail,
+            );
             return new PState(
-                [Mode.GetValue, kont.rhs],
+                [Mode.GetValue, kont.callLevel, kont.rhs],
                 kont.env,
                 infixOp2Kont,
             );
@@ -1011,7 +1259,7 @@ function reduceRetState({ value, kont }: RetState): State {
             if (boolify(left)) {
                 // tail call
                 return new PState(
-                    [Mode.GetValue, kont.rhs],
+                    [Mode.GetValue, kont.callLevel, kont.rhs],
                     kont.env,
                     kont.tail,
                 );
@@ -1028,7 +1276,7 @@ function reduceRetState({ value, kont }: RetState): State {
             else {
                 // tail call
                 return new PState(
-                    [Mode.GetValue, kont.rhs],
+                    [Mode.GetValue, kont.callLevel, kont.rhs],
                     kont.env,
                     kont.tail,
                 );
@@ -1129,6 +1377,7 @@ function reduceRetState({ value, kont }: RetState): State {
     }
     else if (kont instanceof ComparisonOp1Kont) {
         let comparisonOp2Kont = new ComparisonOp2Kont(
+            kont.callLevel,
             value,
             kont.exprs,
             kont.ops,
@@ -1137,7 +1386,7 @@ function reduceRetState({ value, kont }: RetState): State {
             kont.tail,
         );
         return new PState(
-            [Mode.GetValue, kont.exprs[1]],
+            [Mode.GetValue, kont.callLevel, kont.exprs[1]],
             kont.env,
             comparisonOp2Kont,
         );
@@ -1150,6 +1399,7 @@ function reduceRetState({ value, kont }: RetState): State {
             }
             else {
                 let comparisonOp2Kont = new ComparisonOp2Kont(
+                    kont.callLevel,
                     value,
                     kont.exprs,
                     kont.ops,
@@ -1158,7 +1408,11 @@ function reduceRetState({ value, kont }: RetState): State {
                     kont.tail,
                 );
                 return new PState(
-                    [Mode.GetValue, kont.exprs[kont.index + 2]],
+                    [
+                        Mode.GetValue,
+                        kont.callLevel,
+                        kont.exprs[kont.index + 2],
+                    ],
                     kont.env,
                     comparisonOp2Kont,
                 );
@@ -1174,13 +1428,18 @@ function reduceRetState({ value, kont }: RetState): State {
         }
         else {
             let blockKont = new BlockKont(
+                kont.callLevel,
                 kont.statements,
                 kont.nextIndex + 1,
                 kont.env,
                 kont.tail,
             );
             return new PState(
-                [Mode.GetValue, kont.statements[kont.nextIndex]],
+                [
+                    Mode.GetValue,
+                    kont.callLevel,
+                    kont.statements[kont.nextIndex],
+                ],
                 kont.env,
                 blockKont,
             );
@@ -1190,13 +1449,17 @@ function reduceRetState({ value, kont }: RetState): State {
         if (boolify(value)) {
             let clause = kont.clauses[kont.index];
             let block = clause.block;
-            return new PState([Mode.GetValue, block], kont.env, kont.tail);
+            return new PState(
+                [Mode.GetValue, kont.callLevel, block],
+                kont.env,
+                kont.tail,
+            );
         }
         else {
             if (kont.index + 1 >= kont.clauses.length) {
                 if (kont.elseBlock instanceof Block) {
                     return new PState(
-                        [Mode.GetValue, kont.elseBlock],
+                        [Mode.GetValue, kont.callLevel, kont.elseBlock],
                         kont.env,
                         kont.tail,
                     );
@@ -1208,13 +1471,18 @@ function reduceRetState({ value, kont }: RetState): State {
             else {
                 let condExpr = kont.clauses[kont.index + 1].condExpr;
                 let ifKont = new IfKont(
+                    kont.callLevel,
                     kont.clauses,
                     kont.elseBlock,
                     kont.index + 1,
                     kont.env,
                     kont.tail,
                 );
-                return new PState([Mode.GetValue, condExpr], kont.env, ifKont);
+                return new PState(
+                    [Mode.GetValue, kont.callLevel, condExpr],
+                    kont.env,
+                    ifKont,
+                );
             }
         }
     }
@@ -1225,6 +1493,7 @@ function reduceRetState({ value, kont }: RetState): State {
         }
         else {
             let arrayInitializerKont = new ArrayInitializerKont(
+                kont.callLevel,
                 kont.elemValues,
                 kont.elemExprs,
                 kont.index + 1,
@@ -1232,7 +1501,11 @@ function reduceRetState({ value, kont }: RetState): State {
                 kont.tail,
             );
             return new PState(
-                [Mode.GetValue, kont.elemExprs[kont.index + 1]],
+                [
+                    Mode.GetValue,
+                    kont.callLevel,
+                    kont.elemExprs[kont.index + 1],
+                ],
                 kont.env,
                 arrayInitializerKont,
             );
@@ -1243,9 +1516,13 @@ function reduceRetState({ value, kont }: RetState): State {
         if (!(array instanceof ArrayValue)) {
             throw new Error("Can only index an Array");
         }
-        let indexing2Kont = new Indexing2Kont(array, kont.tail);
+        let indexing2Kont = new Indexing2Kont(
+            kont.callLevel,
+            array,
+            kont.tail,
+        );
         return new PState(
-            [Mode.GetValue, kont.indexExpr],
+            [Mode.GetValue, kont.callLevel, kont.indexExpr],
             kont.env,
             indexing2Kont,
         );
@@ -1280,6 +1557,7 @@ function reduceRetState({ value, kont }: RetState): State {
             let element = arrayValue.elements[0];
             bind(bodyEnv, kont.name, element);
             let for2Kont = new For2Kont(
+                kont.callLevel,
                 arrayValue,
                 kont.name,
                 kont.body,
@@ -1287,7 +1565,11 @@ function reduceRetState({ value, kont }: RetState): State {
                 kont.env,
                 kont.tail,
             );
-            return new PState([Mode.GetValue, kont.body], bodyEnv, for2Kont);
+            return new PState(
+                [Mode.GetValue, kont.callLevel, kont.body],
+                bodyEnv,
+                for2Kont,
+            );
         }
     }
     else if (kont instanceof For2Kont) {
@@ -1300,6 +1582,7 @@ function reduceRetState({ value, kont }: RetState): State {
             let element = arrayValue.elements[kont.nextIndex];
             bind(bodyEnv, kont.name, element);
             let for2Kont = new For2Kont(
+                kont.callLevel,
                 arrayValue,
                 kont.name,
                 kont.body,
@@ -1307,7 +1590,11 @@ function reduceRetState({ value, kont }: RetState): State {
                 kont.env,
                 kont.tail,
             );
-            return new PState([Mode.GetValue, kont.body], bodyEnv, for2Kont);
+            return new PState(
+                [Mode.GetValue, kont.callLevel, kont.body],
+                bodyEnv,
+                for2Kont,
+            );
         }
     }
     else if (kont instanceof IndexingLoc1Kont) {
@@ -1315,9 +1602,13 @@ function reduceRetState({ value, kont }: RetState): State {
         if (!(array instanceof ArrayValue)) {
             throw new Error("Can only index an Array");
         }
-        let indexingLoc2Kont = new IndexingLoc2Kont(array, kont.tail);
+        let indexingLoc2Kont = new IndexingLoc2Kont(
+            kont.callLevel,
+            array,
+            kont.tail,
+        );
         return new PState(
-            [Mode.GetValue, kont.indexExpr],
+            [Mode.GetValue, kont.callLevel, kont.indexExpr],
             kont.env,
             indexingLoc2Kont,
         );
@@ -1335,8 +1626,12 @@ function reduceRetState({ value, kont }: RetState): State {
     else if (kont instanceof Assign1Kont) {
         let location = value;
         let rhs = kont.rhs;
-        let assign2Kont = new Assign2Kont(location, kont.tail);
-        return new PState([Mode.GetValue, rhs], kont.env, assign2Kont);
+        let assign2Kont = new Assign2Kont(kont.callLevel, location, kont.tail);
+        return new PState(
+            [Mode.GetValue, kont.callLevel, rhs],
+            kont.env,
+            assign2Kont,
+        );
     }
     else if (kont instanceof Assign2Kont) {
         assign(kont.location, value);
@@ -1345,20 +1640,29 @@ function reduceRetState({ value, kont }: RetState): State {
     else if (kont instanceof BlockLocKont) {
         if (kont.nextIndex + 1 >= kont.statements.length) {
             return new PState(
-                [Mode.GetLocation, kont.statements[kont.nextIndex]],
+                [
+                    Mode.GetLocation,
+                    kont.callLevel,
+                    kont.statements[kont.nextIndex],
+                ],
                 kont.env,
                 kont.tail,
             );
         }
         else {
             let blockLocKont = new BlockLocKont(
+                kont.callLevel,
                 kont.statements,
                 kont.nextIndex + 1,
                 kont.env,
                 kont.tail,
             );
             return new PState(
-                [Mode.GetValue, kont.statements[kont.nextIndex]],
+                [
+                    Mode.GetValue,
+                    kont.callLevel,
+                    kont.statements[kont.nextIndex],
+                ],
                 kont.env,
                 blockLocKont,
             );
@@ -1368,13 +1672,17 @@ function reduceRetState({ value, kont }: RetState): State {
         if (boolify(value)) {
             let clause = kont.clauses[kont.index];
             let block = clause.children[1] as Block;
-            return new PState([Mode.GetLocation, block], kont.env, kont.tail);
+            return new PState(
+                [Mode.GetLocation, kont.callLevel, block],
+                kont.env,
+                kont.tail,
+            );
         }
         else {
             if (kont.index + 1 >= kont.clauses.length) {
                 if (kont.elseBlock instanceof Block) {
                     return new PState(
-                        [Mode.GetLocation, kont.elseBlock],
+                        [Mode.GetLocation, kont.callLevel, kont.elseBlock],
                         kont.env,
                         kont.tail,
                     );
@@ -1389,26 +1697,32 @@ function reduceRetState({ value, kont }: RetState): State {
             else {
                 let condExpr = kont.clauses[kont.index + 1].condExpr;
                 let ifKont = new IfLocKont(
+                    kont.callLevel,
                     kont.clauses,
                     kont.elseBlock,
                     kont.index + 1,
                     kont.env,
                     kont.tail,
                 );
-                return new PState([Mode.GetValue, condExpr], kont.env, ifKont);
+                return new PState(
+                    [Mode.GetValue, kont.callLevel, condExpr],
+                    kont.env,
+                    ifKont,
+                );
             }
         }
     }
     else if (kont instanceof While1Kont) {
         if (boolify(value)) {
             let while2Kont = new While2Kont(
+                kont.callLevel,
                 kont.condExpr,
                 kont.body,
                 kont.env,
                 kont.tail,
             );
             return new PState(
-                [Mode.GetValue, kont.body],
+                [Mode.GetValue, kont.callLevel, kont.body],
                 kont.env,
                 while2Kont,
             );
@@ -1419,13 +1733,14 @@ function reduceRetState({ value, kont }: RetState): State {
     }
     else if (kont instanceof While2Kont) {
         let while1Kont = new While1Kont(
+            kont.callLevel,
             kont.condExpr,
             kont.body,
             kont.env,
             kont.tail,
         );
         return new PState(
-            [Mode.GetValue, kont.condExpr],
+            [Mode.GetValue, kont.callLevel, kont.condExpr],
             kont.env,
             while1Kont,
         );
@@ -1442,13 +1757,14 @@ function reduceRetState({ value, kont }: RetState): State {
         }
         if (kont.args.length === 0) {
             return new PState(
-                [Mode.GetValue, value.body],
+                [Mode.GetValue, kont.callLevel + 1, value.body],
                 value.outerEnv,
                 kont.tail,
             );
         }
         else {
             let call2Kont = new Call2Kont(
+                kont.callLevel,
                 value,
                 Array.from(
                     { length: kont.args.length },
@@ -1460,7 +1776,7 @@ function reduceRetState({ value, kont }: RetState): State {
                 kont.tail,
             );
             return new PState(
-                [Mode.GetValue, kont.args[0]],
+                [Mode.GetValue, kont.callLevel, kont.args[0]],
                 kont.env,
                 call2Kont,
             );
@@ -1469,7 +1785,7 @@ function reduceRetState({ value, kont }: RetState): State {
     else if (kont instanceof Call2Kont) {
         if (kont.index + 1 >= kont.args.length) {
             return new PState(
-                [Mode.GetValue, kont.funcValue.body],
+                [Mode.GetValue, kont.callLevel + 1, kont.funcValue.body],
                 kont.funcValue.outerEnv,
                 kont.tail,
             );
@@ -1477,6 +1793,7 @@ function reduceRetState({ value, kont }: RetState): State {
         else {
             kont.argValues[kont.index] = value; // dirty mutation; justified
             let call2Kont = new Call2Kont(
+                kont.callLevel,
                 kont.funcValue,
                 kont.argValues,
                 kont.args,
@@ -1485,7 +1802,7 @@ function reduceRetState({ value, kont }: RetState): State {
                 kont.tail,
             );
             return new PState(
-                [Mode.GetValue, kont.args[kont.index + 1]],
+                [Mode.GetValue, kont.callLevel, kont.args[kont.index + 1]],
                 kont.env,
                 call2Kont,
             );

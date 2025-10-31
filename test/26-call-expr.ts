@@ -11,5 +11,7 @@ test("call expression", (t) => {
 
     t.throws(() => run("func f() {}; f(5)"));
     t.throws(() => run("func f() { 1 // 0 }; f()"));
+    t.throws(() => run("func f() { last; }; for x in [1] { f() }"));
+    t.throws(() => run("func f() { next; }; for x in [1] { f() }"));
 });
 
