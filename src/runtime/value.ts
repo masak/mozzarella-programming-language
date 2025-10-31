@@ -1,3 +1,10 @@
+import {
+    Block,
+} from "../compiler/syntax";
+import {
+    Env,
+} from "./env";
+
 export abstract class Value {
 }
 
@@ -38,9 +45,13 @@ export class ArrayValue {
 
 export class FuncValue {
     name: string;
+    outerEnv: Env;
+    body: Block;
 
-    constructor(name: string) {
+    constructor(name: string, outerEnv: Env, body: Block) {
         this.name = name;
+        this.outerEnv = outerEnv;
+        this.body = body;
     }
 }
 

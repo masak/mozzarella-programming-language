@@ -2,10 +2,12 @@ import {
     Lexer,
 } from "./lex";
 import {
+    ArgumentList,
     ArrayInitializerExpr,
     Block,
     BlockStatement,
     BoolLitExpr,
+    CallExpr,
     CompUnit,
     Decl,
     DoExpr,
@@ -54,18 +56,6 @@ class InfixOp extends Op {
         super();
         this.token = token;
     }
-}
-
-class PostfixOp extends Op {
-    token: Token;
-
-    constructor(token: Token) {
-        super();
-        this.token = token;
-    }
-}
-
-class ParenOp extends Op {
 }
 
 const comparisonOps = new Set([
@@ -385,12 +375,6 @@ export class Parser {
             if (topOfStack instanceof PrefixOp) { // always tighter
                 return true;
             }
-            else if (topOfStack instanceof ParenOp) { // not really an op
-                return false;
-            }
-            else if (topOfStack instanceof PostfixOp) {
-                throw new Error("Precondition failed: postfix op on stack");
-            }
             if (!(topOfStack instanceof InfixOp)) {
                 throw new Error("Precondition failed: unknown op type");
             }
@@ -415,16 +399,6 @@ export class Parser {
                 let rhs = termStack.pop()!;
                 let lhs = termStack.pop()!;
                 termStack.push(new InfixOpExpr(lhs, op.token, rhs));
-            }
-            else if (op instanceof PostfixOp) {
-                if (op.token.kind === TokenKind.SquareL) {
-                    let index = termStack.pop()!;
-                    let array = termStack.pop()!;
-                    termStack.push(new IndexingExpr(array, index));
-                }
-                else {
-                    throw new Error("Unknown postfix op");
-                }
             }
             else {
                 throw new Error("Unknown kind of op during reduce");
@@ -459,8 +433,10 @@ export class Parser {
                     expectation = "term";
                 }
                 else if (token = this.accept(TokenKind.ParenL)!) {
-                    opStack.push(new ParenOp());
-                    expectation = "term";
+                    let inner = this.parseExpr();
+                    this.advanceOver(TokenKind.ParenR);
+                    termStack.push(new ParenExpr(inner));
+                    expectation = "operator";
                 }
                 else if (token = this.accept(TokenKind.ParenR)!) {
                     this.parseFail("term");
@@ -503,24 +479,18 @@ export class Parser {
                     opStack.push(new InfixOp(token));
                     expectation = "term";
                 }
-                else if (token = this.accept(TokenKind.ParenR)!) {
-                    if (!opStack.some((op) => op instanceof ParenOp)) {
-                        throw new Error("')' without '('");
-                    }
-                    while (!(opStack[opStack.length - 1] instanceof ParenOp)) {
-                        reduce();
-                    }
-                    opStack.pop();  // the ParenL
-                    let inner = termStack.pop()!;
-                    termStack.push(new ParenExpr(inner));
-                    expectation = "operator";
-                }
                 else if (token = this.accept(TokenKind.SquareL)!) {
                     let indexExpr = this.parseExpr();
                     this.advanceOver(TokenKind.SquareR);
-                    opStack.push(new PostfixOp(token));
-                    termStack.push(indexExpr);
-                    reduce();
+                    let array = termStack.pop()!;
+                    termStack.push(new IndexingExpr(array, indexExpr));
+                    expectation = "operator";
+                }
+                else if (token = this.accept(TokenKind.ParenL)!) {
+                    let argList = this.parseArgumentList();
+                    this.advanceOver(TokenKind.ParenR);
+                    let func = termStack.pop()!;
+                    termStack.push(new CallExpr(func, argList));
                     expectation = "operator";
                 }
                 else if (termStartTokens.has(token)) {
@@ -544,6 +514,18 @@ export class Parser {
         }
 
         return termStack[0];
+    }
+
+    parseArgumentList(): ArgumentList {
+        let args: Array<Expr> = [];
+        while (!this.seeing(TokenKind.ParenR)) {
+            let expr = this.parseExpr();
+            args.push(expr);
+            if (!this.accept(TokenKind.Comma)) {
+                break;
+            }
+        }
+        return new ArgumentList(args);
     }
 }
 

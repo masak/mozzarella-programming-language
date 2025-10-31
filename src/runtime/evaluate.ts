@@ -3,6 +3,7 @@ import {
     Block,
     BlockStatement,
     BoolLitExpr,
+    CallExpr,
     CompUnit,
     Decl,
     DoExpr,
@@ -91,6 +92,8 @@ type Kont =
     | IfLocKont
     | While1Kont
     | While2Kont
+    | Call1Kont
+    | Call2Kont
     | HaltKont
 ;
 
@@ -442,6 +445,43 @@ class While2Kont {
     }
 }
 
+class Call1Kont {
+    args: Array<Expr>;
+    env: Env;
+    tail: Kont;
+
+    constructor(args: Array<Expr>, env: Env, tail: Kont) {
+        this.args = args;
+        this.env = env;
+        this.tail = tail;
+    }
+}
+
+class Call2Kont {
+    funcValue: FuncValue;
+    argValues: Array<Value>;
+    args: Array<Expr>;
+    index: number;
+    env: Env;
+    tail: Kont;
+
+    constructor(
+        funcValue: FuncValue,
+        argValues: Array<Value>,
+        args: Array<Expr>,
+        index: number,
+        env: Env,
+        tail: Kont,
+    ) {
+        this.funcValue = funcValue;
+        this.argValues = argValues;
+        this.args = args;
+        this.index = index;
+        this.env = env;
+        this.tail = tail;
+    }
+}
+
 class HaltKont {
 }
 
@@ -495,7 +535,7 @@ function initializeEnv(env: Env, statements: Array<Statement | Decl>): Env {
         else if (statementOrDecl instanceof FuncDecl) {
             let funcDecl = statementOrDecl;
             let name = funcDecl.nameToken.payload as string;
-            bind(env, name, new FuncValue(name));
+            bind(env, name, new FuncValue(name, env, funcDecl.body));
         }
     }
 
@@ -748,6 +788,12 @@ function reducePState({ code: [mode, syntaxNode], env, kont }: PState): State {
         }
         else if (syntaxNode instanceof FuncDecl) {
             return new RetState(new NoneValue(), kont);
+        }
+        else if (syntaxNode instanceof CallExpr) {
+            let funcExpr = syntaxNode.funcExpr;
+            let args = syntaxNode.argList.args;
+            let call1Kont = new Call1Kont(args, env, kont);
+            return new PState([Mode.GetValue, funcExpr], env, call1Kont);
         }
         else {
             throw new Error(
@@ -1383,6 +1429,67 @@ function reduceRetState({ value, kont }: RetState): State {
             kont.env,
             while1Kont,
         );
+    }
+    else if (kont instanceof Call1Kont) {
+        if (!(value instanceof FuncValue)) {
+            throw new Error("Not callable: not a function");
+        }
+        if (kont.args.length > 0) {
+            throw new Error("Too many arguments");
+        }
+        else if (kont.args.length < 0) {
+            throw new Error("Not enough arguments");
+        }
+        if (kont.args.length === 0) {
+            return new PState(
+                [Mode.GetValue, value.body],
+                value.outerEnv,
+                kont.tail,
+            );
+        }
+        else {
+            let call2Kont = new Call2Kont(
+                value,
+                Array.from(
+                    { length: kont.args.length },
+                    () => new UninitValue()
+                ),
+                kont.args,
+                1,
+                kont.env,
+                kont.tail,
+            );
+            return new PState(
+                [Mode.GetValue, kont.args[0]],
+                kont.env,
+                call2Kont,
+            );
+        }
+    }
+    else if (kont instanceof Call2Kont) {
+        if (kont.index + 1 >= kont.args.length) {
+            return new PState(
+                [Mode.GetValue, kont.funcValue.body],
+                kont.funcValue.outerEnv,
+                kont.tail,
+            );
+        }
+        else {
+            kont.argValues[kont.index] = value; // dirty mutation; justified
+            let call2Kont = new Call2Kont(
+                kont.funcValue,
+                kont.argValues,
+                kont.args,
+                kont.index + 1,
+                kont.env,
+                kont.tail,
+            );
+            return new PState(
+                [Mode.GetValue, kont.args[kont.index + 1]],
+                kont.env,
+                call2Kont,
+            );
+        }
     }
     else {
         throw new Error(`Unrecognized kont ${kont.constructor.name}`);

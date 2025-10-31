@@ -217,6 +217,30 @@ export class IndexingExpr extends Expr {
     }
 }
 
+export class ArgumentList extends SyntaxNode {
+    constructor(args: Array<Expr>) {
+        super(args);
+    }
+
+    get args(): Array<Expr> {
+        return this.children as Array<Expr>;
+    }
+}
+
+export class CallExpr extends Expr {
+    constructor(funcExpr: Expr, argList: ArgumentList) {
+        super([funcExpr, argList]);
+    }
+
+    get funcExpr(): Expr {
+        return this.children[0] as Expr;
+    }
+
+    get argList(): ArgumentList {
+        return this.children[1] as ArgumentList;
+    }
+}
+
 abstract class PrimaryExpr extends Expr {
 }
 

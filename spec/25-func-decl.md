@@ -14,7 +14,12 @@ it.
 contain duplicate declarations, that is, two or more declarations of the same
 name.
 
-**New value type**: `FuncValue` (containing `name`, a string).
+**New value type**: `FuncValue`, containing the following properties:
+
+* `name`, a string
+* `outerEnv`, an environment
+* `parameters`, an array of parameters
+* `body`, a block
 
 When stringifying a `FuncValue`, the following procedure is used:
 
