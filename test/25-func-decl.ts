@@ -16,5 +16,7 @@ test("function declaration", (t) => {
     t.throws(() => run("my f; func f() {}"));
     t.throws(() => run("func f() {}; my f;"));
     t.throws(() => run("func f() {}; func f() {}"));
+    t.throws(() => run("func f() {}; f = 19;"));
+    t.throws(() => run("f = false; func f() {}"));
 });
 

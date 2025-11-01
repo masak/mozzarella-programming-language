@@ -1,5 +1,5 @@
 import {
-    bind,
+    bindMutable,
     Env,
 } from "./env";
 import {
@@ -34,7 +34,7 @@ export class ArrayElementLocation extends Location {
 
 export function assign(location: Location, value: Value): void {
     if (location instanceof VarLocation) {
-        bind(location.varEnv, location.name, value);
+        bindMutable(location.varEnv, location.name, value);
     }
     else if (location instanceof ArrayElementLocation) {
         let array = location.array;

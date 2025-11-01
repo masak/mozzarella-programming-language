@@ -43,7 +43,8 @@ import {
     findAllChainedOps,
 } from "./compare";
 import {
-    bind,
+    bindMutable,
+    bindReadonly,
     emptyEnv,
     Env,
     extend,
@@ -617,12 +618,12 @@ function initializeEnv(env: Env, statements: Array<Statement | Decl>): Env {
         if (statementOrDecl instanceof VarDecl) {
             let varDecl = statementOrDecl;
             let name = varDecl.nameToken.payload as string;
-            bind(env, name, new UninitValue());
+            bindMutable(env, name, new UninitValue());
         }
         else if (statementOrDecl instanceof FuncDecl) {
             let funcDecl = statementOrDecl;
             let name = funcDecl.nameToken.payload as string;
-            bind(env, name, new FuncValue(name, env, funcDecl.body));
+            bindReadonly(env, name, new FuncValue(name, env, funcDecl.body));
         }
     }
 
@@ -865,7 +866,7 @@ function reducePState(
         else if (syntaxNode instanceof ForStatement) {
             env = extend(env);
             let name = syntaxNode.nameToken.payload as string;
-            bind(env, name, new UninitValue());
+            bindReadonly(env, name, new UninitValue());
             let arrayExpr = syntaxNode.arrayExpr;
             let body = syntaxNode.body;
             let for1Kont = new For1Kont(callLevel, name, body, env, kont);
@@ -938,7 +939,7 @@ function reducePState(
                     else {
                         let bodyEnv = extend(kont.env);
                         let element = arrayValue.elements[kont.nextIndex];
-                        bind(bodyEnv, kont.name, element);
+                        bindReadonly(bodyEnv, kont.name, element);
                         let for2Kont = new For2Kont(
                             kont.callLevel,
                             arrayValue,
@@ -1001,7 +1002,10 @@ function reducePState(
         }
         else if (syntaxNode instanceof VarRefExpr) {
             let name = syntaxNode.nameToken.payload as string;
-            let varEnv = findEnvOfName(env, name);
+            let [mutable, varEnv] = findEnvOfName(env, name);
+            if (!mutable) {
+                throw new Error(`Binding '${name}' is readonly`);
+            }
             return new RetState(new VarLocation(varEnv, name), kont);
         }
         else if (syntaxNode instanceof ParenExpr) {
@@ -1541,7 +1545,7 @@ function reduceRetState({ value, kont }: RetState): State {
         );
     }
     else if (kont instanceof VarKont) {
-        bind(kont.env, kont.name, value);
+        bindMutable(kont.env, kont.name, value);
         return new RetState(new NoneValue(), kont.tail);
     }
     else if (kont instanceof For1Kont) {
@@ -1555,7 +1559,7 @@ function reduceRetState({ value, kont }: RetState): State {
         else {
             let bodyEnv = extend(kont.env);
             let element = arrayValue.elements[0];
-            bind(bodyEnv, kont.name, element);
+            bindReadonly(bodyEnv, kont.name, element);
             let for2Kont = new For2Kont(
                 kont.callLevel,
                 arrayValue,
@@ -1580,7 +1584,7 @@ function reduceRetState({ value, kont }: RetState): State {
         else {
             let bodyEnv = extend(kont.env);
             let element = arrayValue.elements[kont.nextIndex];
-            bind(bodyEnv, kont.name, element);
+            bindReadonly(bodyEnv, kont.name, element);
             let for2Kont = new For2Kont(
                 kont.callLevel,
                 arrayValue,

@@ -3,11 +3,21 @@ import {
     Value,
 } from "./value";
 
+class Binding {
+    value: Value;
+    mutable: boolean;
+
+    constructor(value: Value, mutable: boolean) {
+        this.value = value;
+        this.mutable = mutable;
+    }
+}
+
 export class Env {
-    bindings: Map<string, Value>;
+    bindings: Map<string, Binding>;
     outer: Env | null;
 
-    constructor(bindings: Map<string, Value>, outer: Env | null) {
+    constructor(bindings: Map<string, Binding>, outer: Env | null) {
         this.bindings = bindings;
         this.outer = outer;
     }
@@ -23,8 +33,9 @@ export function extend(env: Env) {
 
 export function lookup(env: Env | null, name: string): Value {
     while (env !== null) {
-        let value: Value;
-        if (value = env.bindings.get(name)!) {
+        let binding: Binding;
+        if (binding = env.bindings.get(name)!) {
+            let value = binding.value;
             if (value instanceof UninitValue) {
                 throw new Error(`Uninitialized variable '${name}'`);
             }
@@ -35,17 +46,23 @@ export function lookup(env: Env | null, name: string): Value {
     throw new Error(`Undeclared variable '${name}'`);
 }
 
-export function findEnvOfName(env: Env | null, name: string): Env {
+export function findEnvOfName(env: Env | null, name: string): [boolean, Env] {
     while (env != null) {
         if (env.bindings.has(name)) {
-            return env;
+            let binding = env.bindings.get(name)!;
+            let mutable = binding.mutable;
+            return [mutable, env];
         }
         env = env.outer;
     }
     throw new Error(`Undeclared variable '${name}'`);
 }
 
-export function bind(env: Env, name: string, value: Value): void {
-    env.bindings.set(name, value);
+export function bindMutable(env: Env, name: string, value: Value): void {
+    env.bindings.set(name, new Binding(value, /* mutable */ true));
+}
+
+export function bindReadonly(env: Env, name: string, value: Value): void {
+    env.bindings.set(name, new Binding(value, /* mutable */ false));
 }
 

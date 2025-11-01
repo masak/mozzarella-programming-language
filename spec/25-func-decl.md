@@ -40,7 +40,14 @@ procedure is used:
 
 Function declarations are executed at _block entry_.
 
+Besides mutable bindings (such as those created by variable declarations),
+there are also readonly bindings. Function declarations (and by default, all
+other block-scoped declarations) create readonly bindings. It is a runtime
+error to try to assign to a readonly binding.
+
 * `func <name>(<params>) { <block> }`
-    * In the current environment, bind `<name>` to a new `FuncValue` whose
-      `name` is `<name>`.
+    * In the current environment, create a readonly binding from `<name>` to a
+      new `FuncValue` whose `name` is `<name>`, whose `outerEnv` is the current
+      environment, whose `parameters` is the array of parameters `<params>`,
+      and whose `body` is `<block>`.
 

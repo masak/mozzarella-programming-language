@@ -22,5 +22,7 @@ test("assignment expression", (t) => {
     t.throws(() => run("2 + 2 = 4"));
     t.throws(() => run("true = false"));
     t.throws(() => run("my L = [0]; L[3] = 5"));
+    t.throws(() => run('for x in [1, 2, 3] { x = "tomato"; }'));
+    t.throws(() => run("for x in x = [1, 2, 3] {}"));
 });
 
