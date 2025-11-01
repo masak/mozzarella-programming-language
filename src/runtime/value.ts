@@ -46,11 +46,18 @@ export class ArrayValue {
 export class FuncValue {
     name: string;
     outerEnv: Env;
+    parameters: Array<string>;
     body: Block;
 
-    constructor(name: string, outerEnv: Env, body: Block) {
+    constructor(
+        name: string,
+        outerEnv: Env,
+        parameters: Array<string>,
+        body: Block,
+    ) {
         this.name = name;
         this.outerEnv = outerEnv;
+        this.parameters = parameters;
         this.body = body;
     }
 }

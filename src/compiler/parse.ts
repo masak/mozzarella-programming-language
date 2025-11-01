@@ -24,6 +24,8 @@ import {
     LastStatement,
     NextStatement,
     NoneLitExpr,
+    Parameter,
+    ParameterList,
     ParenExpr,
     PrefixOpExpr,
     Statement,
@@ -353,9 +355,10 @@ export class Parser {
             this.expect(TokenKind.Identifier);
             let nameToken = this.accept(TokenKind.Identifier)!;
             this.advanceOver(TokenKind.ParenL);
+            let paramList = this.parseParameterList();
             this.advanceOver(TokenKind.ParenR);
             let body = this.parseBlock();
-            return [new FuncDecl(nameToken, body), true];
+            return [new FuncDecl(nameToken, paramList, body), true];
         }
         else {
             this.parseFail("declaration");
@@ -514,6 +517,20 @@ export class Parser {
         }
 
         return termStack[0];
+    }
+
+    parseParameterList(): ParameterList {
+        let params: Array<Parameter> = [];
+        while (!this.seeing(TokenKind.ParenR)) {
+            this.expect(TokenKind.Identifier);
+            let nameToken = this.accept(TokenKind.Identifier)!;
+            let param = new Parameter(nameToken);
+            params.push(param);
+            if (!this.accept(TokenKind.Comma)) {
+                break;
+            }
+        }
+        return new ParameterList(params);
     }
 
     parseArgumentList(): ArgumentList {

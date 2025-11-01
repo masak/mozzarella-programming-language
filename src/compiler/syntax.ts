@@ -154,13 +154,37 @@ export class VarDecl extends Decl {
     }
 }
 
-export class FuncDecl extends Decl {
-    constructor(nameToken: Token, body: Block) {
-        super([nameToken, null, body]);
+export class Parameter extends SyntaxNode {
+    constructor(nameToken: Token) {
+        super([nameToken]);
     }
 
     get nameToken(): Token {
         return this.children[0] as Token;
+    }
+}
+
+export class ParameterList extends SyntaxNode {
+    constructor(parameters: Array<Parameter>) {
+        super(parameters);
+    }
+
+    get parameters(): Array<Parameter> {
+        return this.children as Array<Parameter>;
+    }
+}
+
+export class FuncDecl extends Decl {
+    constructor(nameToken: Token, parameterList: ParameterList, body: Block) {
+        super([nameToken, parameterList, body]);
+    }
+
+    get nameToken(): Token {
+        return this.children[0] as Token;
+    }
+
+    get parameterList(): ParameterList {
+        return this.children[1] as ParameterList;
     }
 
     get body(): Block {

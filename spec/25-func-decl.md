@@ -4,8 +4,8 @@
 
 **Context-free syntax**:
 
-* `FuncDecl ::= "func" Identifier "(" ParamList ")" Block ;`
-* `ParamList ::= ;`
+* `FuncDecl ::= "func" Identifier "(" ParameterList ")" Block ;`
+* `ParameterList ::= ;`
 
 For now, the `ParamList` nonterminal is empty, but later blades will redefine
 it.

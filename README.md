@@ -47,7 +47,7 @@ to be able to correctly guess the intended implementation.
 - [x] [`next` statements](https://github.com/masak/mozzarella-programming-language/blob/main/spec/24-next-stmt.md)
 - [x] [functions](https://github.com/masak/mozzarella-programming-language/blob/main/spec/25-func-decl.md)
 - [x] [calls](https://github.com/masak/mozzarella-programming-language/blob/main/spec/26-call-expr.md)
-- [ ] parameters
+- [x] [parameters](https://github.com/masak/mozzarella-programming-language/blob/main/spec/27-params.md)
 - [ ] `return` statements
 - [ ] macros
 - [ ] code quotation

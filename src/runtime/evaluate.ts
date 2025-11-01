@@ -95,6 +95,11 @@ type Kont =
     | While2Kont
     | Call1Kont
     | Call2Kont
+    | BlockIgnoreKont
+    | InfixOpIgnore1Kont
+    | ComparisonOpIgnore1Kont
+    | AssignIgnore1Kont
+    | AssignIgnore2Kont
     | HaltKont
 ;
 
@@ -565,6 +570,98 @@ class Call2Kont {
     }
 }
 
+class BlockIgnoreKont {
+    callLevel: number;
+    statements: Array<Statement | Decl>;
+    nextIndex: number;
+    env: Env;
+    tail: Kont;
+
+    constructor(
+        callLevel: number,
+        statements: Array<Statement | Decl>,
+        nextIndex: number,
+        env: Env,
+        tail: Kont,
+    ) {
+        this.callLevel = callLevel;
+        this.statements = statements;
+        this.nextIndex = nextIndex;
+        this.env = env;
+        this.tail = tail;
+    }
+}
+
+class InfixOpIgnore1Kont {
+    callLevel: number;
+    token: Token;
+    rhs: Expr;
+    env: Env;
+    tail: Kont;
+
+    constructor(
+        callLevel: number,
+        token: Token,
+        rhs: Expr,
+        env: Env,
+        tail: Kont,
+    ) {
+        this.callLevel = callLevel;
+        this.token = token;
+        this.rhs = rhs;
+        this.env = env;
+        this.tail = tail;
+    }
+}
+
+class ComparisonOpIgnore1Kont {
+    callLevel: number;
+    exprs: Array<Expr>;
+    ops: Array<Token>;
+    env: Env;
+    tail: Kont;
+
+    constructor(
+        callLevel: number,
+        exprs: Array<Expr>,
+        ops: Array<Token>,
+        env: Env,
+        tail: Kont,
+    ) {
+        this.callLevel = callLevel;
+        this.exprs = exprs;
+        this.ops = ops;
+        this.env = env;
+        this.tail = tail;
+    }
+}
+
+class AssignIgnore1Kont {
+    callLevel: number;
+    rhs: Expr;
+    env: Env;
+    tail: Kont;
+
+    constructor(callLevel: number, rhs: Expr, env: Env, tail: Kont) {
+        this.callLevel = callLevel;
+        this.rhs = rhs;
+        this.env = env;
+        this.tail = tail;
+    }
+}
+
+class AssignIgnore2Kont {
+    callLevel: number;
+    location: Location;
+    tail: Kont;
+
+    constructor(callLevel: number, location: Location, tail: Kont) {
+        this.callLevel = callLevel;
+        this.location = location;
+        this.tail = tail;
+    }
+}
+
 class HaltKont {
     callLevel: number;
 
@@ -582,6 +679,7 @@ class Mode {
 
     static GetValue = new Mode("GetValue");
     static GetLocation = new Mode("GetLocation");
+    static Ignore = new Mode("Ignore");
 }
 
 type State = PState | RetState;
@@ -623,11 +721,31 @@ function initializeEnv(env: Env, statements: Array<Statement | Decl>): Env {
         else if (statementOrDecl instanceof FuncDecl) {
             let funcDecl = statementOrDecl;
             let name = funcDecl.nameToken.payload as string;
-            bindReadonly(env, name, new FuncValue(name, env, funcDecl.body));
+            let parameterList = funcDecl.parameterList.parameters.map(
+                (parameter) => parameter.nameToken.payload as string
+            );
+            let funcValue = new FuncValue(
+                name,
+                env,
+                parameterList,
+                funcDecl.body,
+            );
+            bindReadonly(env, name, funcValue);
         }
     }
 
     return env;
+}
+
+function zip<T, U>(ts: Array<T>, us: Array<U>): Array<[T, U]> {
+    if (ts.length !== us.length) {
+        throw new Error(`Precondition failed: unequal lengths ${ts.length} and ${us.length}`);
+    }
+    let result: Array<[T, U]> = [];
+    for (let i = 0; i < ts.length; i++) {
+        result.push([ts[i], us[i]]);
+    }
+    return result;
 }
 
 function reducePState(
@@ -1085,6 +1203,107 @@ function reducePState(
             throw new Error(
                 "Unsupported for-location syntax node " +
                     syntaxNode.constructor.name
+            );
+        }
+    }
+    else if (mode === Mode.Ignore) {
+        if (syntaxNode instanceof Block) {
+            let statements = syntaxNode.statements;
+            env = initializeEnv(extend(env), statements);
+            if (statements.length === 0) {
+                return new RetState(new NoneValue(), kont);
+            }
+            else {
+                let blockIgnoreKont = new BlockIgnoreKont(
+                    callLevel,
+                    statements,
+                    1,
+                    env,
+                    kont,
+                );
+                return new PState(
+                    [Mode.Ignore, callLevel, statements[0]],
+                    env,
+                    blockIgnoreKont,
+                );
+            }
+        }
+        else if (syntaxNode instanceof ExprStatement) {
+            return new PState(
+                [Mode.Ignore, callLevel, syntaxNode.expr],
+                env,
+                kont,
+            );
+        }
+        else if (syntaxNode instanceof VarRefExpr) {
+            let name = syntaxNode.nameToken.payload as string;
+            /* ignore */ lookup(env, name);
+            return new RetState(new NoneValue(), kont);
+        }
+        else if (syntaxNode instanceof InfixOpExpr) {
+            let lhs = syntaxNode.lhs;
+            let opToken = syntaxNode.opToken;
+            let rhs = syntaxNode.rhs;
+            if (opToken.kind === TokenKind.Plus
+                || opToken.kind === TokenKind.Minus
+                || opToken.kind === TokenKind.Mult
+                || opToken.kind === TokenKind.FloorDiv
+                || opToken.kind === TokenKind.Mod
+                || opToken.kind === TokenKind.Tilde
+                || opToken.kind === TokenKind.AmpAmp
+                || opToken.kind === TokenKind.PipePipe) {
+                let infixOpIgnore1Kont = new InfixOpIgnore1Kont(
+                    callLevel,
+                    opToken,
+                    rhs,
+                    env,
+                    kont,
+                );
+                return new PState(
+                    [Mode.GetValue, callLevel, lhs],
+                    env,
+                    infixOpIgnore1Kont,
+                );
+            }
+            else if (comparisonOps.has(opToken.kind)) {
+                let [exprs, ops] = findAllChainedOps(syntaxNode);
+                checkForUnchainableOps(ops);
+                let comparisonOpIgnore1Kont = new ComparisonOpIgnore1Kont(
+                    callLevel,
+                    exprs,
+                    ops,
+                    env,
+                    kont,
+                );
+                return new PState(
+                    [Mode.GetValue, callLevel, exprs[0]],
+                    env,
+                    comparisonOpIgnore1Kont,
+                );
+            }
+            else if (opToken.kind === TokenKind.Assign) {
+                let assignIgnore1Kont = new AssignIgnore1Kont(
+                    callLevel,
+                    rhs,
+                    env,
+                    kont,
+                );
+                return new PState(
+                    [Mode.GetLocation, callLevel, lhs],
+                    env,
+                    assignIgnore1Kont,
+                );
+            }
+            else {
+                throw new Error(`Unknown infix op type ${opToken.kind.kind}`);
+            }
+        }
+        else if (syntaxNode instanceof IntLitExpr) {
+            return new RetState(new NoneValue(), kont);
+        }
+        else {
+            throw new Error(
+                "Unsupported ignore syntax node " + syntaxNode.constructor.name
             );
         }
     }
@@ -1753,15 +1972,15 @@ function reduceRetState({ value, kont }: RetState): State {
         if (!(value instanceof FuncValue)) {
             throw new Error("Not callable: not a function");
         }
-        if (kont.args.length > 0) {
+        if (kont.args.length > value.parameters.length) {
             throw new Error("Too many arguments");
         }
-        else if (kont.args.length < 0) {
+        else if (kont.args.length < value.parameters.length) {
             throw new Error("Not enough arguments");
         }
         if (kont.args.length === 0) {
             return new PState(
-                [Mode.GetValue, kont.callLevel + 1, value.body],
+                [Mode.Ignore, kont.callLevel + 1, value.body],
                 value.outerEnv,
                 kont.tail,
             );
@@ -1775,7 +1994,7 @@ function reduceRetState({ value, kont }: RetState): State {
                     () => new UninitValue()
                 ),
                 kont.args,
-                1,
+                0,
                 kont.env,
                 kont.tail,
             );
@@ -1787,15 +2006,22 @@ function reduceRetState({ value, kont }: RetState): State {
         }
     }
     else if (kont instanceof Call2Kont) {
+        kont.argValues[kont.index] = value; // dirty mutation; justified
         if (kont.index + 1 >= kont.args.length) {
+            let bodyEnv = extend(kont.funcValue.outerEnv);
+            for (let [param, arg] of zip(
+                kont.funcValue.parameters,
+                kont.argValues,
+            )) {
+                bindReadonly(bodyEnv, param, arg);
+            }
             return new PState(
-                [Mode.GetValue, kont.callLevel + 1, kont.funcValue.body],
-                kont.funcValue.outerEnv,
+                [Mode.Ignore, kont.callLevel + 1, kont.funcValue.body],
+                bodyEnv,
                 kont.tail,
             );
         }
         else {
-            kont.argValues[kont.index] = value; // dirty mutation; justified
             let call2Kont = new Call2Kont(
                 kont.callLevel,
                 kont.funcValue,
@@ -1811,6 +2037,47 @@ function reduceRetState({ value, kont }: RetState): State {
                 call2Kont,
             );
         }
+    }
+    else if (kont instanceof BlockIgnoreKont) {
+        if (kont.nextIndex >= kont.statements.length) {
+            return new RetState(new NoneValue(), kont.tail);
+        }
+        else {
+            let blockIgnoreKont = new BlockIgnoreKont(
+                kont.callLevel,
+                kont.statements,
+                kont.nextIndex + 1,
+                kont.env,
+                kont.tail,
+            );
+            return new PState(
+                [
+                    Mode.GetValue,
+                    kont.callLevel,
+                    kont.statements[kont.nextIndex],
+                ],
+                kont.env,
+                blockIgnoreKont,
+            );
+        }
+    }
+    else if (kont instanceof AssignIgnore1Kont) {
+        let location = value;
+        let rhs = kont.rhs;
+        let assignIgnore2Kont = new AssignIgnore2Kont(
+            kont.callLevel,
+            location,
+            kont.tail,
+        );
+        return new PState(
+            [Mode.GetValue, kont.callLevel, rhs],
+            kont.env,
+            assignIgnore2Kont,
+        );
+    }
+    else if (kont instanceof AssignIgnore2Kont) {
+        assign(kont.location, value);
+        return new RetState(new NoneValue(), kont.tail);
     }
     else {
         throw new Error(`Unrecognized kont ${kont.constructor.name}`);
