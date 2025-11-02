@@ -137,6 +137,16 @@ export class NextStatement extends Statement {
     }
 }
 
+export class ReturnStatement extends Statement {
+    constructor(expr: Expr | null) {
+        super([expr]);
+    }
+
+    get expr(): Expr | null {
+        return this.children[0] as Expr | null;
+    }
+}
+
 export abstract class Decl extends SyntaxNode {
 }
 

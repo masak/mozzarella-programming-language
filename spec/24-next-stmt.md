@@ -2,7 +2,7 @@
 
 **New token**: `NextKeyword` (`next`).
 
-**Context-free syntax**: `NextStatement ::= "next" ;`
+**Context-free syntax**: `NextStatement ::= "next" ";"? ;`
 
 **Execution**:
 

@@ -28,6 +28,7 @@ import {
     ParameterList,
     ParenExpr,
     PrefixOpExpr,
+    ReturnStatement,
     Statement,
     StrLitExpr,
     VarDecl,
@@ -155,6 +156,7 @@ const statementStartTokens = new Set([
     TokenKind.WhileKeyword,
     TokenKind.LastKeyword,
     TokenKind.NextKeyword,
+    TokenKind.ReturnKeyword,
 ]);
 
 const declStartTokens = new Set([
@@ -308,6 +310,14 @@ export class Parser {
         else if (this.accept(TokenKind.NextKeyword)) {
             let sawSemi = Boolean(this.accept(TokenKind.Semi));
             return [new NextStatement(), sawSemi];
+        }
+        else if (this.accept(TokenKind.ReturnKeyword)) {
+            let expr: Expr | null = null;
+            if (this.seeingStartOfExpr()) {
+                expr = this.parseExpr();
+            }
+            let sawSemi = Boolean(this.accept(TokenKind.Semi));
+            return [new ReturnStatement(expr), sawSemi];
         }
         else {
             this.parseFail("statement");

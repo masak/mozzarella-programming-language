@@ -245,6 +245,9 @@ export class Lexer {
             else if (name === "func") {
                 return [pos, new Token(TokenKind.FuncKeyword)];
             }
+            else if (name === "return") {
+                return [pos, new Token(TokenKind.ReturnKeyword)];
+            }
             else {
                 return [pos, new Token(TokenKind.Identifier, name)];
             }

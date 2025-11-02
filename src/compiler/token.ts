@@ -50,6 +50,7 @@ export class TokenKind {
     static LastKeyword = new TokenKind("LastKeyword");
     static NextKeyword = new TokenKind("NextKeyword");
     static FuncKeyword = new TokenKind("FuncKeyword");
+    static ReturnKeyword = new TokenKind("ReturnKeyword");
     static Eof = new TokenKind("Eof");
 }
 

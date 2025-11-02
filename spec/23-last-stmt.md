@@ -2,7 +2,7 @@
 
 **New token**: `LastKeyword` (`last`).
 
-**Context-free syntax**: `LastStatement ::= "last" ;`
+**Context-free syntax**: `LastStatement ::= "last" ";"? ;`
 
 **Execution**:
 

@@ -22,6 +22,7 @@ import {
     NoneLitExpr,
     ParenExpr,
     PrefixOpExpr,
+    ReturnStatement,
     Statement,
     StrLitExpr,
     SyntaxNode,
@@ -100,6 +101,8 @@ type Kont =
     | ComparisonOpIgnore1Kont
     | AssignIgnore1Kont
     | AssignIgnore2Kont
+    | ReturnIgnoreKont
+    | ReturnKont
     | HaltKont
 ;
 
@@ -662,6 +665,26 @@ class AssignIgnore2Kont {
     }
 }
 
+class ReturnIgnoreKont {
+    callLevel: number;
+    tail: Kont;
+
+    constructor(callLevel: number, tail: Kont) {
+        this.callLevel = callLevel;
+        this.tail = tail;
+    }
+}
+
+class ReturnKont {
+    callLevel: number;
+    tail: Kont;
+
+    constructor(callLevel: number, tail: Kont) {
+        this.callLevel = callLevel;
+        this.tail = tail;
+    }
+}
+
 class HaltKont {
     callLevel: number;
 
@@ -1096,6 +1119,35 @@ function reducePState(
                 call1Kont,
             );
         }
+        else if (syntaxNode instanceof ReturnStatement) {
+            if (syntaxNode.expr === null) {
+                while (true) {
+                    if (kont.callLevel < callLevel) {
+                        break;
+                    }
+                    else if (kont instanceof HaltKont) {
+                        break;
+                    }
+                    else {
+                        kont = kont.tail;
+                    }
+                }
+                if (kont instanceof HaltKont) {
+                    throw new Error("'return' outside of a routine");
+                }
+                else {
+                    return new RetState(new NoneValue(), kont);
+                }
+            }
+            else {
+                let returnKont = new ReturnKont(callLevel, kont);
+                return new PState(
+                    [Mode.GetValue, callLevel, syntaxNode.expr],
+                    env,
+                    returnKont,
+                );
+            }
+        }
         else {
             throw new Error(
                 `Unrecognized syntax node ${syntaxNode.constructor.name}`
@@ -1300,6 +1352,35 @@ function reducePState(
         }
         else if (syntaxNode instanceof IntLitExpr) {
             return new RetState(new NoneValue(), kont);
+        }
+        else if (syntaxNode instanceof ReturnStatement) {
+            if (syntaxNode.expr === null) {
+                while (true) {
+                    if (kont.callLevel < callLevel) {
+                        break;
+                    }
+                    else if (kont instanceof HaltKont) {
+                        break;
+                    }
+                    else {
+                        kont = kont.tail;
+                    }
+                }
+                if (kont instanceof HaltKont) {
+                    throw new Error("'return' outside of a routine");
+                }
+                else {
+                    return new RetState(new NoneValue(), kont);
+                }
+            }
+            else {
+                let returnIgnoreKont = new ReturnIgnoreKont(callLevel, kont);
+                return new PState(
+                    [Mode.GetValue, callLevel, syntaxNode.expr],
+                    env,
+                    returnIgnoreKont,
+                );
+            }
         }
         else {
             throw new Error(
@@ -2074,6 +2155,46 @@ function reduceRetState({ value, kont }: RetState): State {
             kont.env,
             assignIgnore2Kont,
         );
+    }
+    else if (kont instanceof ReturnIgnoreKont) {
+        let callLevel = kont.callLevel;
+        while (true) {
+            if (kont.callLevel < callLevel) {
+                break;
+            }
+            else if (kont instanceof HaltKont) {
+                break;
+            }
+            else {
+                kont = kont.tail;
+            }
+        }
+        if (kont instanceof HaltKont) {
+            throw new Error("'return' outside of a routine");
+        }
+        else {
+            return new RetState(value, kont);
+        }
+    }
+    else if (kont instanceof ReturnKont) {
+        let callLevel = kont.callLevel;
+        while (true) {
+            if (kont.callLevel < callLevel) {
+                break;
+            }
+            else if (kont instanceof HaltKont) {
+                break;
+            }
+            else {
+                kont = kont.tail;
+            }
+        }
+        if (kont instanceof HaltKont) {
+            throw new Error("'return' outside of a routine");
+        }
+        else {
+            return new RetState(value, kont);
+        }
     }
     else if (kont instanceof AssignIgnore2Kont) {
         assign(kont.location, value);
