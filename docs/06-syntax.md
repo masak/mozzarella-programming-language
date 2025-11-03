@@ -21,10 +21,10 @@ of its children.
 ```
 CompUnit                    -- (Statement | Decl)*
 Block                       -- (Statement | Decl)*
-ParameterList               -- Parameter*
 Parameter                   -- identifier
-ArgumentList                -- Argument*
+ParameterList               -- Parameter*
 Argument                    -- Expr
+ArgumentList                -- Argument*
 IfClause                    -- Expr, Block
 IfClauseList                -- IfClause*
 Statement
