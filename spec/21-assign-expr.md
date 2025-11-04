@@ -35,7 +35,7 @@ To "assign a value `v` to an `ArrayElemLocation l`" means to do the following:
 * Assert that `0 <= l.index` and `l.index < l.array.elements.length`.
 * Set the element in `l.array` represented by `l.index` to `v`.
 
-To "evaluate an expression `e` (in an environment) for a location`" means to do
+To "evaluate an expression `e` (in an environment) for a location" means to do
 the following:
 
 * If `e` is a `VarRefExpr` for a name `<name>`:
@@ -56,7 +56,7 @@ the following:
     * Return `l`.
 * Otherwise, issue a runtime error.
 
-To "execute a statement `s` (in an environment) for a location`" means to do
+To "execute a statement `s` (in an environment) for a location" means to do
 the following:
 
 * If `s` is an `ExprStatement` with an expression `e`:
@@ -79,7 +79,7 @@ the following:
         * Run the block `blN` for a location `l` and return `l`.
 * Otherwise, issue a runtime error.
 
-To run a block for a location, means to do the following:
+To "run a block for a location", means to do the following:
 
 * If the statement list is empty, issue a runtime error.
 * Otherwise:
