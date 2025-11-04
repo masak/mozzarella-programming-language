@@ -683,6 +683,9 @@ class JumpMap {
     returnTarget: Kont | null = null;
 }
 
+export class OutOfFuel extends Error {
+}
+
 function cloneJumpMap(original: JumpMap): JumpMap {
     let copy = new JumpMap();
     copy.lastTarget = original.lastTarget;
@@ -2131,6 +2134,25 @@ export function runCompUnit(compUnit: CompUnit): Value {
         }
         else {
             state = reduceRetState(state);
+        }
+    }
+    return unload(state);
+}
+
+export function runCompUnitWithFuel(compUnit: CompUnit, fuel: number): Value {
+    let state = load(compUnit);
+
+    while (state instanceof PState || !(state.kont instanceof HaltKont)) {
+        if (state instanceof PState) {
+            state = reducePState(state);
+        }
+        else {
+            state = reduceRetState(state);
+        }
+
+        --fuel;
+        if (fuel <= 0) {
+            throw new OutOfFuel();
         }
     }
     return unload(state);

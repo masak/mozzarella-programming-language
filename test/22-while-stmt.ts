@@ -1,6 +1,8 @@
 import test from "ava";
 import {
+    OutOfFuel,
     run,
+    runWithFuel,
 } from "../src/go";
 
 test("'while' statement", (t) => {
@@ -20,5 +22,10 @@ test("'while' statement", (t) => {
         `;
         t.is(run(program), "[1, 2, 4, 8]");
     }
+
+    t.throws(
+        () => runWithFuel("while true {}", 100),
+        { instanceOf: OutOfFuel },
+    );
 });
 
