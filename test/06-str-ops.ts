@@ -1,7 +1,7 @@
 import test from "ava";
 import {
     run,
-} from "../src/run";
+} from "../src/go";
 
 test("string operators", (t) => {
     t.is(run("~7"), '"7"');

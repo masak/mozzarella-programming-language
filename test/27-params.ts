@@ -1,7 +1,7 @@
 import test from "ava";
 import {
     run,
-} from "../src/run";
+} from "../src/go";
 
 test("parameters", (t) => {
     t.is(run("func f(x) { x; }; f(1)"), "none");

@@ -1,7 +1,7 @@
 import test from "ava";
 import {
     run,
-} from "../src/run";
+} from "../src/go";
 
 test("array indexing", (t) => {
     t.is(run("[10, 20, 30][1]"), "20");

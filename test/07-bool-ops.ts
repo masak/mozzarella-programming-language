@@ -1,7 +1,7 @@
 import test from "ava";
 import {
     run,
-} from "../src/run";
+} from "../src/go";
 
 test("boolean operators", (t) => {
     t.is(run("?0"), "false");

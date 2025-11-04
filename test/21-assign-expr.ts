@@ -1,7 +1,7 @@
 import test from "ava";
 import {
     run,
-} from "../src/run";
+} from "../src/go";
 
 test("assignment expression", (t) => {
     t.is(run("my a = [1, 2]; a[1] = 99; a"), "[1, 99]");

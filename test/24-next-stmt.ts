@@ -1,7 +1,7 @@
 import test from "ava";
 import {
     run,
-} from "../src/run";
+} from "../src/go";
 
 test("'next' statement", (t) => {
     t.is(run("my n = 10; while n > 5 { n = n - 1; next; }; n"), "5");

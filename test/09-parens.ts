@@ -1,7 +1,7 @@
 import test from "ava";
 import {
     run,
-} from "../src/run";
+} from "../src/go";
 
 test("parentheses", (t) => {
     t.is(run("2 + 3 * 4"), "14");

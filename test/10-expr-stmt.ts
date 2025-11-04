@@ -1,7 +1,7 @@
 import test from "ava";
 import {
     run,
-} from "../src/run";
+} from "../src/go";
 
 test("expression statements", (t) => {
     t.is(run("12345;"), "12345");

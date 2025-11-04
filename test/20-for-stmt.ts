@@ -1,7 +1,7 @@
 import test from "ava";
 import {
     run,
-} from "../src/run";
+} from "../src/go";
 
 test("'for' statement", (t) => {
     t.is(run("for x in [1, 2, 3] { x }"), "none");

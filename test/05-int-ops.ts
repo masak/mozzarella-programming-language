@@ -1,7 +1,7 @@
 import test from "ava";
 import {
     run,
-} from "../src/run";
+} from "../src/go";
 
 test("integer operators", (t) => {
     t.is(run("10203 + 4050"), "14253");

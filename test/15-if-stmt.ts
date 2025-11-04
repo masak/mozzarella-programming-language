@@ -1,7 +1,7 @@
 import test from "ava";
 import {
     run,
-} from "../src/run";
+} from "../src/go";
 
 test("'if' statement", (t) => {
     t.is(run("if true { 1 }"), "1");

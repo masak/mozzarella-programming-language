@@ -1,7 +1,7 @@
 import test from "ava";
 import {
     run,
-} from "../src/run";
+} from "../src/go";
 
 test("variable reference", (t) => {
     t.is(run("my x = 5; x"), "5");
