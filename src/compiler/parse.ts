@@ -108,7 +108,8 @@ function strength(infixToken: Token): number {
 }
 
 // Returns whether this precedence level/strength has operators associating to
-// the left or to the right. Currently we only have left-associating operators.
+// the left or to the right. The assignment operator is the only right-
+// associative operator currently; all the others are left-associative.
 function associativity(strength: number): "left" | "right" {
     return strength === assignmentStrength ? "right" : "left";
 }
