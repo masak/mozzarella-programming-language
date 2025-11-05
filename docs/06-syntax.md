@@ -43,7 +43,7 @@ Decl
 Expr
   AssignExpr                -- Expr, Expr
   IndexingExpr              -- Expr, Expr
-  CallExpr                  -- Expr, Argument*
+  CallExpr                  -- Expr, ArgumentList
   PrimaryExpr
     IntLitExpr              -- intLit
     StrLitExpr              -- strLit
