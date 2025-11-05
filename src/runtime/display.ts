@@ -61,7 +61,8 @@ export function displayValue(value: Value, seen: Set<Value>): string {
         }
     }
     else if (value instanceof FuncValue) {
-        return ["<func ", value.name, "()>"].join("");
+        let params = value.parameters.join(", ");
+        return ["<func ", value.name, "(", params, ")>"].join("");
     }
     else if (value instanceof UninitValue) {
         throw new Error("Precondition failed: uninitialized pseudo-value");

@@ -103,6 +103,8 @@ type Kont =
     | AssignIgnore2Kont
     | ReturnIgnoreKont
     | ReturnKont
+    | CallIgnore1Kont
+    | CallIgnore2Kont
     | HaltKont
 ;
 
@@ -655,6 +657,48 @@ class ReturnKont {
     jumpMap: JumpMap;
 
     constructor(tail: Kont, jumpMap: JumpMap) {
+        this.tail = tail;
+        this.jumpMap = jumpMap;
+    }
+}
+
+class CallIgnore1Kont {
+    args: Array<Expr>;
+    env: Env;
+    tail: Kont;
+    jumpMap: JumpMap;
+
+    constructor(args: Array<Expr>, env: Env, tail: Kont, jumpMap: JumpMap) {
+        this.args = args;
+        this.env = env;
+        this.tail = tail;
+        this.jumpMap = jumpMap;
+    }
+}
+
+class CallIgnore2Kont {
+    funcValue: FuncValue;
+    argValues: Array<Value>;
+    args: Array<Expr>;
+    index: number;
+    env: Env;
+    tail: Kont;
+    jumpMap: JumpMap;
+
+    constructor(
+        funcValue: FuncValue,
+        argValues: Array<Value>,
+        args: Array<Expr>,
+        index: number,
+        env: Env,
+        tail: Kont,
+        jumpMap: JumpMap,
+    ) {
+        this.funcValue = funcValue;
+        this.argValues = argValues;
+        this.args = args;
+        this.index = index;
+        this.env = env;
         this.tail = tail;
         this.jumpMap = jumpMap;
     }
@@ -1325,6 +1369,22 @@ function reducePState(
                     jumpMap,
                 );
             }
+        }
+        else if (syntaxNode instanceof CallExpr) {
+            let funcExpr = syntaxNode.funcExpr;
+            let args = syntaxNode.argList.args;
+            let callIgnore1Kont = new CallIgnore1Kont(
+                args,
+                env,
+                kont,
+                jumpMap,
+            );
+            return new PState(
+                [Mode.GetValue, funcExpr],
+                env,
+                callIgnore1Kont,
+                jumpMap,
+            );
         }
         else {
             throw new Error(
@@ -2115,6 +2175,88 @@ function reduceRetState({ value, kont }: RetState): State {
     else if (kont instanceof AssignIgnore2Kont) {
         assign(kont.location, value);
         return new RetState(new NoneValue(), kont.tail);
+    }
+    else if (kont instanceof CallIgnore1Kont) {
+        if (!(value instanceof FuncValue)) {
+            throw new Error("Not callable: not a function");
+        }
+        if (kont.args.length > value.parameters.length) {
+            throw new Error("Too many arguments");
+        }
+        else if (kont.args.length < value.parameters.length) {
+            throw new Error("Not enough arguments");
+        }
+        if (kont.args.length === 0) {
+            let jumpMap = cloneJumpMap(kont.jumpMap);
+            jumpMap.returnTarget = kont.tail;
+            jumpMap.lastTarget = null;
+            jumpMap.nextTarget = null;
+            return new PState(
+                [Mode.Ignore, value.body],
+                value.outerEnv,
+                kont.tail,
+                jumpMap,
+            );
+        }
+        else {
+            let callIgnore2Kont = new CallIgnore2Kont(
+                value,
+                Array.from(
+                    { length: kont.args.length },
+                    () => new UninitValue()
+                ),
+                kont.args,
+                0,
+                kont.env,
+                kont.tail,
+                kont.jumpMap,
+            );
+            return new PState(
+                [Mode.GetValue, kont.args[0]],
+                kont.env,
+                callIgnore2Kont,
+                kont.jumpMap,
+            );
+        }
+    }
+    else if (kont instanceof CallIgnore2Kont) {
+        kont.argValues[kont.index] = value; // dirty mutation; justified
+        if (kont.index + 1 >= kont.args.length) {
+            let bodyEnv = extend(kont.funcValue.outerEnv);
+            for (let [param, arg] of zip(
+                kont.funcValue.parameters,
+                kont.argValues,
+            )) {
+                bindReadonly(bodyEnv, param, arg);
+            }
+            let jumpMap = cloneJumpMap(kont.jumpMap);
+            jumpMap.returnTarget = kont.tail;
+            jumpMap.lastTarget = null;
+            jumpMap.nextTarget = null;
+            return new PState(
+                [Mode.Ignore, kont.funcValue.body],
+                bodyEnv,
+                kont.tail,
+                jumpMap,
+            );
+        }
+        else {
+            let callIgnore2Kont = new CallIgnore2Kont(
+                kont.funcValue,
+                kont.argValues,
+                kont.args,
+                kont.index + 1,
+                kont.env,
+                kont.tail,
+                kont.jumpMap,
+            );
+            return new PState(
+                [Mode.GetValue, kont.args[kont.index + 1]],
+                kont.env,
+                callIgnore2Kont,
+                kont.jumpMap,
+            );
+        }
     }
     else {
         throw new Error(`Unrecognized kont ${kont.constructor.name}`);
