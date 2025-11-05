@@ -1,14 +1,5 @@
 # Near-future plans
 
-## Run with fuel ⛽🏃
-
-After the architectural change to a CEK machine, it should be a small fix to
-run the machine at most N steps, with N being supplied as a parameter.
-
-This in turn would allow some tests to be written that are otherwise hard to
-write, such as trying out infinite loops (checking that they indeed do run out
-of fuel, even with enough fuel).
-
 ## Typed errors 🏷🎯
 
 Right now, some of the tests only check that the code fails with _some_ error.
