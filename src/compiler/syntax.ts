@@ -151,26 +151,34 @@ export abstract class Decl extends SyntaxNode {
 }
 
 export class VarDecl extends Decl {
-    constructor(nameToken: Token, initExpr: Expr | null) {
-        super([nameToken, initExpr]);
+    constructor(nameToken: Token, type: null, initExpr: Expr | null) {
+        super([nameToken, type, initExpr]);
     }
 
     get nameToken(): Token {
         return this.children[0] as Token;
     }
 
+    get type(): null {
+        return this.children[1] as null;
+    }
+
     get initExpr(): Expr | null {
-        return this.children[1] as Expr | null;
+        return this.children[2] as Expr | null;
     }
 }
 
 export class Parameter extends SyntaxNode {
-    constructor(nameToken: Token) {
-        super([nameToken]);
+    constructor(nameToken: Token, type: null) {
+        super([nameToken, type]);
     }
 
     get nameToken(): Token {
         return this.children[0] as Token;
+    }
+
+    get type(): null {
+        return this.children[1] as null;
     }
 }
 
@@ -185,8 +193,13 @@ export class ParameterList extends SyntaxNode {
 }
 
 export class FuncDecl extends Decl {
-    constructor(nameToken: Token, parameterList: ParameterList, body: Block) {
-        super([nameToken, parameterList, body]);
+    constructor(
+        nameToken: Token,
+        parameterList: ParameterList,
+        type: null,
+        body: Block,
+    ) {
+        super([nameToken, parameterList, type, body]);
     }
 
     get nameToken(): Token {
@@ -197,8 +210,12 @@ export class FuncDecl extends Decl {
         return this.children[1] as ParameterList;
     }
 
+    get type(): null {
+        return this.children[2] as null;
+    }
+
     get body(): Block {
-        return this.children[2] as Block;
+        return this.children[3] as Block;
     }
 }
 

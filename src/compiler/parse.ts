@@ -355,11 +355,11 @@ export class Parser {
             if (this.accept(TokenKind.Assign)) {
                 let initExpr = this.parseExpr();
                 let sawSemi = Boolean(this.accept(TokenKind.Semi));
-                return [new VarDecl(nameToken, initExpr), sawSemi];
+                return [new VarDecl(nameToken, null, initExpr), sawSemi];
             }
             else {
                 let sawSemi = Boolean(this.accept(TokenKind.Semi));
-                return [new VarDecl(nameToken, null), sawSemi];
+                return [new VarDecl(nameToken, null, null), sawSemi];
             }
         }
         else if (this.accept(TokenKind.FuncKeyword)) {
@@ -369,7 +369,7 @@ export class Parser {
             let paramList = this.parseParameterList();
             this.advanceOver(TokenKind.ParenR);
             let body = this.parseBlock();
-            return [new FuncDecl(nameToken, paramList, body), true];
+            return [new FuncDecl(nameToken, paramList, null, body), true];
         }
         else {
             this.parseFail("declaration");
@@ -535,7 +535,7 @@ export class Parser {
         while (!this.seeing(TokenKind.ParenR)) {
             this.expect(TokenKind.Identifier);
             let nameToken = this.accept(TokenKind.Identifier)!;
-            let param = new Parameter(nameToken);
+            let param = new Parameter(nameToken, null);
             params.push(param);
             if (!this.accept(TokenKind.Comma)) {
                 break;
