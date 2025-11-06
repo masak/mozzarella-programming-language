@@ -1,5 +1,6 @@
 import test from "ava";
 import {
+    E501_ZeroDivisionError,
     run,
 } from "../src/go";
 
@@ -16,6 +17,9 @@ test("variable declaration", (t) => {
 
     t.throws(() => run("my x; my x"));
     t.throws(() => run("my y; my y;"));
-    t.throws(() => run("my divByZero = 1 // 0;"));
+    t.throws(
+        () => run("my divByZero = 1 // 0;"),
+        { instanceOf: E501_ZeroDivisionError },
+    );
 });
 

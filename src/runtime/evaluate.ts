@@ -44,6 +44,9 @@ import {
     findAllChainedOps,
 } from "./compare";
 import {
+    E501_ZeroDivisionError,
+} from "./error";
+import {
     bindMutable,
     bindReadonly,
     emptyEnv,
@@ -98,6 +101,7 @@ type Kont =
     | Call2Kont
     | BlockIgnoreKont
     | InfixOpIgnore1Kont
+    | InfixOpIgnore2Kont
     | ComparisonOpIgnore1Kont
     | AssignIgnore1Kont
     | AssignIgnore2Kont
@@ -590,11 +594,31 @@ class InfixOpIgnore1Kont {
     rhs: Expr;
     env: Env;
     tail: Kont;
+    jumpMap: JumpMap;
 
-    constructor(token: Token, rhs: Expr, env: Env, tail: Kont) {
+    constructor(
+        token: Token,
+        rhs: Expr,
+        env: Env,
+        tail: Kont,
+        jumpMap: JumpMap,
+    ) {
         this.token = token;
         this.rhs = rhs;
         this.env = env;
+        this.tail = tail;
+        this.jumpMap = jumpMap;
+    }
+}
+
+class InfixOpIgnore2Kont {
+    left: Value;
+    token: Token;
+    tail: Kont;
+
+    constructor(left: Value, token: Token, tail: Kont) {
+        this.left = left;
+        this.token = token;
         this.tail = tail;
     }
 }
@@ -1305,6 +1329,7 @@ function reducePState(
                     rhs,
                     env,
                     kont,
+                    jumpMap,
                 );
                 return new PState(
                     [Mode.GetValue, lhs],
@@ -1624,7 +1649,7 @@ function reduceRetState({ value, kont }: RetState): State {
                 throw new Error("Expected Int as rhs of //");
             }
             if (right.payload === 0n) {
-                throw new Error("Division by 0");
+                throw new E501_ZeroDivisionError("Division by 0");
             }
             let negative = left.payload < 0n !== right.payload < 0n;
             let nonZeroMod = left.payload % right.payload !== 0n;
@@ -1641,7 +1666,7 @@ function reduceRetState({ value, kont }: RetState): State {
                 throw new Error("Expected Int as rhs of %");
             }
             if (right.payload === 0n) {
-                throw new Error("Division by 0");
+                throw new E501_ZeroDivisionError("Division by 0");
             }
             return new RetState(
                 new IntValue(left.payload % right.payload),
@@ -2256,6 +2281,208 @@ function reduceRetState({ value, kont }: RetState): State {
                 callIgnore2Kont,
                 kont.jumpMap,
             );
+        }
+    }
+    else if (kont instanceof InfixOpIgnore1Kont) {
+        let token = kont.token;
+        if (token.kind === TokenKind.Plus) {
+            let left = value;
+            if (!(left instanceof IntValue)) {
+                throw new Error("Expected Int as lhs of +");
+            }
+            let infixOp2Kont = new InfixOpIgnore2Kont(
+                left,
+                token,
+                kont.tail,
+            );
+            return new PState(
+                [Mode.GetValue, kont.rhs],
+                kont.env,
+                infixOp2Kont,
+                kont.jumpMap,
+            );
+        }
+        else if (token.kind === TokenKind.Minus) {
+            let left = value;
+            if (!(left instanceof IntValue)) {
+                throw new Error("Expected Int as lhs of -");
+            }
+            let infixOp2Kont = new InfixOpIgnore2Kont(left, token, kont.tail);
+            return new PState(
+                [Mode.GetValue, kont.rhs],
+                kont.env,
+                infixOp2Kont,
+                kont.jumpMap,
+            );
+        }
+        else if (token.kind === TokenKind.Mult) {
+            let left = value;
+            if (!(left instanceof IntValue)) {
+                throw new Error("Expected Int as lhs of *");
+            }
+            let infixOp2Kont = new InfixOpIgnore2Kont(
+                left,
+                token,
+                kont.tail,
+            );
+            return new PState(
+                [Mode.GetValue, kont.rhs],
+                kont.env,
+                infixOp2Kont,
+                kont.jumpMap,
+            );
+        }
+        else if (token.kind === TokenKind.FloorDiv) {
+            let left = value;
+            if (!(left instanceof IntValue)) {
+                throw new Error("Expected Int as lhs of //");
+            }
+            let infixOp2Kont = new InfixOpIgnore2Kont(left, token, kont.tail);
+            return new PState(
+                [Mode.GetValue, kont.rhs],
+                kont.env,
+                infixOp2Kont,
+                kont.jumpMap,
+            );
+        }
+        else if (token.kind === TokenKind.Mod) {
+            let left = value;
+            if (!(left instanceof IntValue)) {
+                throw new Error("Expected Int as lhs of %");
+            }
+            let infixOp2Kont = new InfixOpIgnore2Kont(left, token, kont.tail);
+            return new PState(
+                [Mode.GetValue, kont.rhs],
+                kont.env,
+                infixOp2Kont,
+                kont.jumpMap,
+            );
+        }
+        else if (token.kind === TokenKind.Tilde) {
+            let left = value;
+            let strLeft = stringify(left);
+            let infixOp2Kont = new InfixOpIgnore2Kont(
+                strLeft,
+                token,
+                kont.tail,
+            );
+            return new PState(
+                [Mode.GetValue, kont.rhs],
+                kont.env,
+                infixOp2Kont,
+                kont.jumpMap,
+            );
+        }
+        else if (token.kind === TokenKind.AmpAmp) {
+            let left = value;
+            if (boolify(left)) {
+                // tail call
+                return new PState(
+                    [Mode.GetValue, kont.rhs],
+                    kont.env,
+                    kont.tail,
+                    kont.jumpMap,
+                );
+            }
+            else {
+                return new RetState(left, kont.tail);
+            }
+        }
+        else if (token.kind === TokenKind.PipePipe) {
+            let left = value;
+            if (boolify(left)) {
+                return new RetState(left, kont.tail);
+            }
+            else {
+                // tail call
+                return new PState(
+                    [Mode.GetValue, kont.rhs],
+                    kont.env,
+                    kont.tail,
+                    kont.jumpMap,
+                );
+            }
+        }
+        else {
+            throw new Error(`Unknown infix op type ${token.kind.kind}`);
+        }
+    }
+    else if (kont instanceof InfixOpIgnore2Kont) {
+        let token = kont.token;
+        if (token.kind === TokenKind.Plus) {
+            let right = value;
+            if (!(right instanceof IntValue)) {
+                throw new Error("Expected Int as rhs of +");
+            }
+            return new RetState(
+                new NoneValue(),
+                kont.tail,
+            );
+        }
+        else if (token.kind === TokenKind.Minus) {
+            let right = value;
+            if (!(right instanceof IntValue)) {
+                throw new Error("Expected Int as rhs of -");
+            }
+            return new RetState(
+                new NoneValue(),
+                kont.tail,
+            );
+        }
+        else if (token.kind === TokenKind.Mult) {
+            let right = value;
+            if (!(right instanceof IntValue)) {
+                throw new Error("Expected Int as rhs of *");
+            }
+            return new RetState(
+                new NoneValue(),
+                kont.tail,
+            );
+        }
+        else if (token.kind === TokenKind.FloorDiv) {
+            let right = value;
+            if (!(right instanceof IntValue)) {
+                throw new Error("Expected Int as rhs of //");
+            }
+            if (right.payload === 0n) {
+                throw new E501_ZeroDivisionError("Division by 0");
+            }
+            return new RetState(
+                new NoneValue(),
+                kont.tail,
+            );
+        }
+        else if (token.kind === TokenKind.Mod) {
+            let right = value;
+            if (!(right instanceof IntValue)) {
+                throw new Error("Expected Int as rhs of %");
+            }
+            if (right.payload === 0n) {
+                throw new E501_ZeroDivisionError("Division by 0");
+            }
+            return new RetState(
+                new NoneValue(),
+                kont.tail,
+            );
+        }
+        else if (token.kind === TokenKind.Tilde) {
+            return new RetState(
+                new NoneValue(),
+                kont.tail,
+            );
+        }
+        else if (token.kind === TokenKind.AmpAmp) {
+            throw new Error(
+                "Precondition broken: no second continuation for &&"
+            );
+        }
+        else if (token.kind === TokenKind.PipePipe) {
+            throw new Error(
+                "Precondition broken: no second continuation for ||"
+            );
+        }
+        else {
+            throw new Error(`Unknown infix op type ${token.kind.kind}`);
         }
     }
     else {

@@ -1,5 +1,6 @@
 import test from "ava";
 import {
+    E501_ZeroDivisionError,
     OutOfFuel,
     run,
     runWithFuel,
@@ -13,7 +14,10 @@ test("call expression", (t) => {
     t.is(run("func f() { 5; }; f()"), "none");
 
     t.throws(() => run("func f() {}; f(5)"));
-    t.throws(() => run("func f() { 1 // 0 }; f()"));
+    t.throws(
+        () => run("func f() { 1 // 0 }; f()"),
+        { instanceOf: E501_ZeroDivisionError },
+    );
     t.throws(() => run("func f() { last; }; for x in [1] { f() }"));
     t.throws(() => run("func f() { next; }; for x in [1] { f() }"));
 

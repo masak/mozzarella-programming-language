@@ -16,6 +16,9 @@ import {
 } from "./runtime/evaluate";
 
 export {
+    E501_ZeroDivisionError,
+} from "./runtime/error";
+export {
     OutOfFuel,
 } from "./runtime/evaluate";
 

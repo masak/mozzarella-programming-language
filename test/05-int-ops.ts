@@ -1,5 +1,6 @@
 import test from "ava";
 import {
+    E501_ZeroDivisionError,
     run,
 } from "../src/go";
 
@@ -17,7 +18,7 @@ test("integer operators", (t) => {
     t.is(run("102 % 5"), "2");
     t.is(run("98 % 5"), "3");
 
-    t.throws(() => run("5 // 0"));
-    t.throws(() => run("19 % 0"));
+    t.throws(() => run("5 // 0"), { instanceOf: E501_ZeroDivisionError });
+    t.throws(() => run("19 % 0"), { instanceOf: E501_ZeroDivisionError });
 });
 
