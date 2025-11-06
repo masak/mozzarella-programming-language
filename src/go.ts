@@ -19,6 +19,7 @@ export {
     E500_OutOfFuel,
     E501_ZeroDivisionError,
     E502_UnchainableOpsError,
+    E503_TypeError,
 } from "./runtime/error";
 
 export function run(source: string): string {

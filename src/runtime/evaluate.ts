@@ -46,6 +46,7 @@ import {
 import {
     E500_OutOfFuel,
     E501_ZeroDivisionError,
+    E503_TypeError,
 } from "./error";
 import {
     bindMutable,
@@ -1446,13 +1447,13 @@ function reduceRetState({ value, kont }: RetState): State {
         let token = kont.token;
         if (token.kind === TokenKind.Plus) {
             if (!(operandValue instanceof IntValue)) {
-                throw new Error("Expected Int as operand of +");
+                throw new E503_TypeError("Expected Int as operand of +");
             }
             return new RetState(new IntValue(operandValue.payload), kont.tail);
         }
         else if (token.kind === TokenKind.Minus) {
             if (!(operandValue instanceof IntValue)) {
-                throw new Error("Expected Int as operand of -");
+                throw new E503_TypeError("Expected Int as operand of -");
             }
             return new RetState(
                 new IntValue(-operandValue.payload),
@@ -1486,7 +1487,7 @@ function reduceRetState({ value, kont }: RetState): State {
         if (token.kind === TokenKind.Plus) {
             let left = value;
             if (!(left instanceof IntValue)) {
-                throw new Error("Expected Int as lhs of +");
+                throw new E503_TypeError("Expected Int as lhs of +");
             }
             let infixOp2Kont = new InfixOp2Kont(
                 left,
@@ -1503,7 +1504,7 @@ function reduceRetState({ value, kont }: RetState): State {
         else if (token.kind === TokenKind.Minus) {
             let left = value;
             if (!(left instanceof IntValue)) {
-                throw new Error("Expected Int as lhs of -");
+                throw new E503_TypeError("Expected Int as lhs of -");
             }
             let infixOp2Kont = new InfixOp2Kont(left, token, kont.tail);
             return new PState(
@@ -1516,7 +1517,7 @@ function reduceRetState({ value, kont }: RetState): State {
         else if (token.kind === TokenKind.Mult) {
             let left = value;
             if (!(left instanceof IntValue)) {
-                throw new Error("Expected Int as lhs of *");
+                throw new E503_TypeError("Expected Int as lhs of *");
             }
             let infixOp2Kont = new InfixOp2Kont(
                 left,
@@ -1533,7 +1534,7 @@ function reduceRetState({ value, kont }: RetState): State {
         else if (token.kind === TokenKind.FloorDiv) {
             let left = value;
             if (!(left instanceof IntValue)) {
-                throw new Error("Expected Int as lhs of //");
+                throw new E503_TypeError("Expected Int as lhs of //");
             }
             let infixOp2Kont = new InfixOp2Kont(left, token, kont.tail);
             return new PState(
@@ -1546,7 +1547,7 @@ function reduceRetState({ value, kont }: RetState): State {
         else if (token.kind === TokenKind.Mod) {
             let left = value;
             if (!(left instanceof IntValue)) {
-                throw new Error("Expected Int as lhs of %");
+                throw new E503_TypeError("Expected Int as lhs of %");
             }
             let infixOp2Kont = new InfixOp2Kont(left, token, kont.tail);
             return new PState(
@@ -1611,7 +1612,7 @@ function reduceRetState({ value, kont }: RetState): State {
             let left = kont.left as IntValue;
             let right = value;
             if (!(right instanceof IntValue)) {
-                throw new Error("Expected Int as rhs of +");
+                throw new E503_TypeError("Expected Int as rhs of +");
             }
             return new RetState(
                 new IntValue(left.payload + right.payload),
@@ -1622,7 +1623,7 @@ function reduceRetState({ value, kont }: RetState): State {
             let left = kont.left as IntValue;
             let right = value;
             if (!(right instanceof IntValue)) {
-                throw new Error("Expected Int as rhs of -");
+                throw new E503_TypeError("Expected Int as rhs of -");
             }
             return new RetState(
                 new IntValue(left.payload - right.payload),
@@ -1633,7 +1634,7 @@ function reduceRetState({ value, kont }: RetState): State {
             let left = kont.left as IntValue;
             let right = value;
             if (!(right instanceof IntValue)) {
-                throw new Error("Expected Int as rhs of *");
+                throw new E503_TypeError("Expected Int as rhs of *");
             }
             return new RetState(
                 new IntValue(left.payload * right.payload),
@@ -1644,7 +1645,7 @@ function reduceRetState({ value, kont }: RetState): State {
             let left = kont.left as IntValue;
             let right = value;
             if (!(right instanceof IntValue)) {
-                throw new Error("Expected Int as rhs of //");
+                throw new E503_TypeError("Expected Int as rhs of //");
             }
             if (right.payload === 0n) {
                 throw new E501_ZeroDivisionError("Division by 0");
@@ -1661,7 +1662,7 @@ function reduceRetState({ value, kont }: RetState): State {
             let left = kont.left as IntValue;
             let right = value;
             if (!(right instanceof IntValue)) {
-                throw new Error("Expected Int as rhs of %");
+                throw new E503_TypeError("Expected Int as rhs of %");
             }
             if (right.payload === 0n) {
                 throw new E501_ZeroDivisionError("Division by 0");
@@ -1828,7 +1829,7 @@ function reduceRetState({ value, kont }: RetState): State {
     else if (kont instanceof Indexing1Kont) {
         let array = value;
         if (!(array instanceof ArrayValue)) {
-            throw new Error("Can only index an Array");
+            throw new E503_TypeError("Can only index an Array");
         }
         let indexing2Kont = new Indexing2Kont(array, kont.tail);
         return new PState(
@@ -1841,7 +1842,7 @@ function reduceRetState({ value, kont }: RetState): State {
     else if (kont instanceof Indexing2Kont) {
         let index = value;
         if (!(index instanceof IntValue)) {
-            throw new Error("Can only index using an Int");
+            throw new E503_TypeError("Can only index using an Int");
         }
         if (index.payload < 0 || index.payload >= kont.array.elements.length) {
             throw new Error("Index out of bounds");
@@ -1858,7 +1859,7 @@ function reduceRetState({ value, kont }: RetState): State {
     else if (kont instanceof For1Kont) {
         let arrayValue = value;
         if (!(arrayValue instanceof ArrayValue)) {
-            throw new Error("Type error: not an array");
+            throw new E503_TypeError("Type error: not an array");
         }
         if (arrayValue.elements.length === 0) {
             return new RetState(new NoneValue(), kont.tail);
@@ -1919,7 +1920,7 @@ function reduceRetState({ value, kont }: RetState): State {
     else if (kont instanceof IndexingLoc1Kont) {
         let array = value;
         if (!(array instanceof ArrayValue)) {
-            throw new Error("Can only index an Array");
+            throw new E503_TypeError("Can only index an Array");
         }
         let indexingLoc2Kont = new IndexingLoc2Kont(array, kont.tail);
         return new PState(
@@ -1932,7 +1933,7 @@ function reduceRetState({ value, kont }: RetState): State {
     else if (kont instanceof IndexingLoc2Kont) {
         let index = value;
         if (!(index instanceof IntValue)) {
-            throw new Error("Can only index using an Int");
+            throw new E503_TypeError("Can only index using an Int");
         }
         return new RetState(
             new ArrayElementLocation(kont.array, Number(index.payload)),
@@ -2066,7 +2067,7 @@ function reduceRetState({ value, kont }: RetState): State {
     }
     else if (kont instanceof Call1Kont) {
         if (!(value instanceof FuncValue)) {
-            throw new Error("Not callable: not a function");
+            throw new E503_TypeError("Not callable: not a function");
         }
         if (kont.args.length > value.parameters.length) {
             throw new Error("Too many arguments");
@@ -2201,7 +2202,7 @@ function reduceRetState({ value, kont }: RetState): State {
     }
     else if (kont instanceof CallIgnore1Kont) {
         if (!(value instanceof FuncValue)) {
-            throw new Error("Not callable: not a function");
+            throw new E503_TypeError("Not callable: not a function");
         }
         if (kont.args.length > value.parameters.length) {
             throw new Error("Too many arguments");
@@ -2286,7 +2287,7 @@ function reduceRetState({ value, kont }: RetState): State {
         if (token.kind === TokenKind.Plus) {
             let left = value;
             if (!(left instanceof IntValue)) {
-                throw new Error("Expected Int as lhs of +");
+                throw new E503_TypeError("Expected Int as lhs of +");
             }
             let infixOp2Kont = new InfixOpIgnore2Kont(
                 left,
@@ -2303,7 +2304,7 @@ function reduceRetState({ value, kont }: RetState): State {
         else if (token.kind === TokenKind.Minus) {
             let left = value;
             if (!(left instanceof IntValue)) {
-                throw new Error("Expected Int as lhs of -");
+                throw new E503_TypeError("Expected Int as lhs of -");
             }
             let infixOp2Kont = new InfixOpIgnore2Kont(left, token, kont.tail);
             return new PState(
@@ -2316,7 +2317,7 @@ function reduceRetState({ value, kont }: RetState): State {
         else if (token.kind === TokenKind.Mult) {
             let left = value;
             if (!(left instanceof IntValue)) {
-                throw new Error("Expected Int as lhs of *");
+                throw new E503_TypeError("Expected Int as lhs of *");
             }
             let infixOp2Kont = new InfixOpIgnore2Kont(
                 left,
@@ -2333,7 +2334,7 @@ function reduceRetState({ value, kont }: RetState): State {
         else if (token.kind === TokenKind.FloorDiv) {
             let left = value;
             if (!(left instanceof IntValue)) {
-                throw new Error("Expected Int as lhs of //");
+                throw new E503_TypeError("Expected Int as lhs of //");
             }
             let infixOp2Kont = new InfixOpIgnore2Kont(left, token, kont.tail);
             return new PState(
@@ -2346,7 +2347,7 @@ function reduceRetState({ value, kont }: RetState): State {
         else if (token.kind === TokenKind.Mod) {
             let left = value;
             if (!(left instanceof IntValue)) {
-                throw new Error("Expected Int as lhs of %");
+                throw new E503_TypeError("Expected Int as lhs of %");
             }
             let infixOp2Kont = new InfixOpIgnore2Kont(left, token, kont.tail);
             return new PState(
@@ -2410,7 +2411,7 @@ function reduceRetState({ value, kont }: RetState): State {
         if (token.kind === TokenKind.Plus) {
             let right = value;
             if (!(right instanceof IntValue)) {
-                throw new Error("Expected Int as rhs of +");
+                throw new E503_TypeError("Expected Int as rhs of +");
             }
             return new RetState(
                 new NoneValue(),
@@ -2420,7 +2421,7 @@ function reduceRetState({ value, kont }: RetState): State {
         else if (token.kind === TokenKind.Minus) {
             let right = value;
             if (!(right instanceof IntValue)) {
-                throw new Error("Expected Int as rhs of -");
+                throw new E503_TypeError("Expected Int as rhs of -");
             }
             return new RetState(
                 new NoneValue(),
@@ -2430,7 +2431,7 @@ function reduceRetState({ value, kont }: RetState): State {
         else if (token.kind === TokenKind.Mult) {
             let right = value;
             if (!(right instanceof IntValue)) {
-                throw new Error("Expected Int as rhs of *");
+                throw new E503_TypeError("Expected Int as rhs of *");
             }
             return new RetState(
                 new NoneValue(),
@@ -2440,7 +2441,7 @@ function reduceRetState({ value, kont }: RetState): State {
         else if (token.kind === TokenKind.FloorDiv) {
             let right = value;
             if (!(right instanceof IntValue)) {
-                throw new Error("Expected Int as rhs of //");
+                throw new E503_TypeError("Expected Int as rhs of //");
             }
             if (right.payload === 0n) {
                 throw new E501_ZeroDivisionError("Division by 0");
@@ -2453,7 +2454,7 @@ function reduceRetState({ value, kont }: RetState): State {
         else if (token.kind === TokenKind.Mod) {
             let right = value;
             if (!(right instanceof IntValue)) {
-                throw new Error("Expected Int as rhs of %");
+                throw new E503_TypeError("Expected Int as rhs of %");
             }
             if (right.payload === 0n) {
                 throw new E501_ZeroDivisionError("Division by 0");

@@ -6,4 +6,7 @@ export class E501_ZeroDivisionError extends Error {
 
 export class E502_UnchainableOpsError extends Error {
 }
+ 
+export class E503_TypeError extends Error {
+}
 

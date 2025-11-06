@@ -1,5 +1,6 @@
 import test from "ava";
 import {
+    E503_TypeError,
     run,
 } from "../src/go";
 
@@ -8,7 +9,7 @@ test("parentheses", (t) => {
     t.is(run("(2 + 3) * 4"), "20");
 
     t.is(run('~(1 + 2) ~ "bottles"'), '"3bottles"');
-    t.throws(() => run('~1 + 2 ~ "bottles"'));
+    t.throws(() => run('~1 + 2 ~ "bottles"'), { instanceOf: E503_TypeError });
 
     t.is(run("true || false && none"), "true");
     t.is(run("(true || false) && none"), "none");
