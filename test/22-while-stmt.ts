@@ -1,6 +1,6 @@
 import test from "ava";
 import {
-    OutOfFuel,
+    E500_OutOfFuel,
     run,
     runWithFuel,
 } from "../src/go";
@@ -25,7 +25,7 @@ test("'while' statement", (t) => {
 
     t.throws(
         () => runWithFuel("while true {}", 100),
-        { instanceOf: OutOfFuel },
+        { instanceOf: E500_OutOfFuel },
     );
 });
 

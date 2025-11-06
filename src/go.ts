@@ -16,11 +16,9 @@ import {
 } from "./runtime/evaluate";
 
 export {
+    E500_OutOfFuel,
     E501_ZeroDivisionError,
 } from "./runtime/error";
-export {
-    OutOfFuel,
-} from "./runtime/evaluate";
 
 export function run(source: string): string {
     let lexer = new Lexer(source);

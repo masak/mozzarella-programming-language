@@ -44,6 +44,7 @@ import {
     findAllChainedOps,
 } from "./compare";
 import {
+    E500_OutOfFuel,
     E501_ZeroDivisionError,
 } from "./error";
 import {
@@ -749,9 +750,6 @@ class JumpMap {
     lastTarget: Kont | null = null;
     nextTarget: Kont | null = null;
     returnTarget: Kont | null = null;
-}
-
-export class OutOfFuel extends Error {
 }
 
 function cloneJumpMap(original: JumpMap): JumpMap {
@@ -2521,7 +2519,7 @@ export function runCompUnitWithFuel(compUnit: CompUnit, fuel: number): Value {
 
         --fuel;
         if (fuel <= 0) {
-            throw new OutOfFuel();
+            throw new E500_OutOfFuel();
         }
     }
     return unload(state);

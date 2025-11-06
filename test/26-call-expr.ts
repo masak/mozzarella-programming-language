@@ -1,7 +1,7 @@
 import test from "ava";
 import {
+    E500_OutOfFuel,
     E501_ZeroDivisionError,
-    OutOfFuel,
     run,
     runWithFuel,
 } from "../src/go";
@@ -23,7 +23,7 @@ test("call expression", (t) => {
 
     t.throws(
         () => runWithFuel("func f() { f() }; f()", 100),
-        { instanceOf: OutOfFuel },
+        { instanceOf: E500_OutOfFuel },
     );
 });
 
