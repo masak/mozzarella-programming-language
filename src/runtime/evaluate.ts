@@ -47,6 +47,7 @@ import {
     E500_OutOfFuel,
     E501_ZeroDivisionError,
     E503_TypeError,
+    E504_IndexError,
 } from "./error";
 import {
     bindMutable,
@@ -1845,7 +1846,7 @@ function reduceRetState({ value, kont }: RetState): State {
             throw new E503_TypeError("Can only index using an Int");
         }
         if (index.payload < 0 || index.payload >= kont.array.elements.length) {
-            throw new Error("Index out of bounds");
+            throw new E504_IndexError("Index out of bounds");
         }
         return new RetState(
             kont.array.elements[Number(index.payload)],

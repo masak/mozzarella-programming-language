@@ -1,6 +1,7 @@
 import test from "ava";
 import {
     E503_TypeError,
+    E504_IndexError,
     run,
 } from "../src/go";
 
@@ -16,8 +17,11 @@ test("array indexing", (t) => {
         () => run('[4, 5, 6]["asparagus"]'),
         { instanceOf: E503_TypeError },
     );
-    t.throws(() => run("[][0]"));
-    t.throws(() => run("[true, false, true][-3]"));
-    t.throws(() => run("[none, none][9]"));
+    t.throws(() => run("[][0]"), { instanceOf: E504_IndexError });
+    t.throws(
+        () => run("[true, false, true][-3]"),
+        { instanceOf: E504_IndexError },
+    );
+    t.throws(() => run("[none, none][9]"), { instanceOf: E504_IndexError });
 });
 

@@ -10,3 +10,6 @@ export class E502_UnchainableOpsError extends Error {
 export class E503_TypeError extends Error {
 }
 
+export class E504_IndexError extends Error {
+}
+

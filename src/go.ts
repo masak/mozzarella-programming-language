@@ -20,6 +20,7 @@ export {
     E501_ZeroDivisionError,
     E502_UnchainableOpsError,
     E503_TypeError,
+    E504_IndexError,
 } from "./runtime/error";
 
 export function run(source: string): string {
