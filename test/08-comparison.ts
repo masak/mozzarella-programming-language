@@ -1,5 +1,6 @@
 import test from "ava";
 import {
+    E502_UnchainableOpsError,
     run,
 } from "../src/go";
 
@@ -140,19 +141,55 @@ test("comparison operators", (t) => {
     t.is(run('"indigo" >= "fusion" == "fusion" >= "crab"'), "true");
     t.is(run('"fusion" >= "indigo" == "fusion" >= "crab"'), "false");
 
-    t.throws(() => run("5 == 5 != 5"));
-    t.throws(() => run("5 != 5 != 5"));
-    t.throws(() => run("5 < 6 != 5"));
-    t.throws(() => run('5 < 6 != "foo"'));
+    t.throws(
+        () => run("5 == 5 != 5"),
+        { instanceOf: E502_UnchainableOpsError },
+    );
+    t.throws(
+        () => run("5 != 5 != 5"),
+        { instanceOf: E502_UnchainableOpsError },
+    );
+    t.throws(
+        () => run("5 < 6 != 5"),
+        { instanceOf: E502_UnchainableOpsError },
+    );
+    t.throws(
+        () => run('5 < 6 != "foo"'),
+        { instanceOf: E502_UnchainableOpsError },
+    );
 
-    t.throws(() => run("3 < 6 != 6 < 9"));
-    t.throws(() => run("3 < 6 != 9 < 9"));
-    t.throws(() => run("3 <= 6 != 6 <= 9"));
-    t.throws(() => run("3 <= 6 != 9 <= 6"));
+    t.throws(
+        () => run("3 < 6 != 6 < 9"),
+        { instanceOf: E502_UnchainableOpsError },
+    );
+    t.throws(
+        () => run("3 < 6 != 9 < 9"),
+        { instanceOf: E502_UnchainableOpsError },
+    );
+    t.throws(
+        () => run("3 <= 6 != 6 <= 9"),
+        { instanceOf: E502_UnchainableOpsError },
+    );
+    t.throws(
+        () => run("3 <= 6 != 9 <= 6"),
+        { instanceOf: E502_UnchainableOpsError },
+    );
 
-    t.throws(() => run('"indigo" > "fusion" != "fusion" > "crab"'));
-    t.throws(() => run('"indigo" > "fusion" != "indigo" > "crab"'));
-    t.throws(() => run('"indigo" >= "fusion" != "fusion" >= "crab"'));
-    t.throws(() => run('"fusion" >= "indigo" != "fusion" >= "crab"'));
+    t.throws(
+        () => run('"indigo" > "fusion" != "fusion" > "crab"'),
+        { instanceOf: E502_UnchainableOpsError },
+    );
+    t.throws(
+        () => run('"indigo" > "fusion" != "indigo" > "crab"'),
+        { instanceOf: E502_UnchainableOpsError },
+    );
+    t.throws(
+        () => run('"indigo" >= "fusion" != "fusion" >= "crab"'),
+        { instanceOf: E502_UnchainableOpsError },
+    );
+    t.throws(
+        () => run('"fusion" >= "indigo" != "fusion" >= "crab"'),
+        { instanceOf: E502_UnchainableOpsError },
+    );
 });
 

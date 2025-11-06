@@ -18,6 +18,7 @@ import {
 export {
     E500_OutOfFuel,
     E501_ZeroDivisionError,
+    E502_UnchainableOpsError,
 } from "./runtime/error";
 
 export function run(source: string): string {

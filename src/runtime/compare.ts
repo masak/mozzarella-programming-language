@@ -7,6 +7,9 @@ import {
     TokenKind,
 } from "../compiler/token";
 import {
+    E502_UnchainableOpsError,
+} from "./error";
+import {
     ArrayValue,
     BoolValue,
     IntValue,
@@ -168,10 +171,12 @@ export function checkForUnchainableOps(ops: Array<Token>) {
     let hasNotEq = ops.some((op) => op.kind === TokenKind.BangEq);
     if (hasNotEq && ops.length > 1) {
         let notEqOpIndex = ops.findIndex((op) => op.kind === TokenKind.BangEq);
-        let otherOp = notEqOpIndex < ops.length
+        let otherOp = notEqOpIndex < ops.length - 1
             ? ops[notEqOpIndex + 1]
             : ops[notEqOpIndex - 1];
-        throw new Error(`Cannot chain != and ${otherOp.kind.kind}`);
+        throw new E502_UnchainableOpsError(
+            `Cannot chain != and ${otherOp.kind.kind}`
+        );
     }
 
     let hasLessTypeOps = ops.some(
@@ -189,8 +194,10 @@ export function checkForUnchainableOps(ops: Array<Token>) {
             (op) => op.kind === TokenKind.Greater
                 || op.kind === TokenKind.GreaterEq
         )!;
-        throw new Error(`Cannot chain ${lessTypeOp.kind.kind} ` +
-                        `and ${greaterTypeOp.kind.kind}`);
+        throw new E502_UnchainableOpsError(
+            `Cannot chain ${lessTypeOp.kind.kind} `
+                + `and ${greaterTypeOp.kind.kind}`
+        );
     }
 }
 
