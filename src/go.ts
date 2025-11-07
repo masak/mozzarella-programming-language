@@ -32,6 +32,7 @@ export {
     E508_ReadonlyError,
     E509_LastOutsideLoopError,
     E510_NextOutsideLoopError,
+    E511_TooManyArgumentsError,
 } from "./runtime/error";
 
 export function run(source: string): string {

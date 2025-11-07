@@ -4,6 +4,7 @@ import {
     E501_ZeroDivisionError,
     E509_LastOutsideLoopError,
     E510_NextOutsideLoopError,
+    E511_TooManyArgumentsError,
     run,
     runWithFuel,
 } from "../src/go";
@@ -15,7 +16,10 @@ test("call expression", (t) => {
     t.is(run("my x = 0; func f() { x = 1; }; f(); x"), "1");
     t.is(run("func f() { 5; }; f()"), "none");
 
-    t.throws(() => run("func f() {}; f(5)"));
+    t.throws(
+        () => run("func f() {}; f(5)"),
+        { instanceOf: E511_TooManyArgumentsError },
+    );
     t.throws(
         () => run("func f() { 1 // 0 }; f()"),
         { instanceOf: E501_ZeroDivisionError },

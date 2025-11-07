@@ -52,6 +52,7 @@ import {
     E508_ReadonlyError,
     E509_LastOutsideLoopError,
     E510_NextOutsideLoopError,
+    E511_TooManyArgumentsError,
 } from "./error";
 import {
     bindMutable,
@@ -2096,7 +2097,7 @@ function reduceRetState({ value, kont }: RetState): State {
             throw new E503_TypeError("Not callable: not a function");
         }
         if (kont.args.length > value.parameters.length) {
-            throw new Error("Too many arguments");
+            throw new E511_TooManyArgumentsError();
         }
         else if (kont.args.length < value.parameters.length) {
             throw new Error("Not enough arguments");
@@ -2231,7 +2232,7 @@ function reduceRetState({ value, kont }: RetState): State {
             throw new E503_TypeError("Not callable: not a function");
         }
         if (kont.args.length > value.parameters.length) {
-            throw new Error("Too many arguments");
+            throw new E511_TooManyArgumentsError();
         }
         else if (kont.args.length < value.parameters.length) {
             throw new Error("Not enough arguments");
