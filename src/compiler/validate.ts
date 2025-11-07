@@ -1,4 +1,7 @@
 import {
+    E301_RedeclarationError,
+} from "./error";
+import {
     Block,
     CompUnit,
     FuncDecl,
@@ -37,7 +40,9 @@ function visitDown(
         let name = syntaxNode.nameToken.payload as string;
         let context = contextStack[contextStack.length - 1];
         if (context.get(name) === VarState.declared) {
-            throw new Error(`Redeclaration of name '${name}'`);
+            throw new E301_RedeclarationError(
+                `Redeclaration of name '${name}'`
+            );
         }
         else if (context.get(name) === VarState.accessed) {
             throw new Error(`Use of variable '${name}' before declaration`);
@@ -50,7 +55,9 @@ function visitDown(
         let name = syntaxNode.nameToken.payload as string;
         let context = contextStack[contextStack.length - 1];
         if (context.get(name) === VarState.declared) {
-            throw new Error(`Redeclaration of name '${name}'`);
+            throw new E301_RedeclarationError(
+                `Redeclaration of name '${name}'`
+            );
         }
         else {
             context.set(name, VarState.declared);

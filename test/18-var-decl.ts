@@ -1,5 +1,6 @@
 import test from "ava";
 import {
+    E301_RedeclarationError,
     E501_ZeroDivisionError,
     run,
 } from "../src/go";
@@ -15,8 +16,11 @@ test("variable declaration", (t) => {
     t.is(run("my hasDigits12345 = 6"), "none");
     t.is(run("my _ = 42"), "none");
 
-    t.throws(() => run("my x; my x"));
-    t.throws(() => run("my y; my y;"));
+    t.throws(() => run("my x; my x"), { instanceOf: E301_RedeclarationError });
+    t.throws(
+        () => run("my y; my y;"),
+        { instanceOf: E301_RedeclarationError },
+    );
     t.throws(
         () => run("my divByZero = 1 // 0;"),
         { instanceOf: E501_ZeroDivisionError },
