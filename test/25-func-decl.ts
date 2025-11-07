@@ -1,6 +1,7 @@
 import test from "ava";
 import {
     E301_RedeclarationError,
+    E508_ReadonlyError,
     run,
 } from "../src/go";
 
@@ -26,7 +27,13 @@ test("function declaration", (t) => {
         () => run("func f() {}; func f() {}"),
         { instanceOf: E301_RedeclarationError },
     );
-    t.throws(() => run("func f() {}; f = 19;"));
-    t.throws(() => run("f = false; func f() {}"));
+    t.throws(
+        () => run("func f() {}; f = 19;"),
+        { instanceOf: E508_ReadonlyError },
+    );
+    t.throws(
+        () => run("f = false; func f() {}"),
+        { instanceOf: E508_ReadonlyError },
+    );
 });
 
