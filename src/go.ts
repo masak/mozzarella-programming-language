@@ -18,6 +18,7 @@ import {
 export {
     E201_SyntaxError,
     E301_RedeclarationError,
+    E302_UseBeforeDeclarationError,
 } from "./compiler/error";
 export {
     E500_OutOfFuel,

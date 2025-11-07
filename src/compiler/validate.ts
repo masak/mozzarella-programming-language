@@ -1,5 +1,6 @@
 import {
     E301_RedeclarationError,
+    E302_UseBeforeDeclarationError,
 } from "./error";
 import {
     Block,
@@ -45,7 +46,9 @@ function visitDown(
             );
         }
         else if (context.get(name) === VarState.accessed) {
-            throw new Error(`Use of variable '${name}' before declaration`);
+            throw new E302_UseBeforeDeclarationError(
+                `Use of variable '${name}' before declaration`
+            );
         }
         else {
             context.set(name, VarState.declared);
