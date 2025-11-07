@@ -30,6 +30,7 @@ export {
     E506_UndeclaredError,
     E507_CannotAssignError,
     E508_ReadonlyError,
+    E509_LastOutsideLoopError,
 } from "./runtime/error";
 
 export function run(source: string): string {

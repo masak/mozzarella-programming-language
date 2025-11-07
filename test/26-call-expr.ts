@@ -2,6 +2,7 @@ import test from "ava";
 import {
     E500_OutOfFuel,
     E501_ZeroDivisionError,
+    E509_LastOutsideLoopError,
     run,
     runWithFuel,
 } from "../src/go";
@@ -18,7 +19,10 @@ test("call expression", (t) => {
         () => run("func f() { 1 // 0 }; f()"),
         { instanceOf: E501_ZeroDivisionError },
     );
-    t.throws(() => run("func f() { last; }; for x in [1] { f() }"));
+    t.throws(
+        () => run("func f() { last; }; for x in [1] { f() }"),
+        { instanceOf: E509_LastOutsideLoopError },
+    );
     t.throws(() => run("func f() { next; }; for x in [1] { f() }"));
 
     t.throws(

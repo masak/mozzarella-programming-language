@@ -25,3 +25,6 @@ export class E507_CannotAssignError extends Error {
 export class E508_ReadonlyError extends Error {
 }
 
+export class E509_LastOutsideLoopError extends Error {
+}
+
