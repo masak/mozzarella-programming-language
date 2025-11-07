@@ -53,6 +53,7 @@ import {
     E509_LastOutsideLoopError,
     E510_NextOutsideLoopError,
     E511_TooManyArgumentsError,
+    E512_NotEnoughArgumentsError,
 } from "./error";
 import {
     bindMutable,
@@ -2100,7 +2101,7 @@ function reduceRetState({ value, kont }: RetState): State {
             throw new E511_TooManyArgumentsError();
         }
         else if (kont.args.length < value.parameters.length) {
-            throw new Error("Not enough arguments");
+            throw new E512_NotEnoughArgumentsError();
         }
         if (kont.args.length === 0) {
             let jumpMap = cloneJumpMap(kont.jumpMap);
@@ -2235,7 +2236,7 @@ function reduceRetState({ value, kont }: RetState): State {
             throw new E511_TooManyArgumentsError();
         }
         else if (kont.args.length < value.parameters.length) {
-            throw new Error("Not enough arguments");
+            throw new E512_NotEnoughArgumentsError();
         }
         if (kont.args.length === 0) {
             let jumpMap = cloneJumpMap(kont.jumpMap);

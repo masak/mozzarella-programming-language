@@ -34,3 +34,6 @@ export class E510_NextOutsideLoopError extends Error {
 export class E511_TooManyArgumentsError extends Error {
 }
 
+export class E512_NotEnoughArgumentsError extends Error {
+}
+
