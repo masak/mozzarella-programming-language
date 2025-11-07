@@ -3,6 +3,7 @@ import {
     E504_IndexError,
     E506_UndeclaredError,
     E507_CannotAssignError,
+    E508_ReadonlyError,
     run,
 } from "../src/go";
 
@@ -35,7 +36,13 @@ test("assignment expression", (t) => {
         () => run("my L = [0]; L[3] = 5"),
         { instanceOf: E504_IndexError },
     );
-    t.throws(() => run('for x in [1, 2, 3] { x = "tomato"; }'));
-    t.throws(() => run("for x in x = [1, 2, 3] {}"));
+    t.throws(
+        () => run('for x in [1, 2, 3] { x = "tomato"; }'),
+        { instanceOf: E508_ReadonlyError },
+    );
+    t.throws(
+        () => run("for x in x = [1, 2, 3] {}"),
+        { instanceOf: E508_ReadonlyError },
+    );
 });
 

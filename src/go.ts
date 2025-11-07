@@ -29,6 +29,7 @@ export {
     E505_UninitializedError,
     E506_UndeclaredError,
     E507_CannotAssignError,
+    E508_ReadonlyError,
 } from "./runtime/error";
 
 export function run(source: string): string {

@@ -49,6 +49,7 @@ import {
     E503_TypeError,
     E504_IndexError,
     E507_CannotAssignError,
+    E508_ReadonlyError,
 } from "./error";
 import {
     bindMutable,
@@ -1186,7 +1187,7 @@ function reducePState(
             let name = syntaxNode.nameToken.payload as string;
             let [mutable, varEnv] = findEnvOfName(env, name);
             if (!mutable) {
-                throw new Error(`Binding '${name}' is readonly`);
+                throw new E508_ReadonlyError(`Binding '${name}' is readonly`);
             }
             return new RetState(new VarLocation(varEnv, name), kont);
         }

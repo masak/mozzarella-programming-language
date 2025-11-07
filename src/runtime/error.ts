@@ -22,3 +22,6 @@ export class E506_UndeclaredError extends Error {
 export class E507_CannotAssignError extends Error {
 }
 
+export class E508_ReadonlyError extends Error {
+}
+
