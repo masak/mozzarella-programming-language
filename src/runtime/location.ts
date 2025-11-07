@@ -3,6 +3,9 @@ import {
     Env,
 } from "./env";
 import {
+    E504_IndexError,
+} from "./error";
+import {
     ArrayValue,
     Value,
 } from "./value";
@@ -40,7 +43,7 @@ export function assign(location: Location, value: Value): void {
         let array = location.array;
         let index = location.index;
         if (index < 0 || index >= array.elements.length) {
-            throw new Error("Index out of bounds");
+            throw new E504_IndexError("Index out of bounds");
         }
         array.elements[index] = value;
     }

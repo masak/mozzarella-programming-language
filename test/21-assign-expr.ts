@@ -1,5 +1,6 @@
 import test from "ava";
 import {
+    E504_IndexError,
     E506_UndeclaredError,
     E507_CannotAssignError,
     run,
@@ -30,7 +31,10 @@ test("assignment expression", (t) => {
         () => run("true = false"),
         { instanceOf: E507_CannotAssignError },
     );
-    t.throws(() => run("my L = [0]; L[3] = 5"));
+    t.throws(
+        () => run("my L = [0]; L[3] = 5"),
+        { instanceOf: E504_IndexError },
+    );
     t.throws(() => run('for x in [1, 2, 3] { x = "tomato"; }'));
     t.throws(() => run("for x in x = [1, 2, 3] {}"));
 });
