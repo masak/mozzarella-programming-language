@@ -1,5 +1,6 @@
 import test from "ava";
 import {
+    E201_SyntaxError,
     run,
 } from "../src/go";
 
@@ -11,6 +12,6 @@ test("statement list", (t) => {
     t.is(run('"finch"; ;;;; ; ; "trophy"'), '"trophy"');
     t.is(run('true; ;;;;'), "none");
 
-    t.throws(() => run("1 2"));
+    t.throws(() => run("1 2"), { instanceOf: E201_SyntaxError });
 });
 

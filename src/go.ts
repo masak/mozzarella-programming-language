@@ -16,6 +16,9 @@ import {
 } from "./runtime/evaluate";
 
 export {
+    E201_SyntaxError,
+} from "./compiler/error";
+export {
     E500_OutOfFuel,
     E501_ZeroDivisionError,
     E502_UnchainableOpsError,

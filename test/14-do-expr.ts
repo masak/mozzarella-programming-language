@@ -1,5 +1,6 @@
 import test from "ava";
 import {
+    E201_SyntaxError,
     run,
 } from "../src/go";
 
@@ -15,7 +16,7 @@ test("'do' expression", (t) => {
     t.is(run("{ 1; do { 2 } }"), "2");
     t.is(run("{ 1; do { 2; } }"), "2");
 
-    t.throws(() => run("do 1 2"));
-    t.throws(() => run("do 1; 2"));
+    t.throws(() => run("do 1 2"), { instanceOf: E201_SyntaxError });
+    t.throws(() => run("do 1; 2"), { instanceOf: E201_SyntaxError });
 });
 

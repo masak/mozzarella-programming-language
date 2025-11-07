@@ -1,4 +1,7 @@
 import {
+    E201_SyntaxError,
+} from "./error";
+import {
     Lexer,
 } from "./lex";
 import {
@@ -175,7 +178,7 @@ export class Parser {
     // low-level helper methods:
 
     private parseFail(expectation: string): never {
-        throw new Error(
+        throw new E201_SyntaxError(
             `Expected ${expectation}, ` +
             `found ${this.lexer.lookahead().kind.kind}`
         );
@@ -508,7 +511,7 @@ export class Parser {
                     expectation = "operator";
                 }
                 else if (termStartTokens.has(token)) {
-                    throw new Error("Two terms in a row");
+                    throw new E201_SyntaxError("Two terms in a row");
                 }
                 else {
                     break;  // anything unknown in op pos means we're done

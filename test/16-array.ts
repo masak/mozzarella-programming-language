@@ -1,5 +1,6 @@
 import test from "ava";
 import {
+    E201_SyntaxError,
     run,
 } from "../src/go";
 
@@ -35,6 +36,6 @@ test("arrays", (t) => {
     t.is(run("![1, 2, 3]"), "false");
     t.is(run("if [] { 1 } else if [2, 3] { 4 } else { 5 }"), "4");
 
-    t.throws(() => run("[,]"));
+    t.throws(() => run("[,]"), { instanceOf: E201_SyntaxError });
 });
 
