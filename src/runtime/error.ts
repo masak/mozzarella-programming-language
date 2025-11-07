@@ -19,3 +19,6 @@ export class E505_UninitializedError extends Error {
 export class E506_UndeclaredError extends Error {
 }
 
+export class E507_CannotAssignError extends Error {
+}
+

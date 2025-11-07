@@ -1,6 +1,7 @@
 import test from "ava";
 import {
     E506_UndeclaredError,
+    E507_CannotAssignError,
     run,
 } from "../src/go";
 
@@ -20,9 +21,15 @@ test("assignment expression", (t) => {
     t.is(run("my a = [7, 8]; my b = a; a[0] = -1; b"), "[-1, 8]");
 
     t.throws(() => run("x = 21"), { instanceOf: E506_UndeclaredError });
-    t.throws(() => run("[1, 2, 3] = 4"));
-    t.throws(() => run("2 + 2 = 4"));
-    t.throws(() => run("true = false"));
+    t.throws(
+        () => run("[1, 2, 3] = 4"),
+        { instanceOf: E507_CannotAssignError },
+    );
+    t.throws(() => run("2 + 2 = 4"), { instanceOf: E507_CannotAssignError });
+    t.throws(
+        () => run("true = false"),
+        { instanceOf: E507_CannotAssignError },
+    );
     t.throws(() => run("my L = [0]; L[3] = 5"));
     t.throws(() => run('for x in [1, 2, 3] { x = "tomato"; }'));
     t.throws(() => run("for x in x = [1, 2, 3] {}"));

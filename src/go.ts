@@ -28,6 +28,7 @@ export {
     E504_IndexError,
     E505_UninitializedError,
     E506_UndeclaredError,
+    E507_CannotAssignError,
 } from "./runtime/error";
 
 export function run(source: string): string {

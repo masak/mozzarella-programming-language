@@ -48,6 +48,7 @@ import {
     E501_ZeroDivisionError,
     E503_TypeError,
     E504_IndexError,
+    E507_CannotAssignError,
 } from "./error";
 import {
     bindMutable,
@@ -1270,9 +1271,8 @@ function reducePState(
             );
         }
         else {
-            throw new Error(
-                "Unsupported for-location syntax node " +
-                    syntaxNode.constructor.name
+            throw new E507_CannotAssignError(
+                "Cannot assign to " + syntaxNode.constructor.name
             );
         }
     }
