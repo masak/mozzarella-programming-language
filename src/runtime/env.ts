@@ -1,4 +1,7 @@
 import {
+    E505_UninitializedError,
+} from "./error";
+import {
     UninitValue,
     Value,
 } from "./value";
@@ -37,7 +40,9 @@ export function lookup(env: Env | null, name: string): Value {
         if (binding = env.bindings.get(name)!) {
             let value = binding.value;
             if (value instanceof UninitValue) {
-                throw new Error(`Uninitialized variable '${name}'`);
+                throw new E505_UninitializedError(
+                    `Uninitialized variable '${name}'`
+                );
             }
             return value;
         }
