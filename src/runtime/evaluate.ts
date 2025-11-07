@@ -51,6 +51,7 @@ import {
     E507_CannotAssignError,
     E508_ReadonlyError,
     E509_LastOutsideLoopError,
+    E510_NextOutsideLoopError,
 } from "./error";
 import {
     bindMutable,
@@ -1123,7 +1124,7 @@ function reducePState(
         else if (syntaxNode instanceof NextStatement) {
             let nextTarget = jumpMap.nextTarget;
             if (nextTarget === null) {
-                throw new Error("'next' outside of loop");
+                throw new E510_NextOutsideLoopError("'next' outside of loop");
             }
             else {
                 return new RetState(new NoneValue(), nextTarget);
@@ -1424,6 +1425,15 @@ function reducePState(
             }
             else {
                 return new RetState(new NoneValue(), lastTarget);
+            }
+        }
+        else if (syntaxNode instanceof NextStatement) {
+            let nextTarget = jumpMap.nextTarget;
+            if (nextTarget === null) {
+                throw new E510_NextOutsideLoopError("'next' outside of loop");
+            }
+            else {
+                return new RetState(new NoneValue(), nextTarget);
             }
         }
         else {

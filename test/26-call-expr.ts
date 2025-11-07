@@ -3,6 +3,7 @@ import {
     E500_OutOfFuel,
     E501_ZeroDivisionError,
     E509_LastOutsideLoopError,
+    E510_NextOutsideLoopError,
     run,
     runWithFuel,
 } from "../src/go";
@@ -23,7 +24,10 @@ test("call expression", (t) => {
         () => run("func f() { last; }; for x in [1] { f() }"),
         { instanceOf: E509_LastOutsideLoopError },
     );
-    t.throws(() => run("func f() { next; }; for x in [1] { f() }"));
+    t.throws(
+        () => run("func f() { next; }; for x in [1] { f() }"),
+        { instanceOf: E510_NextOutsideLoopError },
+    );
 
     t.throws(
         () => runWithFuel("func f() { f() }; f()", 100),

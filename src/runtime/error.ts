@@ -28,3 +28,6 @@ export class E508_ReadonlyError extends Error {
 export class E509_LastOutsideLoopError extends Error {
 }
 
+export class E510_NextOutsideLoopError extends Error {
+}
+

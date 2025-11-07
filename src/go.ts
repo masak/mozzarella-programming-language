@@ -31,6 +31,7 @@ export {
     E507_CannotAssignError,
     E508_ReadonlyError,
     E509_LastOutsideLoopError,
+    E510_NextOutsideLoopError,
 } from "./runtime/error";
 
 export function run(source: string): string {
