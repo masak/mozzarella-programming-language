@@ -1,5 +1,6 @@
 import {
     E505_UninitializedError,
+    E506_UndeclaredError,
 } from "./error";
 import {
     UninitValue,
@@ -48,7 +49,7 @@ export function lookup(env: Env | null, name: string): Value {
         }
         env = env.outer;
     }
-    throw new Error(`Undeclared variable '${name}'`);
+    throw new E506_UndeclaredError(`Undeclared variable '${name}'`);
 }
 
 export function findEnvOfName(env: Env | null, name: string): [boolean, Env] {
@@ -60,7 +61,7 @@ export function findEnvOfName(env: Env | null, name: string): [boolean, Env] {
         }
         env = env.outer;
     }
-    throw new Error(`Undeclared variable '${name}'`);
+    throw new E506_UndeclaredError(`Undeclared variable '${name}'`);
 }
 
 export function bindMutable(env: Env, name: string, value: Value): void {

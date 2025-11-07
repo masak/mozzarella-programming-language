@@ -26,6 +26,7 @@ export {
     E503_TypeError,
     E504_IndexError,
     E505_UninitializedError,
+    E506_UndeclaredError,
 } from "./runtime/error";
 
 export function run(source: string): string {

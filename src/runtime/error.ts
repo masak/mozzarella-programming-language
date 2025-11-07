@@ -16,3 +16,6 @@ export class E504_IndexError extends Error {
 export class E505_UninitializedError extends Error {
 }
 
+export class E506_UndeclaredError extends Error {
+}
+

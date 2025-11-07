@@ -1,6 +1,7 @@
 import test from "ava";
 import {
     E505_UninitializedError,
+    E506_UndeclaredError,
     run,
 } from "../src/go";
 
@@ -13,7 +14,7 @@ test("variable reference", (t) => {
     t.is(run("my w = 11; { w }"), "11");
 
     t.throws(() => run("my x; x"), { instanceOf: E505_UninitializedError });
-    t.throws(() => run("x"));
+    t.throws(() => run("x"), { instanceOf: E506_UndeclaredError });
     t.throws(() => run("x; my x = 3"));
     t.throws(() => run("my x = 1; { x; my x = 2 }"));
     t.throws(() => run("{ x; my x = 99 }"));
