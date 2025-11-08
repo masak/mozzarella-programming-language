@@ -1233,7 +1233,7 @@ function reducePState(
             let statements = syntaxNode.statements;
             env = initializeEnv(extend(env), statements);
             if (statements.length === 0) {
-                throw new Error(
+                throw new E507_CannotAssignError(
                     "Can't evaluate an empty block for a location"
                 );
             }
@@ -2044,10 +2044,7 @@ function reduceRetState({ value, kont }: RetState): State {
                     );
                 }
                 else {
-                    throw new Error(
-                        "Attempt to assign to 'if' statement that fell off "
-                        + "the end without 'else' clause."
-                    );
+                    throw new E507_CannotAssignError();
                 }
             }
             else {

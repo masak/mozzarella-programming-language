@@ -44,5 +44,17 @@ test("assignment expression", (t) => {
         () => run("for x in x = [1, 2, 3] {}"),
         { instanceOf: E508_ReadonlyError },
     );
+    t.throws(
+        () => run("do {} = 3"),
+        { instanceOf: E507_CannotAssignError },
+    );
+    t.throws(
+        () => run("my x; do if false { x } = 8"),
+        { instanceOf: E507_CannotAssignError },
+    );
+    t.throws(
+        () => run("my x; do if 1 + 1 == 3 { x } else if 0 == 3 { x } = 19"),
+        { instanceOf: E507_CannotAssignError },
+    );
 });
 
