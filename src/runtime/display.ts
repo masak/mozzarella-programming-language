@@ -1,4 +1,7 @@
 import {
+    E000_InternalError,
+} from "./error";
+import {
     ArrayValue,
     BoolValue,
     FuncValue,
@@ -65,10 +68,14 @@ export function displayValue(value: Value, seen: Set<Value>): string {
         return ["<func ", value.name, "(", params, ")>"].join("");
     }
     else if (value instanceof UninitValue) {
-        throw new Error("Precondition failed: uninitialized pseudo-value");
+        throw new E000_InternalError(
+            "Precondition failed: uninitialized pseudo-value"
+        );
     }
     else {
-        throw new Error(`Unknown value type '${value.constructor.name}'`);
+        throw new E000_InternalError(
+            `Unknown value type '${value.constructor.name}'`
+        );
     }
 }
 

@@ -2,6 +2,9 @@ import {
     displayValue,
 } from "./display";
 import {
+    E000_InternalError,
+} from "./error";
+import {
     ArrayValue,
     BoolValue,
     IntValue,
@@ -33,7 +36,7 @@ export function stringify(value: Value): StrValue {
     else { // generic fallback
         let typeName = value.constructor.name;
         if (!/Value$/.test(typeName)) {
-            throw new Error("Type name doesn't end in 'Value'");
+            throw new E000_InternalError("Type name doesn't end in 'Value'");
         }
         let shortTypeName = typeName.replace(/Value$/, "");
         return new StrValue("<" + shortTypeName + ">");

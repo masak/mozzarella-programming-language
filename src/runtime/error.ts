@@ -1,3 +1,7 @@
+export {
+    E000_InternalError,
+} from "../compiler/error";
+
 export class E500_OutOfFuel extends Error {
 }
 

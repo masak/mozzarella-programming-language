@@ -7,7 +7,9 @@ import {
     TokenKind,
 } from "../compiler/token";
 import {
+    E000_InternalError,
     E502_UnchainableOpsError,
+    E503_TypeError,
 } from "./error";
 import {
     ArrayValue,
@@ -28,25 +30,27 @@ function isLessThan(left: Value, right: Value): boolean {
     let comparable = isComparable(left) && isComparable(right);
     let sameType = left.constructor === right.constructor;
     if (!(comparable && sameType)) {
-        throw new Error(`Cannot compare ${left.constructor.name} ` +
-                        `and ${right.constructor.name}`);
+        throw new E503_TypeError(
+            `Cannot compare ${left.constructor.name} ` +
+                `and ${right.constructor.name}`
+        );
     }
 
     if (left instanceof IntValue) {
         if (!(right instanceof IntValue)) {
-            throw new Error("Precondition failed: not an Int");
+            throw new E000_InternalError("Precondition failed: not an Int");
         }
         return left.payload < right.payload;
     }
     else if (left instanceof StrValue) {
         if (!(right instanceof StrValue)) {
-            throw new Error("Precondition failed: not a Str");
+            throw new E000_InternalError("Precondition failed: not a Str");
         }
         return left.payload < right.payload;
     }
     else if (left instanceof ArrayValue) {
         if (!(right instanceof ArrayValue)) {
-            throw new Error("Precondition failed: not an Array");
+            throw new E000_InternalError("Precondition failed: not an Array");
         }
         for (let i = 0; i < left.elements.length; i++) {
             if (i >= right.elements.length) {   // left array longer
@@ -68,7 +72,9 @@ function isLessThan(left: Value, right: Value): boolean {
         return left.elements.length < right.elements.length;
     }
     else {
-        throw new Error("Precondition failed: unrecognized comparable type");
+        throw new E000_InternalError(
+            "Precondition failed: unrecognized comparable type"
+        );
     }
 }
 
@@ -112,7 +118,9 @@ function areEqual(left: Value, right: Value): boolean {
 
 function pairwise<T>(fn: (x: T, y: T) => boolean, xs: Array<T>, ys: Array<T>) {
     if (xs.length !== ys.length) {
-        throw new Error("Precondition failed: lists are of unequal length");
+        throw new E000_InternalError(
+            "Precondition failed: lists are of unequal length"
+        );
     }
     for (let i = 0; i < xs.length; i++) {
         if (!fn(xs[i], ys[i])) {
@@ -136,7 +144,9 @@ export const comparisonOps = new Set([
 export function findAllChainedOps(root: Expr): [Array<Expr>, Array<Token>] {
     if (!(root instanceof InfixOpExpr)
         || !comparisonOps.has((root.children[1] as Token).kind)) {
-        throw new Error("Precondition failed: root must be comparison expr");
+        throw new E000_InternalError(
+            "Precondition failed: root must be comparison expr"
+        );
     }
     let stack: Array<InfixOpExpr> = [root];
     while (true) {
@@ -225,7 +235,9 @@ export function evaluateComparison(
         return !areEqual(left, right);
     }
     else {
-        throw new Error(`Unrecognized comparison token kind ${op.kind.kind}`);
+        throw new E000_InternalError(
+            `Unrecognized comparison token kind ${op.kind.kind}`
+        );
     }
 }
 

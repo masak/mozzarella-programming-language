@@ -44,6 +44,7 @@ import {
     findAllChainedOps,
 } from "./compare";
 import {
+    E000_InternalError,
     E500_OutOfFuel,
     E501_ZeroDivisionError,
     E503_TypeError,
@@ -838,7 +839,7 @@ function initializeEnv(env: Env, statements: Array<Statement | Decl>): Env {
 
 function zip<T, U>(ts: Array<T>, us: Array<U>): Array<[T, U]> {
     if (ts.length !== us.length) {
-        throw new Error(
+        throw new E000_InternalError(
             `Precondition failed: unequal lengths ${ts.length} ` +
             `and ${us.length}`
         );
@@ -915,7 +916,9 @@ function reducePState(
                 );
             }
             else {
-                throw new Error(`Unknown prefix op type ${opToken.kind.kind}`);
+                throw new E000_InternalError(
+                    `Unknown prefix op type ${opToken.kind.kind}`
+                );
             }
         }
         else if (syntaxNode instanceof InfixOpExpr) {
@@ -966,7 +969,9 @@ function reducePState(
                 );
             }
             else {
-                throw new Error(`Unknown infix op type ${opToken.kind.kind}`);
+                throw new E000_InternalError(
+                    `Unknown infix op type ${opToken.kind.kind}`
+                );
             }
         }
         else if (syntaxNode instanceof ParenExpr) {
@@ -1168,7 +1173,7 @@ function reducePState(
             }
         }
         else {
-            throw new Error(
+            throw new E000_InternalError(
                 `Unrecognized syntax node ${syntaxNode.constructor.name}`
             );
         }
@@ -1377,7 +1382,9 @@ function reducePState(
                 );
             }
             else {
-                throw new Error(`Unknown infix op type ${opToken.kind.kind}`);
+                throw new E000_InternalError(
+                    `Unknown infix op type ${opToken.kind.kind}`
+                );
             }
         }
         else if (syntaxNode instanceof IntLitExpr) {
@@ -1440,13 +1447,13 @@ function reducePState(
             }
         }
         else {
-            throw new Error(
+            throw new E000_InternalError(
                 "Unsupported ignore syntax node " + syntaxNode.constructor.name
             );
         }
     }
     else {
-        throw new Error("Precondition failed: unrecognized mode");
+        throw new E000_InternalError("Precondition failed: unrecognized mode");
     }
 }
 
@@ -1508,7 +1515,9 @@ function reduceRetState({ value, kont }: RetState): State {
             );
         }
         else {
-            throw new Error(`Unknown prefix op type ${kont.token.kind.kind}`);
+            throw new E000_InternalError(
+                `Unknown prefix op type ${kont.token.kind.kind}`
+            );
         }
     }
     else if (kont instanceof InfixOp1Kont) {
@@ -1632,7 +1641,9 @@ function reduceRetState({ value, kont }: RetState): State {
             }
         }
         else {
-            throw new Error(`Unknown infix op type ${token.kind.kind}`);
+            throw new E000_InternalError(
+                `Unknown infix op type ${token.kind.kind}`
+            );
         }
     }
     else if (kont instanceof InfixOp2Kont) {
@@ -1711,17 +1722,19 @@ function reduceRetState({ value, kont }: RetState): State {
             );
         }
         else if (token.kind === TokenKind.AmpAmp) {
-            throw new Error(
-                "Precondition broken: no second continuation for &&"
+            throw new E000_InternalError(
+                "Precondition failed: no second continuation for &&"
             );
         }
         else if (token.kind === TokenKind.PipePipe) {
-            throw new Error(
-                "Precondition broken: no second continuation for ||"
+            throw new E000_InternalError(
+                "Precondition failed: no second continuation for ||"
             );
         }
         else {
-            throw new Error(`Unknown infix op type ${token.kind.kind}`);
+            throw new E000_InternalError(
+                `Unknown infix op type ${token.kind.kind}`
+            );
         }
     }
     else if (kont instanceof ComparisonOp1Kont) {
@@ -2432,7 +2445,9 @@ function reduceRetState({ value, kont }: RetState): State {
             }
         }
         else {
-            throw new Error(`Unknown infix op type ${token.kind.kind}`);
+            throw new E000_InternalError(
+                `Unknown infix op type ${token.kind.kind}`
+            );
         }
     }
     else if (kont instanceof InfixOpIgnore2Kont) {
@@ -2500,21 +2515,25 @@ function reduceRetState({ value, kont }: RetState): State {
             );
         }
         else if (token.kind === TokenKind.AmpAmp) {
-            throw new Error(
-                "Precondition broken: no second continuation for &&"
+            throw new E000_InternalError(
+                "Precondition failed: no second continuation for &&"
             );
         }
         else if (token.kind === TokenKind.PipePipe) {
-            throw new Error(
-                "Precondition broken: no second continuation for ||"
+            throw new E000_InternalError(
+                "Precondition failed: no second continuation for ||"
             );
         }
         else {
-            throw new Error(`Unknown infix op type ${token.kind.kind}`);
+            throw new E000_InternalError(
+                `Unknown infix op type ${token.kind.kind}`
+            );
         }
     }
     else {
-        throw new Error(`Unrecognized kont ${kont.constructor.name}`);
+        throw new E000_InternalError(
+            `Unrecognized kont ${kont.constructor.name}`
+        );
     }
 }
 

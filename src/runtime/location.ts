@@ -3,6 +3,7 @@ import {
     Env,
 } from "./env";
 import {
+    E000_InternalError,
     E504_IndexError,
 } from "./error";
 import {
@@ -48,7 +49,9 @@ export function assign(location: Location, value: Value): void {
         array.elements[index] = value;
     }
     else {
-        throw new Error("Precondition failed: unrecognized Location");
+        throw new E000_InternalError(
+            "Precondition failed: unrecognized Location"
+        );
     }
 }
 
