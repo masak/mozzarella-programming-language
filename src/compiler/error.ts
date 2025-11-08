@@ -1,3 +1,6 @@
+export class E101_LexerError extends Error {
+}
+
 export class E201_SyntaxError extends Error {
 }
 

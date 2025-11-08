@@ -1,4 +1,7 @@
 import {
+    E101_LexerError,
+} from "./error";
+import {
     Token,
     TokenKind,
 } from "./token";
@@ -74,17 +77,19 @@ export class Lexer {
 
     private charAt(pos: number): string {
         if (pos >= this.input.length) {
-            throw new Error("Character at end of string");
+            throw new E101_LexerError("Character at end of string");
         }
         return this.input.charAt(pos);
     }
 
     private expected(char: string, pos: number): never {
         if (pos >= this.input.length) {
-            throw new Error(`Expected '${char}', found eof`);
+            throw new E101_LexerError(`Expected '${char}', found eof`);
         }
         else {
-            throw new Error(`Expected '${char}', found ${this.charAt(pos)}`);
+            throw new E101_LexerError(
+                `Expected '${char}', found ${this.charAt(pos)}`
+            );
         }
     }
 
@@ -115,7 +120,7 @@ export class Lexer {
                 }
                 let [ch2, tokenKind2] = ch2Info;
                 if (!this.seeingChar(ch2, pos)) {
-                    throw new Error(
+                    throw new E101_LexerError(
                         "Unrecognized character after '" +
                             this.charAt(this.pos) + "'"
                     );
@@ -145,7 +150,7 @@ export class Lexer {
                     pos += 1;
                 }
                 if (!this.seeingDigit(pos)) {
-                    throw new Error("Lexer: expected digit");
+                    throw new E101_LexerError("Lexer: expected digit");
                 }
                 digits.push(this.charAt(pos));
                 pos += 1;
@@ -175,7 +180,9 @@ export class Lexer {
                         characters.push("\\");
                     }
                     else {
-                        throw new Error("Unrecognized escape character");
+                        throw new E101_LexerError(
+                            "Unrecognized escape character"
+                        );
                     }
                 }
                 else {
@@ -204,7 +211,7 @@ export class Lexer {
                 return [pos, new Token(TokenKind.Identifier, name)];
             }
             else if (name.match(/_/)) {
-                throw new Error("Illegal identifier");
+                throw new E101_LexerError("Illegal identifier");
             }
             else if (name === "true") {
                 return [pos, new Token(TokenKind.TrueKeyword, true)];
@@ -257,7 +264,7 @@ export class Lexer {
                 .substring(this.pos, this.pos + 10)
                 .replace(/\s.*/, "")
                 .replace(/\w+$/, "");
-            throw new Error(`Unrecognized token '${tokenGuess}'`);
+            throw new E101_LexerError(`Unrecognized token '${tokenGuess}'`);
         }
     }
 
