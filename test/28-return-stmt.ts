@@ -1,5 +1,6 @@
 import test from "ava";
 import {
+    E513_ReturnOutsideRoutineError,
     run,
 } from "../src/go";
 
@@ -12,6 +13,9 @@ test("'return' statement", (t) => {
     t.is(run("my x = 0; func f() { return x; x = 1; }; f()"), "0");
     t.is(run("my x = 0; func f() { return x; x = 1; }; f(); x"), "0");
 
-    t.throws(() => run("return 10;"));
+    t.throws(
+        () => run("return 10;"),
+        { instanceOf: E513_ReturnOutsideRoutineError },
+    );
 });
 

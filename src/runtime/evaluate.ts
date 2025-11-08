@@ -54,6 +54,7 @@ import {
     E510_NextOutsideLoopError,
     E511_TooManyArgumentsError,
     E512_NotEnoughArgumentsError,
+    E513_ReturnOutsideRoutineError,
 } from "./error";
 import {
     bindMutable,
@@ -1150,7 +1151,7 @@ function reducePState(
             if (syntaxNode.expr === null) {
                 let returnTarget = jumpMap.returnTarget;
                 if (returnTarget === null) {
-                    throw new Error("'return' outside of a routine");
+                    throw new E513_ReturnOutsideRoutineError();
                 }
                 else {
                     return new RetState(new NoneValue(), returnTarget);
@@ -1386,7 +1387,7 @@ function reducePState(
             if (syntaxNode.expr === null) {
                 let returnTarget = jumpMap.returnTarget;
                 if (returnTarget === null) {
-                    throw new Error("'return' outside of a routine");
+                    throw new E513_ReturnOutsideRoutineError();
                 }
                 else {
                     return new RetState(new NoneValue(), returnTarget);
@@ -2209,7 +2210,7 @@ function reduceRetState({ value, kont }: RetState): State {
     else if (kont instanceof ReturnIgnoreKont) {
         let returnTarget = kont.jumpMap.returnTarget;
         if (returnTarget === null) {
-            throw new Error("'return' outside of a routine");
+            throw new E513_ReturnOutsideRoutineError();
         }
         else {
             return new RetState(value, returnTarget);
@@ -2218,7 +2219,7 @@ function reduceRetState({ value, kont }: RetState): State {
     else if (kont instanceof ReturnKont) {
         let returnTarget = kont.jumpMap.returnTarget;
         if (returnTarget === null) {
-            throw new Error("'return' outside of a routine");
+            throw new E513_ReturnOutsideRoutineError();
         }
         else {
             return new RetState(value, returnTarget);

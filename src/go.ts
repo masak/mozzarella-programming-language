@@ -34,6 +34,7 @@ export {
     E510_NextOutsideLoopError,
     E511_TooManyArgumentsError,
     E512_NotEnoughArgumentsError,
+    E513_ReturnOutsideRoutineError,
 } from "./runtime/error";
 
 export function run(source: string): string {

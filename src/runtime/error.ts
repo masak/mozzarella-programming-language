@@ -37,3 +37,6 @@ export class E511_TooManyArgumentsError extends Error {
 export class E512_NotEnoughArgumentsError extends Error {
 }
 
+export class E513_ReturnOutsideRoutineError extends Error {
+}
+
