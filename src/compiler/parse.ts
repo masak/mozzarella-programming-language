@@ -1,4 +1,5 @@
 import {
+    E000_InternalError,
     E201_SyntaxError,
 } from "./error";
 import {
@@ -106,7 +107,9 @@ function strength(infixToken: Token): number {
         return assignmentStrength;
     }
     else {
-        throw new Error("Precondition error: unrecognized infix token");
+        throw new E000_InternalError(
+            "Precondition failed: unrecognized infix token"
+        );
     }
 }
 
@@ -393,7 +396,9 @@ export class Parser {
                 return true;
             }
             if (!(topOfStack instanceof InfixOp)) {
-                throw new Error("Precondition failed: unknown op type");
+                throw new E000_InternalError(
+                    "Precondition failed: unknown op type"
+                );
             }
             let topOpToken = topOfStack.token;
             let topOpStrength = strength(topOpToken);
@@ -405,7 +410,7 @@ export class Parser {
 
         function reduce(): void {
             if (opStack.length === 0) {
-                throw new Error("Empty op stack during reduce");
+                throw new E000_InternalError("Empty op stack during reduce");
             }
             let op = opStack.pop()!;
             if (op instanceof PrefixOp) {
@@ -418,7 +423,9 @@ export class Parser {
                 termStack.push(new InfixOpExpr(lhs, op.token, rhs));
             }
             else {
-                throw new Error("Unknown kind of op during reduce");
+                throw new E000_InternalError(
+                    "Unknown kind of op during reduce"
+                );
             }
         }
 
@@ -524,10 +531,14 @@ export class Parser {
         }
 
         if (termStack.length > 1) {
-            throw new Error("Too many terms left -- impossible");
+            throw new E000_InternalError(
+                "Precondition failed: multiple terms on term stack"
+            );
         }
         else if (termStack.length < 1) {
-            throw new Error("Not enough terms left -- impossible");
+            throw new E000_InternalError(
+                "Precondition failed: term stack is empty"
+            );
         }
 
         return termStack[0];

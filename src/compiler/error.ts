@@ -1,3 +1,6 @@
+export class E000_InternalError extends Error {
+}
+
 export class E101_LexerError extends Error {
 }
 

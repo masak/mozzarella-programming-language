@@ -1,4 +1,5 @@
 import {
+    E000_InternalError,
     E101_LexerError,
 } from "./error";
 import {
@@ -114,7 +115,7 @@ export class Lexer {
             let [tokenKind1, ch2Info] = choice;
             if (tokenKind1 === null) {
                 if (ch2Info === null) {
-                    throw new Error(
+                    throw new E000_InternalError(
                         "Precondition failed: both components null"
                     );
                 }
@@ -270,7 +271,9 @@ export class Lexer {
 
     advance(): void {
         if (this.pos >= this.lookaheadPos) {
-            throw new Error("Trying to advance but nothing to advance to");
+            throw new E000_InternalError(
+                "Trying to advance but nothing to advance to"
+            );
         }
         this.pos = this.lookaheadPos;
     }
