@@ -1,13 +1,5 @@
 # Near-future plans
 
-## Typed errors 🏷🎯
-
-Right now, some of the tests only check that the code fails with _some_ error.
-This is needlessly imprecise, and could in the worst case hide subtle bugs.
-
-The plan is to have specific types (divided into compile-time and runtime
-errors), and to expect a specific type of error in the `t.throws` tests.
-
 ## Errors with locations 🧭🔍
 
 This is part of Hoare's minimum requirements for a language: that the error is
