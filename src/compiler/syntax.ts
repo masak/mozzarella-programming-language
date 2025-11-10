@@ -268,13 +268,23 @@ export class IndexingExpr extends Expr {
     }
 }
 
+export class Argument extends SyntaxNode {
+    constructor(expr: Expr) {
+        super([expr]);
+    }
+
+    get expr(): Expr {
+        return this.children[0] as Expr;
+    }
+}
+
 export class ArgumentList extends SyntaxNode {
-    constructor(args: Array<Expr>) {
+    constructor(args: Array<Argument>) {
         super(args);
     }
 
-    get args(): Array<Expr> {
-        return this.children as Array<Expr>;
+    get args(): Array<Argument> {
+        return this.children as Array<Argument>;
     }
 }
 

@@ -1,4 +1,5 @@
 import {
+    Argument,
     ArrayInitializerExpr,
     Block,
     BlockStatement,
@@ -537,12 +538,17 @@ class While2Kont {
 }
 
 class Call1Kont {
-    args: Array<Expr>;
+    args: Array<Argument>;
     env: Env;
     tail: Kont;
     jumpMap: JumpMap;
 
-    constructor(args: Array<Expr>, env: Env, tail: Kont, jumpMap: JumpMap) {
+    constructor(
+        args: Array<Argument>,
+        env: Env,
+        tail: Kont,
+        jumpMap: JumpMap,
+    ) {
         this.args = args;
         this.env = env;
         this.tail = tail;
@@ -553,7 +559,7 @@ class Call1Kont {
 class Call2Kont {
     funcValue: FuncValue;
     argValues: Array<Value>;
-    args: Array<Expr>;
+    args: Array<Argument>;
     index: number;
     env: Env;
     tail: Kont;
@@ -562,7 +568,7 @@ class Call2Kont {
     constructor(
         funcValue: FuncValue,
         argValues: Array<Value>,
-        args: Array<Expr>,
+        args: Array<Argument>,
         index: number,
         env: Env,
         tail: Kont,
@@ -2140,7 +2146,7 @@ function reduceRetState({ value, kont }: RetState): State {
                 kont.jumpMap,
             );
             return new PState(
-                [Mode.GetValue, kont.args[0]],
+                [Mode.GetValue, kont.args[0].expr],
                 kont.env,
                 call2Kont,
                 kont.jumpMap,
@@ -2179,7 +2185,7 @@ function reduceRetState({ value, kont }: RetState): State {
                 kont.jumpMap,
             );
             return new PState(
-                [Mode.GetValue, kont.args[kont.index + 1]],
+                [Mode.GetValue, kont.args[kont.index + 1].expr],
                 kont.env,
                 call2Kont,
                 kont.jumpMap,

@@ -6,6 +6,7 @@ import {
     Lexer,
 } from "./lex";
 import {
+    Argument,
     ArgumentList,
     ArrayInitializerExpr,
     Block,
@@ -561,10 +562,11 @@ export class Parser {
     }
 
     parseArgumentList(): ArgumentList {
-        let args: Array<Expr> = [];
+        let args: Array<Argument> = [];
         while (!this.seeing(TokenKind.ParenR)) {
             let expr = this.parseExpr();
-            args.push(expr);
+            let arg = new Argument(expr);
+            args.push(arg);
             if (!this.accept(TokenKind.Comma)) {
                 break;
             }
