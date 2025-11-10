@@ -21,6 +21,7 @@ import {
     ForStatement,
     FuncDecl,
     IfClause,
+    IfClauseList,
     IfStatement,
     IndexingExpr,
     InfixOpExpr,
@@ -295,7 +296,8 @@ export class Parser {
                     this.parseFail("'if' or block after 'else'");
                 }
             }
-            let ifStatement = new IfStatement(clauses, elseBlock);
+            let clauseList = new IfClauseList(clauses);
+            let ifStatement = new IfStatement(clauseList, elseBlock);
             return [ifStatement, true];
         }
         else if (this.accept(TokenKind.ForKeyword)) {

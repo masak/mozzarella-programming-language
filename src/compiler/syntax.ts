@@ -80,8 +80,8 @@ export class IfClauseList extends SyntaxNode {
 }
 
 export class IfStatement extends Statement {
-    constructor(clauses: Array<IfClause>, elseBlock: Block | null) {
-        super([new IfClauseList(clauses), elseBlock]);
+    constructor(clauseList: IfClauseList, elseBlock: Block | null) {
+        super([clauseList, elseBlock]);
     }
 
     get clauseList(): IfClauseList {
