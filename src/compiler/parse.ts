@@ -28,6 +28,7 @@ import {
     InfixOpExpr,
     IntLitExpr,
     LastStatement,
+    MacroDecl,
     NextStatement,
     NoneLitExpr,
     Parameter,
@@ -171,6 +172,7 @@ const statementStartTokens = new Set([
 const declStartTokens = new Set([
     TokenKind.MyKeyword,
     TokenKind.FuncKeyword,
+    TokenKind.MacroKeyword,
 ]);
 
 export class Parser {
@@ -380,6 +382,15 @@ export class Parser {
             let body = this.parseBlock();
             return [new FuncDecl(nameToken, paramList, null, body), true];
         }
+        else if (this.accept(TokenKind.MacroKeyword)) {
+            this.expect(TokenKind.Identifier);
+            let nameToken = this.accept(TokenKind.Identifier)!;
+            this.advanceOver(TokenKind.ParenL);
+            let paramList = this.parseParameterList();
+            this.advanceOver(TokenKind.ParenR);
+            let body = this.parseBlock();
+            return [new MacroDecl(nameToken, paramList, null, body), true];
+        }
         else {
             this.parseFail("declaration");
         }
@@ -471,8 +482,9 @@ export class Parser {
                 else if (token = this.accept(TokenKind.DoKeyword)!) {
                     let [statement, sawSemi] = this.parseStatement();
                     if (!sawSemi && !this.seeing(TokenKind.Eof)
-                       && !this.seeing(TokenKind.CurlyR)) {
-                        this.parseFail("semicolon or closing curly brace");
+                       && !this.seeing(TokenKind.CurlyR)
+                       && !this.seeing(TokenKind.ParenR)) {
+                        this.parseFail("end of expression");
                     }
                     termStack.push(new DoExpr(statement));
                     expectation = "operator";

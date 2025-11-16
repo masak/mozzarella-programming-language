@@ -52,6 +52,24 @@ export function lookup(env: Env | null, name: string): Value {
     throw new E506_UndeclaredError(`Undeclared variable '${name}'`);
 }
 
+// Used when looking up the names for macro calls; in this scenario, both
+// undeclared and uninitialized variables are simply treated as harmless
+// "fall-through" cases, not errors.
+export function tolerantLookup(env: Env | null, name: string): Value | null {
+    while (env !== null) {
+        let binding: Binding;
+        if (binding = env.bindings.get(name)!) {
+            let value = binding.value;
+            if (value instanceof UninitValue) {
+                return null;
+            }
+            return value;
+        }
+        env = env.outer;
+    }
+    return null;
+}
+
 export function findEnvOfName(env: Env | null, name: string): [boolean, Env] {
     while (env != null) {
         if (env.bindings.has(name)) {

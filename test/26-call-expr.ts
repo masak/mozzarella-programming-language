@@ -16,6 +16,20 @@ test("call expression", (t) => {
     t.is(run("my x = 0; func f() { x = 1; }; f(); x"), "1");
     t.is(run("func f() { 5; }; f()"), "none");
 
+    {
+        let program = `
+            my n = 0;
+            func f() {
+                n = n + 1;
+            }
+            for ff in [f, f, f] {
+                ff();
+            }
+            n;
+        `;
+        t.is(run(program), "3");
+    }
+
     t.throws(
         () => run("func f() {}; f(5)"),
         { instanceOf: E511_TooManyArgumentsError },

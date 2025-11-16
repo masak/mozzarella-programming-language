@@ -62,6 +62,41 @@ export class FuncValue {
     }
 }
 
+export class MacroValue {
+    name: string;
+    outerEnv: Env;
+    parameters: Array<string>;
+    body: Block;
+
+    constructor(
+        name: string,
+        outerEnv: Env,
+        parameters: Array<string>,
+        body: Block,
+    ) {
+        this.name = name;
+        this.outerEnv = outerEnv;
+        this.parameters = parameters;
+        this.body = body;
+    }
+}
+
+export class SyntaxNodeValue {
+    kind: IntValue;
+    children: Array<SyntaxNodeValue | NoneValue>;
+    payload: IntValue | StrValue | BoolValue | NoneValue;
+
+    constructor(
+        kind: IntValue,
+        children: Array<SyntaxNodeValue | NoneValue>,
+        payload: IntValue | StrValue | BoolValue | NoneValue,
+    ) {
+        this.kind = kind;
+        this.children = children;
+        this.payload = payload;
+    }
+}
+
 export class UninitValue {
 }
 

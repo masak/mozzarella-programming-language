@@ -44,3 +44,6 @@ export class E512_NotEnoughArgumentsError extends Error {
 export class E513_ReturnOutsideRoutineError extends Error {
 }
 
+export class E514_MacroAtRuntimeError extends Error {
+}
+

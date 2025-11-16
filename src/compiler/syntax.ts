@@ -219,6 +219,33 @@ export class FuncDecl extends Decl {
     }
 }
 
+export class MacroDecl extends Decl {
+    constructor(
+        nameToken: Token,
+        parameterList: ParameterList,
+        type: null,
+        body: Block,
+    ) {
+        super([nameToken, parameterList, type, body]);
+    }
+
+    get nameToken(): Token {
+        return this.children[0] as Token;
+    }
+
+    get parameterList(): ParameterList {
+        return this.children[1] as ParameterList;
+    }
+
+    get type(): null {
+        return this.children[2] as null;
+    }
+
+    get body(): Block {
+        return this.children[3] as Block;
+    }
+}
+
 export abstract class Expr extends SyntaxNode {
 }
 
@@ -302,7 +329,7 @@ export class CallExpr extends Expr {
     }
 }
 
-abstract class PrimaryExpr extends Expr {
+export abstract class PrimaryExpr extends Expr {
 }
 
 export class IntLitExpr extends PrimaryExpr {

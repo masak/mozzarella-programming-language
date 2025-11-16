@@ -19,6 +19,7 @@ import {
     InfixOpExpr,
     IntLitExpr,
     LastStatement,
+    MacroDecl,
     NextStatement,
     NoneLitExpr,
     ParenExpr,
@@ -57,6 +58,7 @@ import {
     E511_TooManyArgumentsError,
     E512_NotEnoughArgumentsError,
     E513_ReturnOutsideRoutineError,
+    E514_MacroAtRuntimeError,
 } from "./error";
 import {
     bindMutable,
@@ -81,6 +83,7 @@ import {
     BoolValue,
     FuncValue,
     IntValue,
+    MacroValue,
     NoneValue,
     StrValue,
     UninitValue,
@@ -807,8 +810,11 @@ class RetState {
     }
 }
 
-function load(compUnit: CompUnit): State {
-    let env = initializeEnv(emptyEnv(), compUnit.statements);
+function load(
+    compUnit: CompUnit,
+    staticEnvs: Map<CompUnit | Block, Env>,
+): State {
+    let env = initializeEnv(emptyEnv(), compUnit, staticEnvs);
     return new PState(
         [Mode.GetValue, compUnit],
         env,
@@ -817,12 +823,19 @@ function load(compUnit: CompUnit): State {
     );
 }
 
-function initializeEnv(env: Env, statements: Array<Statement | Decl>): Env {
-    for (let statementOrDecl of statements) {
+export function initializeEnv(
+    env: Env,
+    compUnitOrBlock: CompUnit | Block,
+    staticEnvs: Map<CompUnit | Block, Env>,
+): Env {
+    for (let statementOrDecl of compUnitOrBlock.statements) {
         if (statementOrDecl instanceof VarDecl) {
             let varDecl = statementOrDecl;
             let name = varDecl.nameToken.payload as string;
-            bindMutable(env, name, new UninitValue());
+            let staticEnv = staticEnvs.get(compUnitOrBlock);
+            let value
+                = staticEnv?.bindings.get(name)?.value ?? new UninitValue();
+            bindMutable(env, name, value);
         }
         else if (statementOrDecl instanceof FuncDecl) {
             let funcDecl = statementOrDecl;
@@ -837,6 +850,20 @@ function initializeEnv(env: Env, statements: Array<Statement | Decl>): Env {
                 funcDecl.body,
             );
             bindReadonly(env, name, funcValue);
+        }
+        else if (statementOrDecl instanceof MacroDecl) {
+            let macroDecl = statementOrDecl;
+            let name = macroDecl.nameToken.payload as string;
+            let parameterList = macroDecl.parameterList.parameters.map(
+                (parameter) => parameter.nameToken.payload as string
+            );
+            let macroValue = new MacroValue(
+                name,
+                env,
+                parameterList,
+                macroDecl.body,
+            );
+            bindReadonly(env, name, macroValue);
         }
     }
 
@@ -859,6 +886,7 @@ function zip<T, U>(ts: Array<T>, us: Array<U>): Array<[T, U]> {
 
 function reducePState(
     { code: [mode, syntaxNode], env, kont, jumpMap }: PState,
+    staticEnvs: Map<CompUnit | Block, Env>,
 ): State {
     if (mode === Mode.GetValue) {
         if (syntaxNode instanceof CompUnit) {
@@ -996,8 +1024,8 @@ function reducePState(
             );
         }
         else if (syntaxNode instanceof Block) {
+            env = initializeEnv(extend(env), syntaxNode, staticEnvs);
             let statements = syntaxNode.statements;
-            env = initializeEnv(extend(env), statements);
             if (statements.length === 0) {
                 return new RetState(new NoneValue(), kont);
             }
@@ -1178,6 +1206,9 @@ function reducePState(
                 );
             }
         }
+        else if (syntaxNode instanceof MacroDecl) {
+            return new RetState(new NoneValue(), kont);
+        }
         else {
             throw new E000_InternalError(
                 `Unrecognized syntax node ${syntaxNode.constructor.name}`
@@ -1236,8 +1267,8 @@ function reducePState(
             );
         }
         else if (syntaxNode instanceof Block) {
+            env = initializeEnv(extend(env), syntaxNode, staticEnvs);
             let statements = syntaxNode.statements;
-            env = initializeEnv(extend(env), statements);
             if (statements.length === 0) {
                 throw new E507_CannotAssignError(
                     "Can't evaluate an empty block for a location"
@@ -1297,8 +1328,8 @@ function reducePState(
     }
     else if (mode === Mode.Ignore) {
         if (syntaxNode instanceof Block) {
+            env = initializeEnv(extend(env), syntaxNode, staticEnvs);
             let statements = syntaxNode.statements;
-            env = initializeEnv(extend(env), statements);
             if (statements.length === 0) {
                 return new RetState(new NoneValue(), kont);
             }
@@ -2111,6 +2142,9 @@ function reduceRetState({ value, kont }: RetState): State {
         );
     }
     else if (kont instanceof Call1Kont) {
+        if (value instanceof MacroValue) {
+            throw new E514_MacroAtRuntimeError();
+        }
         if (!(value instanceof FuncValue)) {
             throw new E503_TypeError("Not callable: not a function");
         }
@@ -2246,6 +2280,9 @@ function reduceRetState({ value, kont }: RetState): State {
         return new RetState(new NoneValue(), kont.tail);
     }
     else if (kont instanceof CallIgnore1Kont) {
+        if (value instanceof MacroValue) {
+            throw new E514_MacroAtRuntimeError();
+        }
         if (!(value instanceof FuncValue)) {
             throw new E503_TypeError("Not callable: not a function");
         }
@@ -2544,12 +2581,15 @@ function unload(kont: RetState): Value {
     return kont.value;
 }
 
-export function runCompUnit(compUnit: CompUnit): Value {
-    let state = load(compUnit);
+export function runCompUnit(
+    compUnit: CompUnit,
+    staticEnvs: Map<CompUnit | Block, Env>,
+): Value {
+    let state = load(compUnit, staticEnvs);
 
     while (state instanceof PState || !(state.kont instanceof HaltKont)) {
         if (state instanceof PState) {
-            state = reducePState(state);
+            state = reducePState(state, staticEnvs);
         }
         else {
             state = reduceRetState(state);
@@ -2558,12 +2598,16 @@ export function runCompUnit(compUnit: CompUnit): Value {
     return unload(state);
 }
 
-export function runCompUnitWithFuel(compUnit: CompUnit, fuel: number): Value {
-    let state = load(compUnit);
+export function runCompUnitWithFuel(
+    compUnit: CompUnit,
+    fuel: number,
+    staticEnvs: Map<CompUnit | Block, Env>,
+): Value {
+    let state = load(compUnit, staticEnvs);
 
     while (state instanceof PState || !(state.kont instanceof HaltKont)) {
         if (state instanceof PState) {
-            state = reducePState(state);
+            state = reducePState(state, staticEnvs);
         }
         else {
             state = reduceRetState(state);
@@ -2572,6 +2616,47 @@ export function runCompUnitWithFuel(compUnit: CompUnit, fuel: number): Value {
         --fuel;
         if (fuel <= 0) {
             throw new E500_OutOfFuel();
+        }
+    }
+    return unload(state);
+}
+
+export function callMacro(
+    macroValue: MacroValue,
+    argValues: Array<Value>,
+    staticEnv: Env,
+    staticEnvs: Map<CompUnit | Block, Env>,
+): Value {
+    if (argValues.length > macroValue.parameters.length) {
+        throw new E511_TooManyArgumentsError();
+    }
+    else if (argValues.length < macroValue.parameters.length) {
+        throw new E512_NotEnoughArgumentsError();
+    }
+
+    let bodyEnv = extend(staticEnv);
+    for (let [param, arg] of zip(macroValue.parameters, argValues)) {
+        bindReadonly(bodyEnv, param, arg);
+    }
+    let haltKont = new HaltKont();
+    let jumpMap = new JumpMap();
+    jumpMap.returnTarget = haltKont;
+    jumpMap.lastTarget = null;
+    jumpMap.nextTarget = null;
+
+    let state: State = new PState(
+        [Mode.Ignore, macroValue.body],
+        bodyEnv,
+        haltKont,
+        jumpMap,
+    );
+
+    while (state instanceof PState || !(state.kont instanceof HaltKont)) {
+        if (state instanceof PState) {
+            state = reducePState(state, staticEnvs);
+        }
+        else {
+            state = reduceRetState(state);
         }
     }
     return unload(state);

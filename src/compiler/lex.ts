@@ -256,6 +256,9 @@ export class Lexer {
             else if (name === "return") {
                 return [pos, new Token(TokenKind.ReturnKeyword)];
             }
+            else if (name === "macro") {
+                return [pos, new Token(TokenKind.MacroKeyword)];
+            }
             else {
                 return [pos, new Token(TokenKind.Identifier, name)];
             }

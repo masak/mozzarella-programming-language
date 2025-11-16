@@ -24,9 +24,10 @@ name.
 When stringifying a `FuncValue`, the following procedure is used:
 
 * Return the string `"<func "`, concatenated with the `name`, concatenated with
-  `"()>"`.
+  `"("`, concatenated with all the `parameters`, comma-separated, concatenated
+  with `")>"`.
 
-When boolifying an `ArrayValue`, the boolean value `true` is always returned.
+When boolifying a `FuncValue`, the boolean value `true` is always returned.
 
 The type `FuncValue` is not considered comparable.
 

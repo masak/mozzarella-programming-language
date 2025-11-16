@@ -6,6 +6,7 @@ import {
     Block,
     CompUnit,
     FuncDecl,
+    MacroDecl,
     SyntaxNode,
     VarDecl,
     VarRefExpr,
@@ -55,6 +56,18 @@ function visitDown(
         }
     }
     else if (syntaxNode instanceof FuncDecl) {
+        let name = syntaxNode.nameToken.payload as string;
+        let context = contextStack[contextStack.length - 1];
+        if (context.get(name) === VarState.declared) {
+            throw new E301_RedeclarationError(
+                `Redeclaration of name '${name}'`
+            );
+        }
+        else {
+            context.set(name, VarState.declared);
+        }
+    }
+    else if (syntaxNode instanceof MacroDecl) {
         let name = syntaxNode.nameToken.payload as string;
         let context = contextStack[contextStack.length - 1];
         if (context.get(name) === VarState.declared) {

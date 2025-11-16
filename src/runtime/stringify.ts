@@ -7,9 +7,12 @@ import {
 import {
     ArrayValue,
     BoolValue,
+    FuncValue,
     IntValue,
+    MacroValue,
     NoneValue,
     StrValue,
+    SyntaxNodeValue,
     Value,
 } from "./value";
 
@@ -33,13 +36,14 @@ export function stringify(value: Value): StrValue {
         ).join(", ");
         return new StrValue(["[", elements, "]"].join(""));
     }
-    else { // generic fallback
-        let typeName = value.constructor.name;
-        if (!/Value$/.test(typeName)) {
-            throw new E000_InternalError("Type name doesn't end in 'Value'");
-        }
-        let shortTypeName = typeName.replace(/Value$/, "");
-        return new StrValue("<" + shortTypeName + ">");
+    else if (value instanceof FuncValue
+                || value instanceof MacroValue
+                || value instanceof SyntaxNodeValue) {
+        let s = displayValue(value, new Set());
+        return new StrValue(s);
+    }
+    else {
+        throw new E000_InternalError("Unknown value type in stringify");
     }
 }
 
