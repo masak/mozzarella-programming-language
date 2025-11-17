@@ -77,7 +77,7 @@ of a compilation unit, or as part of larger syntax trees.
 | `CompUnit`       | `(Statement \| Decl)*` |
 | `Block`          | `(Statement \| Decl)*` |
 | `IfClause`       | `Expr, Block`          |
-| `IfClauseList`   | `IfClause+`            |
+| `IfClauseList`   | `IfClause*`            |
 | `Parameter`      | `Identifier, null`     |
 | `ParameterList`  | `Parameter*`           |
 | `Argument`       | `Expr`                 |
