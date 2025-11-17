@@ -39,6 +39,7 @@ Statement
   WhileStatement            -- Expr, Block
   LastStatement             -- (none)
   NextStatement             -- (none)
+  ReturnStatement           -- Expr?
 Decl
   VarDecl                   -- identifier, Type?, Expr?
   FuncDecl                  -- identifier, ParamList, Type?, Block
