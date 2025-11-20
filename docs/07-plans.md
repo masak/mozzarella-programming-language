@@ -281,12 +281,12 @@ most one).
 Given this, we can automatically generate oodles of syntactically well-formed
 Mozzarella programs, and expose them to various thrilling property tests.
 
-## Generator functions
+## Generator functions ⚡🎰
 
 A new declaration, `func* f() {}`, and two new statement forms, `yield e;` and
 `yield* e;`. New value types `GeneratorFuncValue` and `GeneratorValue`.
 
-## `throw` and `CATCH`
+## `throw` and `CATCH` 🏀🥅
 
 Introduce `throw e;` which causes the value `e` to unwind the stack and
 (unless intercepted) to halt the program.
@@ -294,36 +294,36 @@ Introduce `throw e;` which causes the value `e` to unwind the stack and
 Introduce `CATCH { ... }`, a statement form whose presence in a block causes
 that block to intercept runtime exceptions dynamically inside the block.
 
-## Other phasers
+## Other phasers 🛸🪄
 
 At minimum `BEGIN`, `CHECK`, `PRE`, `POST`, `NEXT`, `LAST`, `LEAVE`, `KEEP`,
 `UNDO`, `END`.
 
-## MIDI library
+## MIDI library 🎹🎸
 
 This might require some integration/FFI with JavaScript. Possibly a concept of
 I/O ports of which MIDI output is just one particular kind.
 
-## Informative feature table in SVG
+## Informative feature table in SVG 📋🎨
 
 One row per feature. Show where we introduce new token types, new syntax, and
 new value types. Also show the stages of "growth" that the evaluator goes
 through, from recursive function to added environment to CEK machine to CEK +
 jump table.
 
-## Exponentiation
+## Exponentiation 🚀🔥
 
 Right-associative `b ** n`, evaluating as `n` copies of `b` multiplied
 together.
 
-## Short-circuiting boolean xor
+## Short-circuiting boolean xor ❌🌗
 
 List-associative `x ^^ y ^^ ... ^^ z`; evaluates up to the second truthy value;
 returns (if there were no truthy values) the last value, (if there was exactly
 one truthy value) the only truthy value, (if there was more than one truthy
 value) `none`.
 
-## Bitwise or/and/xor and bitshifts
+## Bitwise or/and/xor and bitshifts 🦠✌️
 
 Written as `x +| y`, `x +& y`, `x +^ y`, `x +< y`, and `x +> y` (as in Raku);
 semantics identical to `bigint` semantics in JavaScript.
