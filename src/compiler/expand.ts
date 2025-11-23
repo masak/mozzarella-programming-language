@@ -4,15 +4,18 @@ import {
 } from "./error";
 import {
     Block,
+    BlockStatement,
     BoolLitExpr,
     CallExpr,
     CompUnit,
+    DoExpr,
     Expr,
     ForStatement,
     FuncDecl,
     IntLitExpr,
     MacroDecl,
     NoneLitExpr,
+    Statement,
     StrLitExpr,
     SyntaxNode,
     VarRefExpr,
@@ -225,19 +228,29 @@ export function macroExpandCompUnit(
                             replaceWith(new BoolLitExpr(token));
                         }
                         else if (resultValue instanceof SyntaxNodeValue) {
-                            let expr = absorbNode(resultValue);
-                            if (expr === null) {
+                            let result = absorbNode(resultValue);
+                            if (result === null) {
                                 // this case is impossible, but the signature
                                 // of `absorbNode` forces us to handle it
                                 replaceWith(new NoneLitExpr());
                             }
-                            else if (expr instanceof Expr) {
-                                replaceWith(expr);
+                            else if (result instanceof Expr) {
+                                replaceWith(result);
+                            }
+                            else if (result instanceof Statement) {
+                                let doExpr = new DoExpr(result);
+                                replaceWith(doExpr);
+                            }
+                            else if (result instanceof Block) {
+                                let blockStatement
+                                    = new BlockStatement(result);
+                                let doExpr = new DoExpr(blockStatement);
+                                replaceWith(doExpr);
                             }
                             else {
                                 throw new E401_IncompatibleSyntaxError(
                                     "Cannot expand node type: " +
-                                        expr.constructor.name
+                                        result.constructor.name
                                 );
                             }
                         }

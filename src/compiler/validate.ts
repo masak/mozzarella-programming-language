@@ -7,6 +7,7 @@ import {
     CompUnit,
     FuncDecl,
     MacroDecl,
+    QuoteExpr,
     SyntaxNode,
     VarDecl,
     VarRefExpr,
@@ -94,7 +95,9 @@ function traverse(syntaxNode: SyntaxNode, contextStack: Array<Context>): void {
     visitDown(syntaxNode, contextStack);
 
     for (let child of syntaxNode.children) {
-        if (child instanceof SyntaxNode) {
+        // We don't traverse into quoted code, because it doesn't participate
+        // in variable access and variable declarations _at this point_
+        if (child instanceof SyntaxNode && !(child instanceof QuoteExpr)) {
             traverse(child, contextStack);
         }
     }

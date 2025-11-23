@@ -29,6 +29,7 @@ import {
     ParenExpr,
     PrefixOpExpr,
     PrimaryExpr,
+    QuoteExpr,
     ReturnStatement,
     Statement,
     StrLitExpr,
@@ -112,6 +113,7 @@ export const SYNTAX_KIND__DO_EXPR = new IntValue(BigInt(0x2021));
 export const SYNTAX_KIND__ARRAY_INITIALIZER_EXPR
     = new IntValue(BigInt(0x2022));
 export const SYNTAX_KIND__VAR_REF_EXPR = new IntValue(BigInt(0x2023));
+export const SYNTAX_KIND__QUOTE_EXPR = new IntValue(BigInt(0x2024));
 
 export function reifyNode(
     syntaxNode: SyntaxNode | null,
@@ -568,6 +570,14 @@ export function reifyNode(
         return new SyntaxNodeValue(
             SYNTAX_KIND__VAR_REF_EXPR,
             [reifyNode(nameToken)],
+            new NoneValue(),
+        );
+    }
+    else if (syntaxNode instanceof QuoteExpr) {
+        let statements = syntaxNode.statements;
+        return new SyntaxNodeValue(
+            SYNTAX_KIND__QUOTE_EXPR,
+            statements.map(reifyNode),
             new NoneValue(),
         );
     }

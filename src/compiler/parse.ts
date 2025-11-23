@@ -35,6 +35,7 @@ import {
     ParameterList,
     ParenExpr,
     PrefixOpExpr,
+    QuoteExpr,
     ReturnStatement,
     Statement,
     StrLitExpr,
@@ -266,6 +267,27 @@ export class Parser {
         }
         this.expect(TokenKind.Eof);
         return new CompUnit(statements);
+    }
+
+    parseStatementList(): Array<Statement | Decl> {
+        let statements: Array<Statement | Decl> = [];
+        while (this.seeingStartOfStatementOrDecl()) {
+            if (this.seeingStartOfStatement()) {
+                let [statement, sawSemi] = this.parseStatement();
+                statements.push(statement);
+                if (!sawSemi) {
+                    break;
+                }
+            }
+            else {  // declaration
+                let [decl, sawSemi] = this.parseDecl();
+                statements.push(decl);
+                if (!sawSemi) {
+                    break;
+                }
+            }
+        }
+        return statements;
     }
 
     parseStatement(): [Statement, boolean] {
@@ -503,7 +525,15 @@ export class Parser {
                     expectation = "operator";
                 }
                 else if (token = this.accept(TokenKind.Identifier)!) {
-                    termStack.push(new VarRefExpr(token));
+                    if (token.payload === "code"
+                            && this.accept(TokenKind.Backquote)) {
+                        let statementList = this.parseStatementList();
+                        this.advanceOver(TokenKind.Backquote);
+                        termStack.push(new QuoteExpr(statementList));
+                    }
+                    else {
+                        termStack.push(new VarRefExpr(token));
+                    }
                     expectation = "operator";
                 }
                 else {

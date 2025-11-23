@@ -30,6 +30,7 @@ import {
     SYNTAX_KIND__PAREN_EXPR,
     SYNTAX_KIND__PREFIX_OP_EXPR,
     SYNTAX_KIND__PRIMARY_EXPR,
+    SYNTAX_KIND__QUOTE_EXPR,
     SYNTAX_KIND__RETURN_STATEMENT,
     SYNTAX_KIND__STR_LIT_EXPR,
     SYNTAX_KIND__TOKEN_AMP_AMP,
@@ -304,6 +305,9 @@ export function displayValue(value: Value, seen: Set<Value>): string {
         }
         else if (hasKind(value, SYNTAX_KIND__VAR_REF_EXPR)) {
             kind = "VarRefExpr";
+        }
+        else if (hasKind(value, SYNTAX_KIND__QUOTE_EXPR)) {
+            kind = "QuoteExpr";
         }
         else {
             throw new E000_InternalError(

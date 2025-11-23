@@ -408,3 +408,13 @@ export class VarRefExpr extends PrimaryExpr {
     }
 }
 
+export class QuoteExpr extends PrimaryExpr {
+    constructor(statements: Array<Statement | Decl>) {
+        super(statements);
+    }
+
+    get statements(): Array<Statement | Decl> {
+        return this.children as Array<Statement | Decl>;
+    }
+}
+

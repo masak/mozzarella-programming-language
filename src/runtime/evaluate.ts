@@ -24,6 +24,7 @@ import {
     NoneLitExpr,
     ParenExpr,
     PrefixOpExpr,
+    QuoteExpr,
     ReturnStatement,
     Statement,
     StrLitExpr,
@@ -76,6 +77,10 @@ import {
     VarLocation,
 } from "./location";
 import {
+    reifyNode,
+    SYNTAX_KIND__BLOCK,
+} from "./reify";
+import {
     stringify,
 } from "./stringify";
 import {
@@ -86,6 +91,7 @@ import {
     MacroValue,
     NoneValue,
     StrValue,
+    SyntaxNodeValue,
     UninitValue,
     Value,
 } from "./value";
@@ -1209,6 +1215,29 @@ function reducePState(
         else if (syntaxNode instanceof MacroDecl) {
             return new RetState(new NoneValue(), kont);
         }
+        else if (syntaxNode instanceof QuoteExpr) {
+            let statements = syntaxNode.statements;
+            if (statements.length === 1) {
+                let statement = statements[0] as Statement;
+                if (statement instanceof ExprStatement) {
+                    let expr = statement.expr;
+                    let value = reifyNode(expr) as SyntaxNodeValue;
+                    return new RetState(value, kont);
+                }
+                else {
+                    let value = reifyNode(statement) as SyntaxNodeValue;
+                    return new RetState(value, kont);
+                }
+            }
+            else {
+                let value = new SyntaxNodeValue(
+                    SYNTAX_KIND__BLOCK,
+                    statements.map(reifyNode),
+                    new NoneValue(),
+                );
+                return new RetState(value, kont);
+            }
+        }
         else {
             throw new E000_InternalError(
                 `Unrecognized syntax node ${syntaxNode.constructor.name}`
@@ -1481,6 +1510,29 @@ function reducePState(
             }
             else {
                 return new RetState(new NoneValue(), nextTarget);
+            }
+        }
+        else if (syntaxNode instanceof QuoteExpr) {
+            let statements = syntaxNode.statements;
+            if (statements.length === 1) {
+                let statement = statements[0] as Statement;
+                if (statement instanceof ExprStatement) {
+                    let expr = statement.expr;
+                    /* ignore */ reifyNode(expr) as SyntaxNodeValue;
+                    return new RetState(new NoneValue(), kont);
+                }
+                else {
+                    /* ignore */ reifyNode(statement) as SyntaxNodeValue;
+                    return new RetState(new NoneValue(), kont);
+                }
+            }
+            else {
+                /* ignore */ new SyntaxNodeValue(
+                    SYNTAX_KIND__BLOCK,
+                    statements.map(reifyNode),
+                    new NoneValue(),
+                );
+                return new RetState(new NoneValue(), kont);
             }
         }
         else {

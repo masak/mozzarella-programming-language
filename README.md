@@ -50,7 +50,7 @@ to be able to correctly guess the intended implementation.
 - [x] [parameters](https://github.com/masak/mozzarella-programming-language/blob/main/spec/27-params.md)
 - [x] [`return` statements](https://github.com/masak/mozzarella-programming-language/blob/main/spec/28-return-stmt.md)
 - [x] [macros](https://github.com/masak/mozzarella-programming-language/blob/main/spec/29-macro-decl.md)
-- [ ] code quotation
+- [x] [quote expressions](https://github.com/masak/mozzarella-programming-language/blob/main/spec/30-quote-expr.md)
 - [ ] quote interpolation
 - [ ] macro hygiene
 
