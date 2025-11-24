@@ -15,6 +15,7 @@ import {
     IntLitExpr,
     MacroDecl,
     NoneLitExpr,
+    QuoteExpr,
     Statement,
     StrLitExpr,
     SyntaxNode,
@@ -116,6 +117,10 @@ function traverseNode(
     envStack: Array<Env>,
     staticEnvs: Map<CompUnit | Block, Env>,
 ): SyntaxNode {
+    if (syntaxNode instanceof QuoteExpr) {
+        return syntaxNode;
+    }
+
     visitDown(syntaxNode, envStack, staticEnvs);
 
     let newChildren: Array<SyntaxNode | null> = [];

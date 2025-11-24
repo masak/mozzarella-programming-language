@@ -106,5 +106,9 @@ test("quote expression", (t) => {
     }
 
     t.is(run("my code = false; code || !code"), "true");
+
+    t.is(run("macro m(x) { return x; }; m(12)"), "12");
+    t.is(run("macro m(x) { return x; }; code`m(12)`"), "<syntax CallExpr>");
+    t.is(run("macro m(x) { return x; }; code`m(false)`"), "<syntax CallExpr>");
 });
 

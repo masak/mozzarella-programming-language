@@ -44,3 +44,8 @@ interpolation is added, some parts of quote expression need to be considered.
         * Create a `DoExpr` containing `s`; name it `e`.
         * Return `reify(e)`.
 
+**Macro expansion**:
+
+In the traversal of nodes during the macro expansion pass, disregard nodes of
+type `QuoteExpr`; do not visit any of its descendants.
+
