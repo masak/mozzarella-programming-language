@@ -19,7 +19,7 @@ macros with this name), but functions as a keyword in a quote expression.
 **Validation**:
 
 When validating programs, `my x; { { x }; my x; }` triggers a validation error
-("ambiguous variable reference"). However, `my x; { code\`x\`; my x; }`
+("ambiguous variable reference"). However, ``my x; { code`x`; my x; }``
 doesn't. The reason is that the `x` inside the code quote is quoted and not
 an active part of the program. More generally, for the purposes of validaation,
 quoted variable references do not count as variable references.
