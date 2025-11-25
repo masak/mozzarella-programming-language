@@ -1,22 +1,13 @@
 # Architecture
 
-Currently, the whole implementation has two parts:
-
-* The _compiler_ takes a source string and produces a syntax tree
-* The _runtime_ takes a syntax tree and executes it as a program
-
-All this is pulled together in `run.ts`, which invokes first the compiler and
-then the runtime.
-
 ```
-+----------+    +---------+
-| compiler |    | runtime |
-+----------+    +---------+
-      ^              ^
-      |              |
-+-------------------------+
-|          go.ts          |
-+-------------------------+
++-------+-------+----------+--------+     +-----------+
+|  lex  | parse | validate | expand | ... |  evaluate |
++-------+-------+----------+--------+     +-----------+
+|     C   O   M   P   I   L   E     |     |  R  U  N  |
++-----------------------------------+-----+-----------+
+|                        G   O                        |
++-----------------------------------------------------+
 ```
 
 ## Compiler
@@ -27,22 +18,22 @@ then the runtime.
     * It depends on `syntax.ts`, which declares all the syntax node types
 * The _validator_ scans the syntax tree for a small number of static patterns
   that we can't allow to proceed to runtime. (Currently, that only involves
-  referencing a variable before it's declared in a scope.)
+  referencing a variable before it's declared in a scope, as well as multiple
+  declarations.)
+* The _expander_ scans the syntax tree for macro calls, calls the corresponding
+  macro, and replaces the call with whatever code the macro returns.
+    * It depends on `reify.ts`, which can turn implementation-internal syntax
+      trees into Mozzarella values, and `absorb.ts`, which transforms
+      Mozzarella values back into implementation-internal syntax trees
 
 ```
-+----------+  +-----------+
-| token.ts |  | syntax.ts |
-+----------+  +-----------+
-     ^              ^
-     |              |
- +--------+    +----------+    +-------------+
- | lex.ts |    | parse.ts |    | validate.ts |
- +--------+    +----------+    +-------------+
-     ^              ^                 ^
-     |              |                 |
-+--------------------------------------------+
-|                compiler                    |
-+--------------------------------------------+
+                             reify
+ tokens  syntax              absorb
++-------+-------+----------+--------+
+|  lex  | parse | validate | expand |
++-------+-------+----------+--------+
+|     C   O   M   P   I   L   E     |
++-----------------------------------+
 ```
 
 ## Runtime
@@ -56,31 +47,17 @@ then the runtime.
     * `location.ts` handles locations (used for assignments)
     * `stringify.ts` determines how to convert any value to a string value
 
-All of these also depend on `value.ts`, which declares all the built-in value
-types.
-
 ```
-              +----------+
-              | value.ts |
-              +----------+
-                    ^
-                    |
-+------------+ +------------+ +------------+
-| boolify.ts | | compare.ts | | display.ts |
-+------------+ +------------+ +------------+
-       ^            ^               ^
- +--------+ +-------------+ +--------------+
- | env.ts | | location.ts | | stringify.ts |
- +--------+ +-------------+ +--------------+
-      ^|           ^|              ^|
-      ||           ||              ||
-+--------------------------------------------+
-|               evaluate.ts                  |
-+--------------------------------------------+
-                     ^
-                     |
-+--------------------------------------------+
-|                 runtime                    |
-+--------------------------------------------+
+                                           stringify
+                                           location
+                                           env
+                                           display
+                                           compare
+                                           boolify
+                                          +-----------+
+                                          |  evaluate |
+                                          +-----------+
+                                          |  R  U  N  |
+                                          +-----------+
 ```
 
