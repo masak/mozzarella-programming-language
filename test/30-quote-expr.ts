@@ -110,5 +110,21 @@ test("quote expression", (t) => {
     t.is(run("macro m(x) { return x; }; m(12)"), "12");
     t.is(run("macro m(x) { return x; }; code`m(12)`"), "<syntax CallExpr>");
     t.is(run("macro m(x) { return x; }; code`m(false)`"), "<syntax CallExpr>");
+
+    {
+        let program = `
+            macro m1() {
+                return code\`
+                    macro m2() {
+                        return 7;
+                    }
+                    m2();
+                \`;
+            }
+            m1();
+        `;
+
+        t.is(run(program), "7");
+    }
 });
 
