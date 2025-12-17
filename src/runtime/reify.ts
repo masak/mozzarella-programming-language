@@ -34,6 +34,7 @@ import {
     Statement,
     StrLitExpr,
     SyntaxNode,
+    UnquoteExpr,
     VarDecl,
     VarRefExpr,
     WhileStatement,
@@ -114,175 +115,145 @@ export const SYNTAX_KIND__ARRAY_INITIALIZER_EXPR
     = new IntValue(BigInt(0x2022));
 export const SYNTAX_KIND__VAR_REF_EXPR = new IntValue(BigInt(0x2023));
 export const SYNTAX_KIND__QUOTE_EXPR = new IntValue(BigInt(0x2024));
+export const SYNTAX_KIND__UNQUOTE_EXPR = new IntValue(BigInt(0x2025));
 
-export function reifyNode(
-    syntaxNode: SyntaxNode | null,
-): SyntaxNodeValue | NoneValue {
-    if (syntaxNode === null) {
-        return new NoneValue();
-    }
-    else if (syntaxNode instanceof Token) {
+const exprKinds = new Set([
+    SYNTAX_KIND__PREFIX_OP_EXPR,
+    SYNTAX_KIND__INFIX_OP_EXPR,
+    SYNTAX_KIND__INDEXING_EXPR,
+    SYNTAX_KIND__ARGUMENT,
+    SYNTAX_KIND__ARGUMENT_LIST,
+    SYNTAX_KIND__CALL_EXPR,
+    SYNTAX_KIND__INT_LIT_EXPR,
+    SYNTAX_KIND__STR_LIT_EXPR,
+    SYNTAX_KIND__BOOL_LIT_EXPR,
+    SYNTAX_KIND__NONE_LIT_EXPR,
+    SYNTAX_KIND__PAREN_EXPR,
+    SYNTAX_KIND__DO_EXPR,
+    SYNTAX_KIND__ARRAY_INITIALIZER_EXPR,
+    SYNTAX_KIND__VAR_REF_EXPR,
+    SYNTAX_KIND__QUOTE_EXPR,
+    SYNTAX_KIND__UNQUOTE_EXPR,
+]);
+
+export function isExprKind(syntaxNodeValue: SyntaxNodeValue): boolean {
+    return exprKinds.has(syntaxNodeValue.kind);
+}
+
+const statementKinds = new Set([
+    SYNTAX_KIND__EXPR_STATEMENT,
+    SYNTAX_KIND__EMPTY_STATEMENT,
+    SYNTAX_KIND__BLOCK_STATEMENT,
+    SYNTAX_KIND__IF_STATEMENT,
+    SYNTAX_KIND__FOR_STATEMENT,
+    SYNTAX_KIND__WHILE_STATEMENT,
+    SYNTAX_KIND__LAST_STATEMENT,
+    SYNTAX_KIND__NEXT_STATEMENT,
+    SYNTAX_KIND__RETURN_STATEMENT,
+]);
+
+export function isStatementKind(syntaxNodeValue: SyntaxNodeValue): boolean {
+    return statementKinds.has(syntaxNodeValue.kind);
+}
+
+export function kindAndPayloadOfNode(
+    syntaxNode: SyntaxNode,
+): [IntValue, IntValue | StrValue | BoolValue | NoneValue] {
+    let kind: IntValue;
+    let payload: IntValue | StrValue | BoolValue | NoneValue;
+    if (syntaxNode instanceof Token) {
         let tokenKind = syntaxNode.kind;
         if (tokenKind === TokenKind.IntLit) {
-            return new SyntaxNodeValue(
-                SYNTAX_KIND__TOKEN_INT_LIT,
-                [],
-                new IntValue(syntaxNode.payload as bigint),
-            );
+            kind = SYNTAX_KIND__TOKEN_INT_LIT;
+            payload = new IntValue(syntaxNode.payload as bigint);
         }
         else if (tokenKind === TokenKind.StrLit) {
-            return new SyntaxNodeValue(
-                SYNTAX_KIND__TOKEN_STR_LIT,
-                [],
-                new StrValue(syntaxNode.payload as string),
-            );
+            kind = SYNTAX_KIND__TOKEN_STR_LIT;
+            payload = new StrValue(syntaxNode.payload as string);
         }
         else if (tokenKind === TokenKind.TrueKeyword) {
-            return new SyntaxNodeValue(
-                SYNTAX_KIND__TOKEN_TRUE_KEYWORD,
-                [],
-                new BoolValue(true),
-            );
+            kind = SYNTAX_KIND__TOKEN_TRUE_KEYWORD;
+            payload = new BoolValue(true);
         }
         else if (tokenKind === TokenKind.FalseKeyword) {
-            return new SyntaxNodeValue(
-                SYNTAX_KIND__TOKEN_FALSE_KEYWORD,
-                [],
-                new BoolValue(false),
-            );
+            kind = SYNTAX_KIND__TOKEN_FALSE_KEYWORD;
+            payload = new BoolValue(false);
         }
         else if (tokenKind === TokenKind.NoneKeyword) {
-            return new SyntaxNodeValue(
-                SYNTAX_KIND__TOKEN_NONE_KEYWORD,
-                [],
-                new NoneValue(),
-            );
+            kind = SYNTAX_KIND__TOKEN_NONE_KEYWORD;
+            payload = new NoneValue();
         }
         else if (tokenKind === TokenKind.Plus) {
-            return new SyntaxNodeValue(
-                SYNTAX_KIND__TOKEN_PLUS,
-                [],
-                new NoneValue(),
-            );
+            kind = SYNTAX_KIND__TOKEN_PLUS;
+            payload = new NoneValue();
         }
         else if (tokenKind === TokenKind.Minus) {
-            return new SyntaxNodeValue(
-                SYNTAX_KIND__TOKEN_MINUS,
-                [],
-                new NoneValue(),
-            );
+            kind = SYNTAX_KIND__TOKEN_MINUS;
+            payload = new NoneValue();
         }
         else if (tokenKind === TokenKind.Mult) {
-            return new SyntaxNodeValue(
-                SYNTAX_KIND__TOKEN_MULT,
-                [],
-                new NoneValue(),
-            );
+            kind = SYNTAX_KIND__TOKEN_MULT;
+            payload = new NoneValue();
         }
         else if (tokenKind === TokenKind.FloorDiv) {
-            return new SyntaxNodeValue(
-                SYNTAX_KIND__TOKEN_FLOOR_DIV,
-                [],
-                new NoneValue(),
-            );
+            kind = SYNTAX_KIND__TOKEN_FLOOR_DIV;
+            payload = new NoneValue();
         }
         else if (tokenKind === TokenKind.Mod) {
-            return new SyntaxNodeValue(
-                SYNTAX_KIND__TOKEN_MOD,
-                [],
-                new NoneValue(),
-            );
+            kind = SYNTAX_KIND__TOKEN_MOD;
+            payload = new NoneValue();
         }
         else if (tokenKind === TokenKind.Tilde) {
-            return new SyntaxNodeValue(
-                SYNTAX_KIND__TOKEN_TILDE,
-                [],
-                new NoneValue(),
-            );
+            kind = SYNTAX_KIND__TOKEN_TILDE;
+            payload = new NoneValue();
         }
         else if (tokenKind === TokenKind.Quest) {
-            return new SyntaxNodeValue(
-                SYNTAX_KIND__TOKEN_QUEST,
-                [],
-                new NoneValue(),
-            );
+            kind = SYNTAX_KIND__TOKEN_QUEST;
+            payload = new NoneValue();
         }
         else if (tokenKind === TokenKind.Bang) {
-            return new SyntaxNodeValue(
-                SYNTAX_KIND__TOKEN_BANG,
-                [],
-                new NoneValue(),
-            );
+            kind = SYNTAX_KIND__TOKEN_BANG;
+            payload = new NoneValue();
         }
         else if (tokenKind === TokenKind.AmpAmp) {
-            return new SyntaxNodeValue(
-                SYNTAX_KIND__TOKEN_AMP_AMP,
-                [],
-                new NoneValue(),
-            );
+            kind = SYNTAX_KIND__TOKEN_AMP_AMP;
+            payload = new NoneValue();
         }
         else if (tokenKind === TokenKind.PipePipe) {
-            return new SyntaxNodeValue(
-                SYNTAX_KIND__TOKEN_PIPE_PIPE,
-                [],
-                new NoneValue(),
-            );
+            kind = SYNTAX_KIND__TOKEN_PIPE_PIPE;
+            payload = new NoneValue();
         }
         else if (tokenKind === TokenKind.Less) {
-            return new SyntaxNodeValue(
-                SYNTAX_KIND__TOKEN_LESS,
-                [],
-                new NoneValue(),
-            );
+            kind = SYNTAX_KIND__TOKEN_LESS;
+            payload = new NoneValue();
         }
         else if (tokenKind === TokenKind.LessEq) {
-            return new SyntaxNodeValue(
-                SYNTAX_KIND__TOKEN_LESS_EQ,
-                [],
-                new NoneValue(),
-            );
+            kind = SYNTAX_KIND__TOKEN_LESS_EQ;
+            payload = new NoneValue();
         }
         else if (tokenKind === TokenKind.Greater) {
-            return new SyntaxNodeValue(
-                SYNTAX_KIND__TOKEN_GREATER,
-                [],
-                new NoneValue(),
-            );
+            kind = SYNTAX_KIND__TOKEN_GREATER;
+            payload = new NoneValue();
         }
         else if (tokenKind === TokenKind.GreaterEq) {
-            return new SyntaxNodeValue(
-                SYNTAX_KIND__TOKEN_GREATER_EQ,
-                [],
-                new NoneValue(),
-            );
+            kind = SYNTAX_KIND__TOKEN_GREATER_EQ;
+            payload = new NoneValue();
         }
         else if (tokenKind === TokenKind.EqEq) {
-            return new SyntaxNodeValue(
-                SYNTAX_KIND__TOKEN_EQ_EQ,
-                [],
-                new NoneValue(),
-            );
+            kind = SYNTAX_KIND__TOKEN_EQ_EQ;
+            payload = new NoneValue();
         }
         else if (tokenKind === TokenKind.BangEq) {
-            return new SyntaxNodeValue(
-                SYNTAX_KIND__TOKEN_BANG_EQ,
-                [],
-                new NoneValue(),
-            );
+            kind = SYNTAX_KIND__TOKEN_BANG_EQ;
+            payload = new NoneValue();
         }
         else if (tokenKind === TokenKind.Assign) {
-            return new SyntaxNodeValue(
-                SYNTAX_KIND__TOKEN_ASSIGN,
-                [],
-                new NoneValue(),
-            );
+            kind = SYNTAX_KIND__TOKEN_ASSIGN;
+            payload = new NoneValue();
         }
         else if (tokenKind === TokenKind.Identifier) {
-            return new SyntaxNodeValue(
-                SYNTAX_KIND__TOKEN_IDENTIFIER,
-                [],
-                new StrValue(syntaxNode.payload as string),
-            );
+            kind = SYNTAX_KIND__TOKEN_IDENTIFIER;
+            payload = new StrValue(syntaxNode.payload as string);
         }
         else {
             throw new E000_InternalError(
@@ -291,110 +262,56 @@ export function reifyNode(
         }
     }
     else if (syntaxNode instanceof CompUnit) {
-        let statements = syntaxNode.statements;
-        return new SyntaxNodeValue(
-            SYNTAX_KIND__COMPUNIT,
-            statements.map(reifyNode),
-            new NoneValue(),
-        );
+        kind = SYNTAX_KIND__COMPUNIT;
+        payload = new NoneValue();
     }
     else if (syntaxNode instanceof Block) {
-        let statements = syntaxNode.statements;
-        return new SyntaxNodeValue(
-            SYNTAX_KIND__BLOCK,
-            statements.map(reifyNode),
-            new NoneValue(),
-        );
+        kind = SYNTAX_KIND__BLOCK;
+        payload = new NoneValue();
     }
     else if (syntaxNode instanceof ExprStatement) {
-        let expr = syntaxNode.expr;
-        return new SyntaxNodeValue(
-            SYNTAX_KIND__EXPR_STATEMENT,
-            [reifyNode(expr)],
-            new NoneValue(),
-        );
+        kind = SYNTAX_KIND__EXPR_STATEMENT;
+        payload = new NoneValue();
     }
     else if (syntaxNode instanceof EmptyStatement) {
-        return new SyntaxNodeValue(
-            SYNTAX_KIND__EMPTY_STATEMENT,
-            [],
-            new NoneValue(),
-        );
+        kind = SYNTAX_KIND__EMPTY_STATEMENT;
+        payload = new NoneValue();
     }
     else if (syntaxNode instanceof BlockStatement) {
-        let block = syntaxNode.block;
-        return new SyntaxNodeValue(
-            SYNTAX_KIND__BLOCK_STATEMENT,
-            [reifyNode(block)],
-            new NoneValue(),
-        );
+        kind = SYNTAX_KIND__BLOCK_STATEMENT;
+        payload = new NoneValue();
     }
     else if (syntaxNode instanceof IfClause) {
-        let condExpr = syntaxNode.condExpr;
-        let block = syntaxNode.block;
-        return new SyntaxNodeValue(
-            SYNTAX_KIND__IF_CLAUSE,
-            [reifyNode(condExpr), reifyNode(block)],
-            new NoneValue(),
-        );
+        kind = SYNTAX_KIND__IF_CLAUSE;
+        payload = new NoneValue();
     }
     else if (syntaxNode instanceof IfClauseList) {
-        let clauses = syntaxNode.clauses;
-        return new SyntaxNodeValue(
-            SYNTAX_KIND__IF_CLAUSE_LIST,
-            clauses.map(reifyNode),
-            new NoneValue(),
-        );
+        kind = SYNTAX_KIND__IF_CLAUSE_LIST;
+        payload = new NoneValue();
     }
     else if (syntaxNode instanceof IfStatement) {
-        let clauseList = syntaxNode.clauseList;
-        let elseBlock = syntaxNode.elseBlock;
-        return new SyntaxNodeValue(
-            SYNTAX_KIND__IF_STATEMENT,
-            [reifyNode(clauseList), reifyNode(elseBlock)],
-            new NoneValue(),
-        );
+        kind = SYNTAX_KIND__IF_STATEMENT;
+        payload = new NoneValue();
     }
     else if (syntaxNode instanceof ForStatement) {
-        let nameToken = syntaxNode.nameToken;
-        let arrayExpr = syntaxNode.arrayExpr;
-        let body = syntaxNode.body;
-        return new SyntaxNodeValue(
-            SYNTAX_KIND__FOR_STATEMENT,
-            [reifyNode(nameToken), reifyNode(arrayExpr), reifyNode(body)],
-            new NoneValue(),
-        );
+        kind = SYNTAX_KIND__FOR_STATEMENT;
+        payload = new NoneValue();
     }
     else if (syntaxNode instanceof WhileStatement) {
-        let condExpr = syntaxNode.condExpr;
-        let body = syntaxNode.body;
-        return new SyntaxNodeValue(
-            SYNTAX_KIND__WHILE_STATEMENT,
-            [reifyNode(condExpr), reifyNode(body)],
-            new NoneValue(),
-        );
+        kind = SYNTAX_KIND__WHILE_STATEMENT;
+        payload = new NoneValue();
     }
     else if (syntaxNode instanceof LastStatement) {
-        return new SyntaxNodeValue(
-            SYNTAX_KIND__LAST_STATEMENT,
-            [],
-            new NoneValue(),
-        );
+        kind = SYNTAX_KIND__LAST_STATEMENT;
+        payload = new NoneValue();
     }
     else if (syntaxNode instanceof NextStatement) {
-        return new SyntaxNodeValue(
-            SYNTAX_KIND__NEXT_STATEMENT,
-            [],
-            new NoneValue(),
-        );
+        kind = SYNTAX_KIND__NEXT_STATEMENT;
+        payload = new NoneValue();
     }
     else if (syntaxNode instanceof ReturnStatement) {
-        let expr = syntaxNode.expr;
-        return new SyntaxNodeValue(
-            SYNTAX_KIND__RETURN_STATEMENT,
-            [reifyNode(expr)],
-            new NoneValue(),
-        );
+        kind = SYNTAX_KIND__RETURN_STATEMENT;
+        payload = new NoneValue();
     }
     else if (syntaxNode instanceof Statement) {
         throw new E000_InternalError(
@@ -403,53 +320,24 @@ export function reifyNode(
         );
     }
     else if (syntaxNode instanceof VarDecl) {
-        let nameToken = syntaxNode.nameToken;
-        let type = syntaxNode.type;
-        let initExpr = syntaxNode.initExpr;
-        return new SyntaxNodeValue(
-            SYNTAX_KIND__VAR_DECL,
-            [reifyNode(nameToken), reifyNode(type), reifyNode(initExpr)],
-            new NoneValue(),
-        );
+        kind = SYNTAX_KIND__VAR_DECL;
+        payload = new NoneValue();
     }
     else if (syntaxNode instanceof Parameter) {
-        let nameToken = syntaxNode.nameToken;
-        let type = syntaxNode.type;
-        return new SyntaxNodeValue(
-            SYNTAX_KIND__PARAMETER,
-            [reifyNode(nameToken), reifyNode(type)],
-            new NoneValue(),
-        );
+        kind = SYNTAX_KIND__PARAMETER;
+        payload = new NoneValue();
     }
     else if (syntaxNode instanceof ParameterList) {
-        let parameters = syntaxNode.parameters;
-        return new SyntaxNodeValue(
-            SYNTAX_KIND__PARAMETER_LIST,
-            parameters.map(reifyNode),
-            new NoneValue(),
-        );
+        kind = SYNTAX_KIND__PARAMETER_LIST;
+        payload = new NoneValue();
     }
     else if (syntaxNode instanceof FuncDecl) {
-        let nameToken = syntaxNode.nameToken;
-        let parameterList = syntaxNode.parameterList;
-        let type = syntaxNode.type;
-        let body = syntaxNode.body;
-        return new SyntaxNodeValue(
-            SYNTAX_KIND__FUNC_DECL,
-            [nameToken, parameterList, type, body].map(reifyNode),
-            new NoneValue(),
-        );
+        kind = SYNTAX_KIND__FUNC_DECL;
+        payload = new NoneValue();
     }
     else if (syntaxNode instanceof MacroDecl) {
-        let nameToken = syntaxNode.nameToken;
-        let parameterList = syntaxNode.parameterList;
-        let type = syntaxNode.type;
-        let body = syntaxNode.body;
-        return new SyntaxNodeValue(
-            SYNTAX_KIND__MACRO_DECL,
-            [nameToken, parameterList, type, body].map(reifyNode),
-            new NoneValue(),
-        );
+        kind = SYNTAX_KIND__MACRO_DECL;
+        payload = new NoneValue();
     }
     else if (syntaxNode instanceof Decl) {
         throw new E000_InternalError(
@@ -458,128 +346,68 @@ export function reifyNode(
         );
     }
     else if (syntaxNode instanceof PrefixOpExpr) {
-        let opToken = syntaxNode.opToken;
-        let operand = syntaxNode.operand;
-        return new SyntaxNodeValue(
-            SYNTAX_KIND__PREFIX_OP_EXPR,
-            [reifyNode(opToken), reifyNode(operand)],
-            new NoneValue(),
-        );
+        kind = SYNTAX_KIND__PREFIX_OP_EXPR;
+        payload = new NoneValue();
     }
     else if (syntaxNode instanceof InfixOpExpr) {
-        let lhs = syntaxNode.lhs;
-        let opToken = syntaxNode.opToken;
-        let rhs = syntaxNode.rhs;
-        return new SyntaxNodeValue(
-            SYNTAX_KIND__INFIX_OP_EXPR,
-            [reifyNode(lhs), reifyNode(opToken), reifyNode(rhs)],
-            new NoneValue(),
-        );
+        kind = SYNTAX_KIND__INFIX_OP_EXPR;
+        payload = new NoneValue();
     }
     else if (syntaxNode instanceof IndexingExpr) {
-        let arrayExpr = syntaxNode.arrayExpr;
-        let indexExpr = syntaxNode.indexExpr;
-        return new SyntaxNodeValue(
-            SYNTAX_KIND__INDEXING_EXPR,
-            [reifyNode(arrayExpr), reifyNode(indexExpr)],
-            new NoneValue(),
-        );
+        kind = SYNTAX_KIND__INDEXING_EXPR;
+        payload = new NoneValue();
     }
     else if (syntaxNode instanceof Argument) {
-        let expr = syntaxNode.expr;
-        return new SyntaxNodeValue(
-            SYNTAX_KIND__ARGUMENT,
-            [reifyNode(expr)],
-            new NoneValue(),
-        );
+        kind = SYNTAX_KIND__ARGUMENT;
+        payload = new NoneValue();
     }
     else if (syntaxNode instanceof ArgumentList) {
-        let args = syntaxNode.args;
-        return new SyntaxNodeValue(
-            SYNTAX_KIND__ARGUMENT_LIST,
-            args.map(reifyNode),
-            new NoneValue(),
-        );
+        kind = SYNTAX_KIND__ARGUMENT_LIST;
+        payload = new NoneValue();
     }
     else if (syntaxNode instanceof CallExpr) {
-        let funcExpr = syntaxNode.funcExpr;
-        let argList = syntaxNode.argList;
-        return new SyntaxNodeValue(
-            SYNTAX_KIND__CALL_EXPR,
-            [reifyNode(funcExpr), reifyNode(argList)],
-            new NoneValue(),
-        );
+        kind = SYNTAX_KIND__CALL_EXPR;
+        payload = new NoneValue();
     }
     else if (syntaxNode instanceof IntLitExpr) {
-        let valueToken = syntaxNode.valueToken;
-        return new SyntaxNodeValue(
-            SYNTAX_KIND__INT_LIT_EXPR,
-            [reifyNode(valueToken)],
-            new NoneValue(),
-        );
+        kind = SYNTAX_KIND__INT_LIT_EXPR;
+        payload = new NoneValue();
     }
     else if (syntaxNode instanceof StrLitExpr) {
-        let valueToken = syntaxNode.valueToken;
-        return new SyntaxNodeValue(
-            SYNTAX_KIND__STR_LIT_EXPR,
-            [reifyNode(valueToken)],
-            new NoneValue(),
-        );
+        kind = SYNTAX_KIND__STR_LIT_EXPR;
+        payload = new NoneValue();
     }
     else if (syntaxNode instanceof BoolLitExpr) {
-        let valueToken = syntaxNode.valueToken;
-        return new SyntaxNodeValue(
-            SYNTAX_KIND__BOOL_LIT_EXPR,
-            [reifyNode(valueToken)],
-            new NoneValue(),
-        );
+        kind = SYNTAX_KIND__BOOL_LIT_EXPR;
+        payload = new NoneValue();
     }
     else if (syntaxNode instanceof NoneLitExpr) {
-        return new SyntaxNodeValue(
-            SYNTAX_KIND__BOOL_LIT_EXPR,
-            [],
-            new NoneValue(),
-        );
+        kind = SYNTAX_KIND__NONE_LIT_EXPR;
+        payload = new NoneValue();
     }
     else if (syntaxNode instanceof ParenExpr) {
-        let innerExpr = syntaxNode.innerExpr;
-        return new SyntaxNodeValue(
-            SYNTAX_KIND__PAREN_EXPR,
-            [reifyNode(innerExpr)],
-            new NoneValue(),
-        );
+        kind = SYNTAX_KIND__PAREN_EXPR;
+        payload = new NoneValue();
     }
     else if (syntaxNode instanceof DoExpr) {
-        let statement = syntaxNode.statement;
-        return new SyntaxNodeValue(
-            SYNTAX_KIND__DO_EXPR,
-            [reifyNode(statement)],
-            new NoneValue(),
-        );
+        kind = SYNTAX_KIND__DO_EXPR;
+        payload = new NoneValue();
     }
     else if (syntaxNode instanceof ArrayInitializerExpr) {
-        let elements = syntaxNode.elements;
-        return new SyntaxNodeValue(
-            SYNTAX_KIND__ARRAY_INITIALIZER_EXPR,
-            elements.map(reifyNode),
-            new NoneValue(),
-        );
+        kind = SYNTAX_KIND__ARRAY_INITIALIZER_EXPR;
+        payload = new NoneValue();
     }
     else if (syntaxNode instanceof VarRefExpr) {
-        let nameToken = syntaxNode.nameToken;
-        return new SyntaxNodeValue(
-            SYNTAX_KIND__VAR_REF_EXPR,
-            [reifyNode(nameToken)],
-            new NoneValue(),
-        );
+        kind = SYNTAX_KIND__VAR_REF_EXPR;
+        payload = new NoneValue();
     }
     else if (syntaxNode instanceof QuoteExpr) {
-        let statements = syntaxNode.statements;
-        return new SyntaxNodeValue(
-            SYNTAX_KIND__QUOTE_EXPR,
-            statements.map(reifyNode),
-            new NoneValue(),
-        );
+        kind = SYNTAX_KIND__QUOTE_EXPR;
+        payload = new NoneValue();
+    }
+    else if (syntaxNode instanceof UnquoteExpr) {
+        kind = SYNTAX_KIND__UNQUOTE_EXPR;
+        payload = new NoneValue();
     }
     else if (syntaxNode instanceof PrimaryExpr) {
         throw new E000_InternalError(
@@ -595,8 +423,23 @@ export function reifyNode(
     }
     else {
         throw new E000_InternalError(
-            `Converting unknown node type '${syntaxNode.constructor.name}'`
+            "Converting unknown node type '" +
+                syntaxNode.constructor.name + "'"
         );
+    }
+    return [kind, payload];
+}
+
+export function reifyNode(
+    syntaxNode: SyntaxNode | null,
+): SyntaxNodeValue | NoneValue {
+    if (syntaxNode === null) {
+        return new NoneValue();
+    }
+    else {
+        let [kind, payload] = kindAndPayloadOfNode(syntaxNode);
+        let children = syntaxNode.children.map(reifyNode);
+        return new SyntaxNodeValue(kind, children, payload);
     }
 }
 

@@ -29,6 +29,7 @@ import {
     Statement,
     StrLitExpr,
     SyntaxNode,
+    UnquoteExpr,
     VarDecl,
     VarRefExpr,
     WhileStatement,
@@ -77,8 +78,19 @@ import {
     VarLocation,
 } from "./location";
 import {
-    reifyNode,
+    kindAndPayloadOfNode,
+    isExprKind,
+    isStatementKind,
     SYNTAX_KIND__BLOCK,
+    SYNTAX_KIND__BOOL_LIT_EXPR,
+    SYNTAX_KIND__DO_EXPR,
+    SYNTAX_KIND__INT_LIT_EXPR,
+    SYNTAX_KIND__NONE_LIT_EXPR,
+    SYNTAX_KIND__STR_LIT_EXPR,
+    SYNTAX_KIND__TOKEN_FALSE_KEYWORD,
+    SYNTAX_KIND__TOKEN_INT_LIT,
+    SYNTAX_KIND__TOKEN_STR_LIT,
+    SYNTAX_KIND__TOKEN_TRUE_KEYWORD,
 } from "./reify";
 import {
     stringify,
@@ -130,6 +142,10 @@ type Kont =
     | ReturnKont
     | CallIgnore1Kont
     | CallIgnore2Kont
+    | Quote1Kont
+    | Quote2Kont
+    | UnquoteKont
+    | QuoteIgnore1Kont
     | HaltKont
 ;
 
@@ -754,6 +770,93 @@ class CallIgnore2Kont {
     }
 }
 
+class Quote1Kont {
+    index: number;
+    statements: Array<Statement | Decl>;
+    statementValues: Array<SyntaxNodeValue>;
+    env: Env;
+    tail: Kont;
+    jumpMap: JumpMap;
+
+    constructor(
+        index: number,
+        statements: Array<Statement | Decl>,
+        statementValues: Array<SyntaxNodeValue>,
+        env: Env,
+        tail: Kont,
+        jumpMap: JumpMap,
+    ) {
+        this.index = index;
+        this.statements = statements;
+        this.statementValues = statementValues;
+        this.env = env;
+        this.tail = tail;
+        this.jumpMap = jumpMap;
+    }
+}
+
+class Quote2Kont {
+    index: number;
+    node: SyntaxNode;
+    childValues: Array<SyntaxNodeValue | NoneValue>;
+    quoteLevel: number;
+    env: Env;
+    tail: Kont;
+    jumpMap: JumpMap;
+
+    constructor(
+        index: number,
+        node: SyntaxNode,
+        childValues: Array<SyntaxNodeValue | NoneValue>,
+        quoteLevel: number,
+        env: Env,
+        tail: Kont,
+        jumpMap: JumpMap,
+    ) {
+        this.index = index;
+        this.node = node;
+        this.childValues = childValues;
+        this.quoteLevel = quoteLevel;
+        this.env = env;
+        this.tail = tail;
+        this.jumpMap = jumpMap;
+    }
+}
+
+class UnquoteKont {
+    env: Env;
+    tail: Kont;
+    jumpMap: JumpMap;
+
+    constructor(env: Env, tail: Kont, jumpMap: JumpMap) {
+        this.env = env;
+        this.tail = tail;
+        this.jumpMap = jumpMap;
+    }
+}
+
+class QuoteIgnore1Kont {
+    index: number;
+    statements: Array<Statement | Decl>;
+    env: Env;
+    tail: Kont;
+    jumpMap: JumpMap;
+
+    constructor(
+        index: number,
+        statements: Array<Statement | Decl>,
+        env: Env,
+        tail: Kont,
+        jumpMap: JumpMap,
+    ) {
+        this.index = index;
+        this.statements = statements;
+        this.env = env;
+        this.tail = tail;
+        this.jumpMap = jumpMap;
+    }
+}
+
 class HaltKont {
     constructor() {
     }
@@ -769,6 +872,7 @@ class Mode {
     static GetValue = new Mode("GetValue");
     static GetLocation = new Mode("GetLocation");
     static Ignore = new Mode("Ignore");
+    static Interpolate = new Mode("Interpolate");
 }
 
 class JumpMap {
@@ -788,13 +892,13 @@ function cloneJumpMap(original: JumpMap): JumpMap {
 type State = PState | RetState;
 
 class PState {
-    code: [Mode, SyntaxNode];
+    code: [Mode, SyntaxNode, number];
     env: Env;
     kont: Kont;
     jumpMap: JumpMap;
 
     constructor(
-        code: [Mode, SyntaxNode],
+        code: [Mode, SyntaxNode, number],
         env: Env,
         kont: Kont,
         jumpMap: JumpMap,
@@ -822,7 +926,7 @@ function load(
 ): State {
     let env = initializeEnv(emptyEnv(), compUnit, staticEnvs);
     return new PState(
-        [Mode.GetValue, compUnit],
+        [Mode.GetValue, compUnit, 0],
         env,
         new HaltKont(),
         new JumpMap(),
@@ -891,7 +995,7 @@ function zip<T, U>(ts: Array<T>, us: Array<U>): Array<[T, U]> {
 }
 
 function reducePState(
-    { code: [mode, syntaxNode], env, kont, jumpMap }: PState,
+    { code: [mode, syntaxNode, quoteLevel], env, kont, jumpMap }: PState,
     staticEnvs: Map<CompUnit | Block, Env>,
 ): State {
     if (mode === Mode.GetValue) {
@@ -909,7 +1013,7 @@ function reducePState(
                     jumpMap,
                 );
                 return new PState(
-                    [Mode.GetValue, statements[0]],
+                    [Mode.GetValue, statements[0], quoteLevel],
                     env,
                     compUnitKont,
                     jumpMap,
@@ -918,7 +1022,7 @@ function reducePState(
         }
         else if (syntaxNode instanceof ExprStatement) {
             return new PState(
-                [Mode.GetValue, syntaxNode.expr],
+                [Mode.GetValue, syntaxNode.expr, quoteLevel],
                 env,
                 kont,
                 jumpMap,
@@ -949,7 +1053,7 @@ function reducePState(
                 || opToken.kind === TokenKind.Bang) {
                 let prefixOpKont = new PrefixOpKont(opToken, kont);
                 return new PState(
-                    [Mode.GetValue, operand],
+                    [Mode.GetValue, operand, quoteLevel],
                     env,
                     prefixOpKont,
                     jumpMap,
@@ -976,7 +1080,7 @@ function reducePState(
                 let infixOpKont1
                     = new InfixOp1Kont(opToken, rhs, env, kont, jumpMap);
                 return new PState(
-                    [Mode.GetValue, lhs],
+                    [Mode.GetValue, lhs, quoteLevel],
                     env,
                     infixOpKont1,
                     jumpMap,
@@ -993,7 +1097,7 @@ function reducePState(
                     jumpMap,
                 );
                 return new PState(
-                    [Mode.GetValue, exprs[0]],
+                    [Mode.GetValue, exprs[0], quoteLevel],
                     env,
                     comparisonOp1Kont,
                     jumpMap,
@@ -1002,7 +1106,7 @@ function reducePState(
             else if (opToken.kind === TokenKind.Assign) {
                 let assign1Kont = new Assign1Kont(rhs, env, kont, jumpMap);
                 return new PState(
-                    [Mode.GetLocation, lhs],
+                    [Mode.GetLocation, lhs, quoteLevel],
                     env,
                     assign1Kont,
                     jumpMap,
@@ -1016,14 +1120,19 @@ function reducePState(
         }
         else if (syntaxNode instanceof ParenExpr) {
             let innerExpr = syntaxNode.innerExpr;
-            return new PState([Mode.GetValue, innerExpr], env, kont, jumpMap);
+            return new PState(
+                [Mode.GetValue, innerExpr, quoteLevel],
+                env,
+                kont,
+                jumpMap,
+            );
         }
         else if (syntaxNode instanceof EmptyStatement) {
             return new RetState(new NoneValue(), kont);
         }
         else if (syntaxNode instanceof BlockStatement) {
             return new PState(
-                [Mode.GetValue, syntaxNode.block],
+                [Mode.GetValue, syntaxNode.block, quoteLevel],
                 env,
                 kont,
                 jumpMap,
@@ -1044,7 +1153,7 @@ function reducePState(
                     jumpMap,
                 );
                 return new PState(
-                    [Mode.GetValue, statements[0]],
+                    [Mode.GetValue, statements[0], quoteLevel],
                     env,
                     blockKont,
                     jumpMap,
@@ -1053,7 +1162,12 @@ function reducePState(
         }
         else if (syntaxNode instanceof DoExpr) {
             let statement = syntaxNode.statement;
-            return new PState([Mode.GetValue, statement], env, kont, jumpMap);
+            return new PState(
+                [Mode.GetValue, statement, quoteLevel],
+                env,
+                kont,
+                jumpMap,
+            );
         }
         else if (syntaxNode instanceof IfStatement) {
             let clauses = syntaxNode.clauseList.clauses;
@@ -1067,7 +1181,12 @@ function reducePState(
                 kont,
                 jumpMap,
             );
-            return new PState([Mode.GetValue, condExpr], env, ifKont, jumpMap);
+            return new PState(
+                [Mode.GetValue, condExpr, quoteLevel],
+                env,
+                ifKont,
+                jumpMap,
+            );
         }
         else if (syntaxNode instanceof ArrayInitializerExpr) {
             if (syntaxNode.elements.length === 0) {
@@ -1083,7 +1202,11 @@ function reducePState(
                     jumpMap,
                 );
                 return new PState(
-                    [Mode.GetValue, syntaxNode.children[0] as Expr],
+                    [
+                        Mode.GetValue,
+                        syntaxNode.children[0] as Expr,
+                        quoteLevel,
+                    ],
                     env,
                     arrayInitializerKont,
                     jumpMap,
@@ -1100,7 +1223,7 @@ function reducePState(
                 jumpMap,
             );
             return new PState(
-                [Mode.GetValue, arrayExpr],
+                [Mode.GetValue, arrayExpr, quoteLevel],
                 env,
                 indexing1Kont,
                 jumpMap,
@@ -1112,7 +1235,7 @@ function reducePState(
                 let name = syntaxNode.nameToken.payload as string;
                 let varKont = new VarKont(name, env, kont);
                 return new PState(
-                    [Mode.GetValue, initExpr],
+                    [Mode.GetValue, initExpr, quoteLevel],
                     env,
                     varKont,
                     jumpMap,
@@ -1135,7 +1258,7 @@ function reducePState(
             let body = syntaxNode.body;
             let for1Kont = new For1Kont(name, body, env, kont, jumpMap);
             return new PState(
-                [Mode.GetValue, arrayExpr],
+                [Mode.GetValue, arrayExpr, quoteLevel],
                 env,
                 for1Kont,
                 jumpMap,
@@ -1152,7 +1275,7 @@ function reducePState(
                 jumpMap,
             );
             return new PState(
-                [Mode.GetValue, condExpr],
+                [Mode.GetValue, condExpr, quoteLevel],
                 env,
                 while1Kont,
                 jumpMap,
@@ -1186,7 +1309,7 @@ function reducePState(
             let args = syntaxNode.argList.args;
             let call1Kont = new Call1Kont(args, env, kont, jumpMap);
             return new PState(
-                [Mode.GetValue, funcExpr],
+                [Mode.GetValue, funcExpr, quoteLevel],
                 env,
                 call1Kont,
                 jumpMap,
@@ -1205,7 +1328,7 @@ function reducePState(
             else {
                 let returnKont = new ReturnKont(kont, jumpMap);
                 return new PState(
-                    [Mode.GetValue, syntaxNode.expr],
+                    [Mode.GetValue, syntaxNode.expr, quoteLevel],
                     env,
                     returnKont,
                     jumpMap,
@@ -1216,27 +1339,37 @@ function reducePState(
             return new RetState(new NoneValue(), kont);
         }
         else if (syntaxNode instanceof QuoteExpr) {
-            let statements = syntaxNode.statements;
-            if (statements.length === 1) {
-                let statement = statements[0] as Statement;
-                if (statement instanceof ExprStatement) {
-                    let expr = statement.expr;
-                    let value = reifyNode(expr) as SyntaxNodeValue;
-                    return new RetState(value, kont);
-                }
-                else {
-                    let value = reifyNode(statement) as SyntaxNodeValue;
-                    return new RetState(value, kont);
-                }
-            }
-            else {
+            if (syntaxNode.statements.length === 0) {
                 let value = new SyntaxNodeValue(
                     SYNTAX_KIND__BLOCK,
-                    statements.map(reifyNode),
+                    [],
                     new NoneValue(),
                 );
                 return new RetState(value, kont);
             }
+            else {
+                let statements = syntaxNode.statements;
+                let statementValues: Array<SyntaxNodeValue> = [];
+                let quote1Kont = new Quote1Kont(
+                    0,
+                    statements,
+                    statementValues,
+                    env,
+                    kont,
+                    jumpMap,
+                );
+                return new PState(
+                    [Mode.Interpolate, statements[0], /* quoteLevel */ 1],
+                    env,
+                    quote1Kont,
+                    jumpMap,
+                );
+            }
+        }
+        else if (syntaxNode instanceof UnquoteExpr) {
+            throw new E000_InternalError(
+                "Precondition failed: evaluating UnquoteExpr"
+            );
         }
         else {
             throw new E000_InternalError(
@@ -1255,7 +1388,7 @@ function reducePState(
                 jumpMap,
             );
             return new PState(
-                [Mode.GetValue, arrayExpr],
+                [Mode.GetValue, arrayExpr, quoteLevel],
                 env,
                 indexingLoc1Kont,
                 jumpMap,
@@ -1272,7 +1405,7 @@ function reducePState(
         else if (syntaxNode instanceof ParenExpr) {
             let innerExpr = syntaxNode.innerExpr;
             return new PState(
-                [Mode.GetLocation, innerExpr],
+                [Mode.GetLocation, innerExpr, quoteLevel],
                 env,
                 kont,
                 jumpMap,
@@ -1281,7 +1414,7 @@ function reducePState(
         else if (syntaxNode instanceof DoExpr) {
             let statement = syntaxNode.statement;
             return new PState(
-                [Mode.GetLocation, statement],
+                [Mode.GetLocation, statement, quoteLevel],
                 env,
                 kont,
                 jumpMap,
@@ -1289,7 +1422,7 @@ function reducePState(
         }
         else if (syntaxNode instanceof BlockStatement) {
             return new PState(
-                [Mode.GetLocation, syntaxNode.block],
+                [Mode.GetLocation, syntaxNode.block, quoteLevel],
                 env,
                 kont,
                 jumpMap,
@@ -1305,7 +1438,7 @@ function reducePState(
             }
             else if (statements.length === 1) {
                 return new PState(
-                    [Mode.GetLocation, statements[0]],
+                    [Mode.GetLocation, statements[0], quoteLevel],
                     env,
                     kont,
                     jumpMap,
@@ -1315,7 +1448,7 @@ function reducePState(
                 let blockLoc1Kont
                     = new BlockLocKont(statements, 1, env, kont, jumpMap);
                 return new PState(
-                    [Mode.GetValue, statements[0]],
+                    [Mode.GetValue, statements[0], quoteLevel],
                     env,
                     blockLoc1Kont,
                     jumpMap,
@@ -1324,7 +1457,7 @@ function reducePState(
         }
         else if (syntaxNode instanceof ExprStatement) {
             return new PState(
-                [Mode.GetLocation, syntaxNode.expr],
+                [Mode.GetLocation, syntaxNode.expr, quoteLevel],
                 env,
                 kont,
                 jumpMap,
@@ -1343,7 +1476,7 @@ function reducePState(
                 jumpMap,
             );
             return new PState(
-                [Mode.GetValue, condExpr],
+                [Mode.GetValue, condExpr, quoteLevel],
                 env,
                 ifLocKont,
                 jumpMap,
@@ -1371,7 +1504,7 @@ function reducePState(
                     jumpMap,
                 );
                 return new PState(
-                    [Mode.Ignore, statements[0]],
+                    [Mode.Ignore, statements[0], quoteLevel],
                     env,
                     blockIgnoreKont,
                     jumpMap,
@@ -1380,7 +1513,7 @@ function reducePState(
         }
         else if (syntaxNode instanceof ExprStatement) {
             return new PState(
-                [Mode.Ignore, syntaxNode.expr],
+                [Mode.Ignore, syntaxNode.expr, quoteLevel],
                 env,
                 kont,
                 jumpMap,
@@ -1411,7 +1544,7 @@ function reducePState(
                     jumpMap,
                 );
                 return new PState(
-                    [Mode.GetValue, lhs],
+                    [Mode.GetValue, lhs, quoteLevel],
                     env,
                     infixOpIgnore1Kont,
                     jumpMap,
@@ -1427,7 +1560,7 @@ function reducePState(
                     kont,
                 );
                 return new PState(
-                    [Mode.GetValue, exprs[0]],
+                    [Mode.GetValue, exprs[0], quoteLevel],
                     env,
                     comparisonOpIgnore1Kont,
                     jumpMap,
@@ -1441,7 +1574,7 @@ function reducePState(
                     jumpMap,
                 );
                 return new PState(
-                    [Mode.GetLocation, lhs],
+                    [Mode.GetLocation, lhs, quoteLevel],
                     env,
                     assignIgnore1Kont,
                     jumpMap,
@@ -1469,7 +1602,7 @@ function reducePState(
             else {
                 let returnIgnoreKont = new ReturnIgnoreKont(kont, jumpMap);
                 return new PState(
-                    [Mode.GetValue, syntaxNode.expr],
+                    [Mode.GetValue, syntaxNode.expr, quoteLevel],
                     env,
                     returnIgnoreKont,
                     jumpMap,
@@ -1486,7 +1619,7 @@ function reducePState(
                 jumpMap,
             );
             return new PState(
-                [Mode.GetValue, funcExpr],
+                [Mode.GetValue, funcExpr, quoteLevel],
                 env,
                 callIgnore1Kont,
                 jumpMap,
@@ -1513,25 +1646,40 @@ function reducePState(
             }
         }
         else if (syntaxNode instanceof QuoteExpr) {
-            let statements = syntaxNode.statements;
-            if (statements.length === 1) {
-                let statement = statements[0] as Statement;
-                if (statement instanceof ExprStatement) {
-                    let expr = statement.expr;
-                    /* ignore */ reifyNode(expr) as SyntaxNodeValue;
-                    return new RetState(new NoneValue(), kont);
-                }
-                else {
-                    /* ignore */ reifyNode(statement) as SyntaxNodeValue;
-                    return new RetState(new NoneValue(), kont);
-                }
+            if (syntaxNode.statements.length === 0) {
+                /* ignore */
+                return new RetState(new NoneValue(), kont);
             }
             else {
-                /* ignore */ new SyntaxNodeValue(
-                    SYNTAX_KIND__BLOCK,
-                    statements.map(reifyNode),
-                    new NoneValue(),
+                let statements = syntaxNode.statements;
+                let quoteIgnore1Kont = new QuoteIgnore1Kont(
+                    0,
+                    statements,
+                    env,
+                    kont,
+                    jumpMap,
                 );
+                return new PState(
+                    [Mode.Interpolate, statements[0], /* quoteLevel */ 1],
+                    env,
+                    quoteIgnore1Kont,
+                    jumpMap,
+                );
+            }
+        }
+        else if (syntaxNode instanceof VarDecl) {
+            let initExpr = syntaxNode.initExpr;
+            if (initExpr !== null) {
+                let name = syntaxNode.nameToken.payload as string;
+                let varKont = new VarKont(name, env, kont);
+                return new PState(
+                    [Mode.GetValue, initExpr, quoteLevel],
+                    env,
+                    varKont,
+                    jumpMap,
+                );
+            }
+            else {
                 return new RetState(new NoneValue(), kont);
             }
         }
@@ -1539,6 +1687,62 @@ function reducePState(
             throw new E000_InternalError(
                 "Unsupported ignore syntax node " + syntaxNode.constructor.name
             );
+        }
+    }
+    else if (mode === Mode.Interpolate) {
+        if (syntaxNode instanceof UnquoteExpr && quoteLevel < 1) {
+            throw new E000_InternalError(
+                "Precondition failed: Quote level too low"
+            );
+        }
+        else if (syntaxNode instanceof UnquoteExpr && quoteLevel === 1) {
+            let unquoteKont = new UnquoteKont(
+                env,
+                kont,
+                jumpMap,
+            );
+            return new PState(
+                [Mode.GetValue, syntaxNode.innerExpr, /* quoteLevel */ 0],
+                env,
+                unquoteKont,
+                jumpMap,
+            );
+        }
+        else {  // either UnquoteExpr at quoteLevel > 1, or any other node
+            let childQuoteLevel = syntaxNode instanceof QuoteExpr
+                ? quoteLevel + 1
+                : syntaxNode instanceof UnquoteExpr
+                    ? quoteLevel - 1
+                    : quoteLevel;
+            if (syntaxNode.children.length > 0) {
+                let childValues: Array<SyntaxNodeValue | NoneValue> = [];
+                let quote2Kont = new Quote2Kont(
+                    0,
+                    syntaxNode,
+                    childValues,
+                    childQuoteLevel,
+                    env,
+                    kont,
+                    jumpMap,
+                );
+                let firstChild = syntaxNode.children[0];
+                if (firstChild === null) {
+                    return new RetState(new NoneValue(), quote2Kont);
+                }
+                else {
+                    return new PState(
+                        [Mode.Interpolate, firstChild, childQuoteLevel],
+                        env,
+                        quote2Kont,
+                        jumpMap,
+                    );
+                }
+            }
+            else {
+                let [kind, payload] = kindAndPayloadOfNode(syntaxNode);
+                let value = new SyntaxNodeValue(kind, [], payload);
+                return new RetState(value, kont);
+            }
         }
     }
     else {
@@ -1560,7 +1764,11 @@ function reduceRetState({ value, kont }: RetState): State {
                 kont.jumpMap,
             );
             return new PState(
-                [Mode.GetValue, kont.statements[kont.nextIndex]],
+                [
+                    Mode.GetValue,
+                    kont.statements[kont.nextIndex],
+                    /* quoteLevel */ 0,
+                ],
                 kont.env,
                 compUnitKont,
                 kont.jumpMap,
@@ -1622,7 +1830,7 @@ function reduceRetState({ value, kont }: RetState): State {
                 kont.tail,
             );
             return new PState(
-                [Mode.GetValue, kont.rhs],
+                [Mode.GetValue, kont.rhs, /* quoteLevel */ 0],
                 kont.env,
                 infixOp2Kont,
                 kont.jumpMap,
@@ -1635,7 +1843,7 @@ function reduceRetState({ value, kont }: RetState): State {
             }
             let infixOp2Kont = new InfixOp2Kont(left, token, kont.tail);
             return new PState(
-                [Mode.GetValue, kont.rhs],
+                [Mode.GetValue, kont.rhs, /* quoteLevel */ 0],
                 kont.env,
                 infixOp2Kont,
                 kont.jumpMap,
@@ -1652,7 +1860,7 @@ function reduceRetState({ value, kont }: RetState): State {
                 kont.tail,
             );
             return new PState(
-                [Mode.GetValue, kont.rhs],
+                [Mode.GetValue, kont.rhs, /* quoteLevel */ 0],
                 kont.env,
                 infixOp2Kont,
                 kont.jumpMap,
@@ -1665,7 +1873,7 @@ function reduceRetState({ value, kont }: RetState): State {
             }
             let infixOp2Kont = new InfixOp2Kont(left, token, kont.tail);
             return new PState(
-                [Mode.GetValue, kont.rhs],
+                [Mode.GetValue, kont.rhs, /* quoteLevel */ 0],
                 kont.env,
                 infixOp2Kont,
                 kont.jumpMap,
@@ -1678,7 +1886,7 @@ function reduceRetState({ value, kont }: RetState): State {
             }
             let infixOp2Kont = new InfixOp2Kont(left, token, kont.tail);
             return new PState(
-                [Mode.GetValue, kont.rhs],
+                [Mode.GetValue, kont.rhs, /* quoteLevel */ 0],
                 kont.env,
                 infixOp2Kont,
                 kont.jumpMap,
@@ -1693,7 +1901,7 @@ function reduceRetState({ value, kont }: RetState): State {
                 kont.tail,
             );
             return new PState(
-                [Mode.GetValue, kont.rhs],
+                [Mode.GetValue, kont.rhs, /* quoteLevel */ 0],
                 kont.env,
                 infixOp2Kont,
                 kont.jumpMap,
@@ -1704,7 +1912,7 @@ function reduceRetState({ value, kont }: RetState): State {
             if (boolify(left)) {
                 // tail call
                 return new PState(
-                    [Mode.GetValue, kont.rhs],
+                    [Mode.GetValue, kont.rhs, /* quoteLevel */ 0],
                     kont.env,
                     kont.tail,
                     kont.jumpMap,
@@ -1722,7 +1930,7 @@ function reduceRetState({ value, kont }: RetState): State {
             else {
                 // tail call
                 return new PState(
-                    [Mode.GetValue, kont.rhs],
+                    [Mode.GetValue, kont.rhs, /* quoteLevel */ 0],
                     kont.env,
                     kont.tail,
                     kont.jumpMap,
@@ -1837,7 +2045,7 @@ function reduceRetState({ value, kont }: RetState): State {
             kont.jumpMap,
         );
         return new PState(
-            [Mode.GetValue, kont.exprs[1]],
+            [Mode.GetValue, kont.exprs[1], /* quoteLevel */ 0],
             kont.env,
             comparisonOp2Kont,
             kont.jumpMap,
@@ -1846,10 +2054,7 @@ function reduceRetState({ value, kont }: RetState): State {
     else if (kont instanceof ComparisonOp2Kont) {
         let op = kont.ops[kont.index];
         if (evaluateComparison(kont.prev, op, value)) {
-            if (kont.index + 1 >= kont.ops.length) {
-                return new RetState(new BoolValue(true), kont.tail);
-            }
-            else {
+            if (kont.index + 1 < kont.ops.length) {
                 let comparisonOp2Kont = new ComparisonOp2Kont(
                     value,
                     kont.exprs,
@@ -1860,11 +2065,18 @@ function reduceRetState({ value, kont }: RetState): State {
                     kont.jumpMap,
                 );
                 return new PState(
-                    [Mode.GetValue, kont.exprs[kont.index + 2]],
+                    [
+                        Mode.GetValue,
+                        kont.exprs[kont.index + 2],
+                        /* quoteLevel */ 0,
+                    ],
                     kont.env,
                     comparisonOp2Kont,
                     kont.jumpMap,
                 );
+            }
+            else {
+                return new RetState(new BoolValue(true), kont.tail);
             }
         }
         else {
@@ -1884,7 +2096,11 @@ function reduceRetState({ value, kont }: RetState): State {
                 kont.jumpMap,
             );
             return new PState(
-                [Mode.GetValue, kont.statements[kont.nextIndex]],
+                [
+                    Mode.GetValue,
+                    kont.statements[kont.nextIndex],
+                    /* quoteLevel */ 0,
+                ],
                 kont.env,
                 blockKont,
                 kont.jumpMap,
@@ -1896,27 +2112,14 @@ function reduceRetState({ value, kont }: RetState): State {
             let clause = kont.clauses[kont.index];
             let block = clause.block;
             return new PState(
-                [Mode.GetValue, block],
+                [Mode.GetValue, block, /* quoteLevel */ 0],
                 kont.env,
                 kont.tail,
                 kont.jumpMap,
             );
         }
         else {
-            if (kont.index + 1 >= kont.clauses.length) {
-                if (kont.elseBlock instanceof Block) {
-                    return new PState(
-                        [Mode.GetValue, kont.elseBlock],
-                        kont.env,
-                        kont.tail,
-                        kont.jumpMap,
-                    );
-                }
-                else {
-                    return new RetState(new NoneValue(), kont.tail);
-                }
-            }
-            else {
+            if (kont.index + 1 < kont.clauses.length) {
                 let condExpr = kont.clauses[kont.index + 1].condExpr;
                 let ifKont = new IfKont(
                     kont.clauses,
@@ -1927,20 +2130,28 @@ function reduceRetState({ value, kont }: RetState): State {
                     kont.jumpMap,
                 );
                 return new PState(
-                    [Mode.GetValue, condExpr],
+                    [Mode.GetValue, condExpr, /* quoteLevel */ 0],
                     kont.env,
                     ifKont,
                     kont.jumpMap,
                 );
             }
+            else if (kont.elseBlock instanceof Block) {
+                return new PState(
+                    [Mode.GetValue, kont.elseBlock, /* quoteLevel */ 0],
+                    kont.env,
+                    kont.tail,
+                    kont.jumpMap,
+                );
+            }
+            else {
+                return new RetState(new NoneValue(), kont.tail);
+            }
         }
     }
     else if (kont instanceof ArrayInitializerKont) {
         kont.elemValues[kont.index] = value;
-        if (kont.index + 1 >= kont.elemExprs.length) {
-            return new RetState(new ArrayValue(kont.elemValues), kont.tail);
-        }
-        else {
+        if (kont.index + 1 < kont.elemExprs.length) {
             let arrayInitializerKont = new ArrayInitializerKont(
                 kont.elemValues,
                 kont.elemExprs,
@@ -1950,11 +2161,18 @@ function reduceRetState({ value, kont }: RetState): State {
                 kont.jumpMap,
             );
             return new PState(
-                [Mode.GetValue, kont.elemExprs[kont.index + 1]],
+                [
+                    Mode.GetValue,
+                    kont.elemExprs[kont.index + 1],
+                    /* quoteLevel */ 0,
+                ],
                 kont.env,
                 arrayInitializerKont,
                 kont.jumpMap,
             );
+        }
+        else {
+            return new RetState(new ArrayValue(kont.elemValues), kont.tail);
         }
     }
     else if (kont instanceof Indexing1Kont) {
@@ -1964,7 +2182,7 @@ function reduceRetState({ value, kont }: RetState): State {
         }
         let indexing2Kont = new Indexing2Kont(array, kont.tail);
         return new PState(
-            [Mode.GetValue, kont.indexExpr],
+            [Mode.GetValue, kont.indexExpr, /* quoteLevel */ 0],
             kont.env,
             indexing2Kont,
             kont.jumpMap,
@@ -2012,7 +2230,7 @@ function reduceRetState({ value, kont }: RetState): State {
             jumpMap.lastTarget = kont.tail;
             jumpMap.nextTarget = for2Kont;
             return new PState(
-                [Mode.GetValue, kont.body],
+                [Mode.GetValue, kont.body, /* quoteLevel */ 0],
                 bodyEnv,
                 for2Kont,
                 jumpMap,
@@ -2041,7 +2259,7 @@ function reduceRetState({ value, kont }: RetState): State {
             jumpMap.lastTarget = kont.tail;
             jumpMap.nextTarget = for2Kont;
             return new PState(
-                [Mode.GetValue, kont.body],
+                [Mode.GetValue, kont.body, /* quoteLevel */ 0],
                 bodyEnv,
                 for2Kont,
                 jumpMap,
@@ -2055,7 +2273,7 @@ function reduceRetState({ value, kont }: RetState): State {
         }
         let indexingLoc2Kont = new IndexingLoc2Kont(array, kont.tail);
         return new PState(
-            [Mode.GetValue, kont.indexExpr],
+            [Mode.GetValue, kont.indexExpr, /* quoteLevel */ 0],
             kont.env,
             indexingLoc2Kont,
             kont.jumpMap,
@@ -2076,7 +2294,7 @@ function reduceRetState({ value, kont }: RetState): State {
         let rhs = kont.rhs;
         let assign2Kont = new Assign2Kont(location, kont.tail);
         return new PState(
-            [Mode.GetValue, rhs],
+            [Mode.GetValue, rhs, /* quoteLevel */ 0],
             kont.env,
             assign2Kont,
             kont.jumpMap,
@@ -2089,7 +2307,11 @@ function reduceRetState({ value, kont }: RetState): State {
     else if (kont instanceof BlockLocKont) {
         if (kont.nextIndex + 1 >= kont.statements.length) {
             return new PState(
-                [Mode.GetLocation, kont.statements[kont.nextIndex]],
+                [
+                    Mode.GetLocation,
+                    kont.statements[kont.nextIndex],
+                    /* quoteLevel */ 0,
+                ],
                 kont.env,
                 kont.tail,
                 kont.jumpMap,
@@ -2104,7 +2326,11 @@ function reduceRetState({ value, kont }: RetState): State {
                 kont.jumpMap,
             );
             return new PState(
-                [Mode.GetValue, kont.statements[kont.nextIndex]],
+                [
+                    Mode.GetValue,
+                    kont.statements[kont.nextIndex],
+                    /* quoteLevel */ 0,
+                ],
                 kont.env,
                 blockLocKont,
                 kont.jumpMap,
@@ -2116,27 +2342,14 @@ function reduceRetState({ value, kont }: RetState): State {
             let clause = kont.clauses[kont.index];
             let block = clause.children[1] as Block;
             return new PState(
-                [Mode.GetLocation, block],
+                [Mode.GetLocation, block, /* quoteLevel */  0],
                 kont.env,
                 kont.tail,
                 kont.jumpMap,
             );
         }
         else {
-            if (kont.index + 1 >= kont.clauses.length) {
-                if (kont.elseBlock instanceof Block) {
-                    return new PState(
-                        [Mode.GetLocation, kont.elseBlock],
-                        kont.env,
-                        kont.tail,
-                        kont.jumpMap,
-                    );
-                }
-                else {
-                    throw new E507_CannotAssignError();
-                }
-            }
-            else {
+            if (kont.index + 1 < kont.clauses.length) {
                 let condExpr = kont.clauses[kont.index + 1].condExpr;
                 let ifKont = new IfLocKont(
                     kont.clauses,
@@ -2147,11 +2360,22 @@ function reduceRetState({ value, kont }: RetState): State {
                     kont.jumpMap,
                 );
                 return new PState(
-                    [Mode.GetValue, condExpr],
+                    [Mode.GetValue, condExpr, /* quoteLevel */ 0],
                     kont.env,
                     ifKont,
                     kont.jumpMap,
                 );
+            }
+            else if (kont.elseBlock instanceof Block) {
+                return new PState(
+                    [Mode.GetLocation, kont.elseBlock, /* quoteLevel */ 0],
+                    kont.env,
+                    kont.tail,
+                    kont.jumpMap,
+                );
+            }
+            else {
+                throw new E507_CannotAssignError();
             }
         }
     }
@@ -2168,7 +2392,7 @@ function reduceRetState({ value, kont }: RetState): State {
             jumpMap.lastTarget = kont.tail;
             jumpMap.nextTarget = while2Kont;
             return new PState(
-                [Mode.GetValue, kont.body],
+                [Mode.GetValue, kont.body, /* quoteLevel */ 0],
                 kont.env,
                 while2Kont,
                 jumpMap,
@@ -2187,7 +2411,7 @@ function reduceRetState({ value, kont }: RetState): State {
             kont.jumpMap,
         );
         return new PState(
-            [Mode.GetValue, kont.condExpr],
+            [Mode.GetValue, kont.condExpr, /* quoteLevel */ 0],
             kont.env,
             while1Kont,
             kont.jumpMap,
@@ -2212,7 +2436,7 @@ function reduceRetState({ value, kont }: RetState): State {
             jumpMap.lastTarget = null;
             jumpMap.nextTarget = null;
             return new PState(
-                [Mode.Ignore, value.body],
+                [Mode.Ignore, value.body, /* quoteLevel */ 0],
                 value.outerEnv,
                 kont.tail,
                 jumpMap,
@@ -2232,7 +2456,7 @@ function reduceRetState({ value, kont }: RetState): State {
                 kont.jumpMap,
             );
             return new PState(
-                [Mode.GetValue, kont.args[0].expr],
+                [Mode.GetValue, kont.args[0].expr, /* quoteLevel */ 0],
                 kont.env,
                 call2Kont,
                 kont.jumpMap,
@@ -2241,7 +2465,28 @@ function reduceRetState({ value, kont }: RetState): State {
     }
     else if (kont instanceof Call2Kont) {
         kont.argValues[kont.index] = value; // dirty mutation; justified
-        if (kont.index + 1 >= kont.args.length) {
+        if (kont.index + 1 < kont.args.length) {
+            let call2Kont = new Call2Kont(
+                kont.funcValue,
+                kont.argValues,
+                kont.args,
+                kont.index + 1,
+                kont.env,
+                kont.tail,
+                kont.jumpMap,
+            );
+            return new PState(
+                [
+                    Mode.GetValue,
+                    kont.args[kont.index + 1].expr,
+                    /* quoteLevel */ 0,
+                ],
+                kont.env,
+                call2Kont,
+                kont.jumpMap,
+            );
+        }
+        else {
             let bodyEnv = extend(kont.funcValue.outerEnv);
             for (let [param, arg] of zip(
                 kont.funcValue.parameters,
@@ -2254,27 +2499,10 @@ function reduceRetState({ value, kont }: RetState): State {
             jumpMap.lastTarget = null;
             jumpMap.nextTarget = null;
             return new PState(
-                [Mode.Ignore, kont.funcValue.body],
+                [Mode.Ignore, kont.funcValue.body, /* quoteLevel */ 0],
                 bodyEnv,
                 kont.tail,
                 jumpMap,
-            );
-        }
-        else {
-            let call2Kont = new Call2Kont(
-                kont.funcValue,
-                kont.argValues,
-                kont.args,
-                kont.index + 1,
-                kont.env,
-                kont.tail,
-                kont.jumpMap,
-            );
-            return new PState(
-                [Mode.GetValue, kont.args[kont.index + 1].expr],
-                kont.env,
-                call2Kont,
-                kont.jumpMap,
             );
         }
     }
@@ -2291,7 +2519,11 @@ function reduceRetState({ value, kont }: RetState): State {
                 kont.jumpMap,
             );
             return new PState(
-                [Mode.GetValue, kont.statements[kont.nextIndex]],
+                [
+                    Mode.GetValue,
+                    kont.statements[kont.nextIndex],
+                    /* quoteLevel */ 0,
+                ],
                 kont.env,
                 blockIgnoreKont,
                 kont.jumpMap,
@@ -2303,7 +2535,7 @@ function reduceRetState({ value, kont }: RetState): State {
         let rhs = kont.rhs;
         let assignIgnore2Kont = new AssignIgnore2Kont(location, kont.tail);
         return new PState(
-            [Mode.GetValue, rhs],
+            [Mode.GetValue, rhs, /* quoteLevel */ 0],
             kont.env,
             assignIgnore2Kont,
             kont.jumpMap,
@@ -2350,7 +2582,7 @@ function reduceRetState({ value, kont }: RetState): State {
             jumpMap.lastTarget = null;
             jumpMap.nextTarget = null;
             return new PState(
-                [Mode.Ignore, value.body],
+                [Mode.Ignore, value.body, /* quoteLevel */ 0],
                 value.outerEnv,
                 kont.tail,
                 jumpMap,
@@ -2370,7 +2602,7 @@ function reduceRetState({ value, kont }: RetState): State {
                 kont.jumpMap,
             );
             return new PState(
-                [Mode.GetValue, kont.args[0]],
+                [Mode.GetValue, kont.args[0], /* quoteLevel */ 0],
                 kont.env,
                 callIgnore2Kont,
                 kont.jumpMap,
@@ -2379,7 +2611,28 @@ function reduceRetState({ value, kont }: RetState): State {
     }
     else if (kont instanceof CallIgnore2Kont) {
         kont.argValues[kont.index] = value; // dirty mutation; justified
-        if (kont.index + 1 >= kont.args.length) {
+        if (kont.index + 1 < kont.args.length) {
+            let callIgnore2Kont = new CallIgnore2Kont(
+                kont.funcValue,
+                kont.argValues,
+                kont.args,
+                kont.index + 1,
+                kont.env,
+                kont.tail,
+                kont.jumpMap,
+            );
+            return new PState(
+                [
+                    Mode.GetValue,
+                    kont.args[kont.index + 1],
+                    /* quoteLevel */ 0,
+                ],
+                kont.env,
+                callIgnore2Kont,
+                kont.jumpMap,
+            );
+        }
+        else {
             let bodyEnv = extend(kont.funcValue.outerEnv);
             for (let [param, arg] of zip(
                 kont.funcValue.parameters,
@@ -2392,27 +2645,10 @@ function reduceRetState({ value, kont }: RetState): State {
             jumpMap.lastTarget = null;
             jumpMap.nextTarget = null;
             return new PState(
-                [Mode.Ignore, kont.funcValue.body],
+                [Mode.Ignore, kont.funcValue.body, /* quoteLevel */ 0],
                 bodyEnv,
                 kont.tail,
                 jumpMap,
-            );
-        }
-        else {
-            let callIgnore2Kont = new CallIgnore2Kont(
-                kont.funcValue,
-                kont.argValues,
-                kont.args,
-                kont.index + 1,
-                kont.env,
-                kont.tail,
-                kont.jumpMap,
-            );
-            return new PState(
-                [Mode.GetValue, kont.args[kont.index + 1]],
-                kont.env,
-                callIgnore2Kont,
-                kont.jumpMap,
             );
         }
     }
@@ -2429,7 +2665,7 @@ function reduceRetState({ value, kont }: RetState): State {
                 kont.tail,
             );
             return new PState(
-                [Mode.GetValue, kont.rhs],
+                [Mode.GetValue, kont.rhs, /* quoteLevel */ 0],
                 kont.env,
                 infixOp2Kont,
                 kont.jumpMap,
@@ -2442,7 +2678,7 @@ function reduceRetState({ value, kont }: RetState): State {
             }
             let infixOp2Kont = new InfixOpIgnore2Kont(left, token, kont.tail);
             return new PState(
-                [Mode.GetValue, kont.rhs],
+                [Mode.GetValue, kont.rhs, /* quoteLevel */ 0],
                 kont.env,
                 infixOp2Kont,
                 kont.jumpMap,
@@ -2459,7 +2695,7 @@ function reduceRetState({ value, kont }: RetState): State {
                 kont.tail,
             );
             return new PState(
-                [Mode.GetValue, kont.rhs],
+                [Mode.GetValue, kont.rhs, /* quoteLevel */ 0],
                 kont.env,
                 infixOp2Kont,
                 kont.jumpMap,
@@ -2472,7 +2708,7 @@ function reduceRetState({ value, kont }: RetState): State {
             }
             let infixOp2Kont = new InfixOpIgnore2Kont(left, token, kont.tail);
             return new PState(
-                [Mode.GetValue, kont.rhs],
+                [Mode.GetValue, kont.rhs, /* quoteLevel */ 0],
                 kont.env,
                 infixOp2Kont,
                 kont.jumpMap,
@@ -2485,7 +2721,7 @@ function reduceRetState({ value, kont }: RetState): State {
             }
             let infixOp2Kont = new InfixOpIgnore2Kont(left, token, kont.tail);
             return new PState(
-                [Mode.GetValue, kont.rhs],
+                [Mode.GetValue, kont.rhs, /* quoteLevel */ 0],
                 kont.env,
                 infixOp2Kont,
                 kont.jumpMap,
@@ -2500,7 +2736,7 @@ function reduceRetState({ value, kont }: RetState): State {
                 kont.tail,
             );
             return new PState(
-                [Mode.GetValue, kont.rhs],
+                [Mode.GetValue, kont.rhs, /* quoteLevel */ 0],
                 kont.env,
                 infixOp2Kont,
                 kont.jumpMap,
@@ -2511,7 +2747,7 @@ function reduceRetState({ value, kont }: RetState): State {
             if (boolify(left)) {
                 // tail call
                 return new PState(
-                    [Mode.GetValue, kont.rhs],
+                    [Mode.GetValue, kont.rhs, /* quoteLevel */ 0],
                     kont.env,
                     kont.tail,
                     kont.jumpMap,
@@ -2529,7 +2765,7 @@ function reduceRetState({ value, kont }: RetState): State {
             else {
                 // tail call
                 return new PState(
-                    [Mode.GetValue, kont.rhs],
+                    [Mode.GetValue, kont.rhs, /* quoteLevel */ 0],
                     kont.env,
                     kont.tail,
                     kont.jumpMap,
@@ -2622,6 +2858,203 @@ function reduceRetState({ value, kont }: RetState): State {
             );
         }
     }
+    else if (kont instanceof Quote1Kont) {
+        kont.statementValues[kont.index] = value as SyntaxNodeValue;
+        if (kont.index + 1 < kont.statements.length) {
+            let statements = kont.statements;
+            let quote1Kont = new Quote1Kont(
+                kont.index + 1,
+                statements,
+                kont.statementValues,
+                kont.env,
+                kont.tail,
+                kont.jumpMap,
+            );
+            return new PState(
+                [
+                    Mode.Interpolate,
+                    statements[kont.index + 1],
+                    /* quoteLevel */ 1,
+                ],
+                kont.env,
+                quote1Kont,
+                kont.jumpMap,
+            );
+        }
+        else {
+            let value: SyntaxNodeValue;
+            if (kont.statements.length === 1) {
+                if (kont.statements[0] instanceof ExprStatement) {
+                    value = kont.statementValues[0].children[0] as
+                        SyntaxNodeValue;
+                }
+                else if (kont.statements[0] instanceof Statement) {
+                    value = kont.statementValues[0] as SyntaxNodeValue;
+                }
+                else {
+                    value = new SyntaxNodeValue(
+                        SYNTAX_KIND__BLOCK,
+                        kont.statementValues,
+                        new NoneValue(),
+                    );
+                }
+            }
+            else {
+                value = new SyntaxNodeValue(
+                    SYNTAX_KIND__BLOCK,
+                    kont.statementValues,
+                    new NoneValue(),
+                );
+            }
+            return new RetState(value, kont.tail);
+        }
+    }
+    else if (kont instanceof Quote2Kont) {
+        kont.childValues[kont.index] = value;
+        if (kont.index + 1 < kont.node.children.length) {
+            let quote2Kont = new Quote2Kont(
+                kont.index + 1,
+                kont.node,
+                kont.childValues,
+                kont.quoteLevel,
+                kont.env,
+                kont.tail,
+                kont.jumpMap,
+            );
+            let child = kont.node.children[kont.index + 1];
+            if (child === null) {
+                return new RetState(new NoneValue(), quote2Kont);
+            }
+            else {
+                return new PState(
+                    [Mode.Interpolate, child, kont.quoteLevel],
+                    kont.env,
+                    quote2Kont,
+                    kont.jumpMap,
+                );
+            }
+        }
+        else {
+            let [kind, payload] = kindAndPayloadOfNode(kont.node);
+            let value = new SyntaxNodeValue(kind, kont.childValues, payload);
+            return new RetState(value, kont.tail);
+        }
+    }
+    else if (kont instanceof UnquoteKont) {
+        if (value instanceof IntValue) {
+            return new RetState(
+                new SyntaxNodeValue(
+                    SYNTAX_KIND__INT_LIT_EXPR,
+                    [new SyntaxNodeValue(
+                        SYNTAX_KIND__TOKEN_INT_LIT,
+                        [],
+                        value,
+                    )],
+                    new NoneValue(),
+                ),
+                kont.tail,
+            );
+        }
+        else if (value instanceof StrValue) {
+            return new RetState(
+                new SyntaxNodeValue(
+                    SYNTAX_KIND__STR_LIT_EXPR,
+                    [new SyntaxNodeValue(
+                        SYNTAX_KIND__TOKEN_STR_LIT,
+                        [],
+                        value,
+                    )],
+                    new NoneValue(),
+                ),
+                kont.tail,
+            );
+        }
+        else if (value instanceof BoolValue) {
+            if (value.payload) {
+                return new RetState(
+                    new SyntaxNodeValue(
+                        SYNTAX_KIND__BOOL_LIT_EXPR,
+                        [new SyntaxNodeValue(
+                            SYNTAX_KIND__TOKEN_TRUE_KEYWORD,
+                            [],
+                            value,
+                        )],
+                        new NoneValue(),
+                    ),
+                    kont.tail,
+                );
+            }
+            else {
+                return new RetState(
+                    new SyntaxNodeValue(
+                        SYNTAX_KIND__BOOL_LIT_EXPR,
+                        [new SyntaxNodeValue(
+                            SYNTAX_KIND__TOKEN_FALSE_KEYWORD,
+                            [],
+                            value,
+                        )],
+                        new NoneValue(),
+                    ),
+                    kont.tail,
+                );
+            }
+        }
+        else if (value instanceof NoneValue) {
+            return new RetState(
+                new SyntaxNodeValue(SYNTAX_KIND__NONE_LIT_EXPR, [], value),
+                kont.tail,
+            );
+        }
+        else if (value instanceof SyntaxNodeValue) {
+            if (isExprKind(value)) {
+                return new RetState(value, kont.tail);
+            }
+            else if (isStatementKind(value)) {
+                let doExpr = new SyntaxNodeValue(
+                    SYNTAX_KIND__DO_EXPR,
+                    [value],
+                    new NoneValue(),
+                );
+                return new RetState(doExpr, kont.tail);
+            }
+            else {
+                throw new E503_TypeError(
+                    "Unknown syntax node kind in quote interpolation"
+                );
+            }
+        }
+        else {
+            throw new E503_TypeError(
+                "Unknown syntax node kind in quote interpolation"
+            );
+        }
+    }
+    else if (kont instanceof QuoteIgnore1Kont) {
+        if (kont.index + 1 < kont.statements.length) {
+            let statements = kont.statements;
+            let quoteIgnore1Kont = new QuoteIgnore1Kont(
+                kont.index + 1,
+                statements,
+                kont.env,
+                kont.tail,
+                kont.jumpMap,
+            );
+            return new PState(
+                [
+                    Mode.Interpolate,
+                    statements[kont.index + 1],
+                    /* quoteLevel */ 1,
+                ],
+                kont.env,
+                quoteIgnore1Kont,
+                kont.jumpMap,
+            );
+        }
+        else {
+            /* ignore */
+            return new RetState(new NoneValue(), kont.tail);
+        }
+    }
     else {
         throw new E000_InternalError(
             `Unrecognized kont ${kont.constructor.name}`
@@ -2697,7 +3130,7 @@ export function callMacro(
     jumpMap.nextTarget = null;
 
     let state: State = new PState(
-        [Mode.Ignore, macroValue.body],
+        [Mode.Ignore, macroValue.body, /* quoteLevel */ 0],
         bodyEnv,
         haltKont,
         jumpMap,

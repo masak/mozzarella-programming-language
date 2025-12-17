@@ -28,10 +28,12 @@ import {
     ParameterList,
     ParenExpr,
     PrefixOpExpr,
+    QuoteExpr,
     ReturnStatement,
     Statement,
     StrLitExpr,
     SyntaxNode,
+    UnquoteExpr,
     VarDecl,
     VarRefExpr,
     WhileStatement,
@@ -74,6 +76,7 @@ import {
     SYNTAX_KIND__PAREN_EXPR,
     SYNTAX_KIND__PREFIX_OP_EXPR,
     SYNTAX_KIND__PRIMARY_EXPR,
+    SYNTAX_KIND__QUOTE_EXPR,
     SYNTAX_KIND__RETURN_STATEMENT,
     SYNTAX_KIND__STATEMENT,
     SYNTAX_KIND__STR_LIT_EXPR,
@@ -100,6 +103,7 @@ import {
     SYNTAX_KIND__TOKEN_STR_LIT,
     SYNTAX_KIND__TOKEN_TILDE,
     SYNTAX_KIND__TOKEN_TRUE_KEYWORD,
+    SYNTAX_KIND__UNQUOTE_EXPR,
     SYNTAX_KIND__VAR_DECL,
     SYNTAX_KIND__VAR_REF_EXPR,
     SYNTAX_KIND__WHILE_STATEMENT,
@@ -363,10 +367,20 @@ export function absorbNode(
         let nameToken = absorbNode(syntaxNodeValue.children[0]) as Token;
         return new VarRefExpr(nameToken);
     }
+    else if (hasKind(syntaxNodeValue, SYNTAX_KIND__QUOTE_EXPR)) {
+        let statements
+            = syntaxNodeValue.children
+                .map(absorbNode) as Array<Statement | Decl>;
+        return new QuoteExpr(statements);
+    }
+    else if (hasKind(syntaxNodeValue, SYNTAX_KIND__UNQUOTE_EXPR)) {
+        let innerExpr = absorbNode(syntaxNodeValue.children[0]) as Expr;
+        return new UnquoteExpr(innerExpr);
+    }
     else {
         throw new E000_InternalError(
-            "Converting unknown node type '" +
-                syntaxNodeValue.constructor.name + "'"
+            "Converting unknown node kind '" +
+                syntaxNodeValue.kind.payload + "'"
         );
     }
 }

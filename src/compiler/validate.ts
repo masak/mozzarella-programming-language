@@ -1,6 +1,7 @@
 import {
     E301_RedeclarationError,
     E302_UseBeforeDeclarationError,
+    E303_UnquoteOutsideQuoteError,
 } from "./error";
 import {
     Block,
@@ -9,6 +10,7 @@ import {
     MacroDecl,
     QuoteExpr,
     SyntaxNode,
+    UnquoteExpr,
     VarDecl,
     VarRefExpr,
 } from "./syntax";
@@ -91,22 +93,38 @@ function visitUp(
     }
 }
 
-function traverse(syntaxNode: SyntaxNode, contextStack: Array<Context>): void {
-    visitDown(syntaxNode, contextStack);
+function traverse(
+    syntaxNode: SyntaxNode,
+    contextStack: Array<Context>,
+    quoteLevel: number,
+): void {
+    if (quoteLevel === 0) {
+        visitDown(syntaxNode, contextStack);
+    }
 
     for (let child of syntaxNode.children) {
-        // We don't traverse into quoted code, because it doesn't participate
-        // in variable access and variable declarations _at this point_
-        if (child instanceof SyntaxNode && !(child instanceof QuoteExpr)) {
-            traverse(child, contextStack);
+        if (child instanceof SyntaxNode) {
+            if (child instanceof QuoteExpr) {
+                traverse(child, contextStack, quoteLevel + 1);
+            }
+            else if (child instanceof UnquoteExpr) {
+                if (quoteLevel <= 0) {
+                    throw new E303_UnquoteOutsideQuoteError();
+                }
+                traverse(child, contextStack, quoteLevel - 1);
+            }
+            else {
+                traverse(child, contextStack, quoteLevel);
+            }
         }
     }
 
-    visitUp(syntaxNode, contextStack);
+    if (quoteLevel === 0) {
+        visitUp(syntaxNode, contextStack);
+    }
 }
 
 export function validateCompUnit(compUnit: CompUnit): void {
-    let contextStack: Array<Context> = [new Map()];
-    traverse(compUnit, contextStack);
+    traverse(compUnit, /* contextStack */ [new Map()], /* quoteLevel */ 0);
 }
 

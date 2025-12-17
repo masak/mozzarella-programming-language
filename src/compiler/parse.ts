@@ -39,6 +39,7 @@ import {
     ReturnStatement,
     Statement,
     StrLitExpr,
+    UnquoteExpr,
     VarDecl,
     VarRefExpr,
     WhileStatement,
@@ -156,6 +157,7 @@ const termStartTokens = new Set([
     TokenKind.DoKeyword,
     TokenKind.SquareL,
     TokenKind.Identifier,
+    TokenKind.Dollar,
 ]);
 
 const statementStartTokens = new Set([
@@ -534,6 +536,13 @@ export class Parser {
                     else {
                         termStack.push(new VarRefExpr(token));
                     }
+                    expectation = "operator";
+                }
+                else if (token = this.accept(TokenKind.Dollar)!) {
+                    this.advanceOver(TokenKind.CurlyL);
+                    let innerExpr = this.parseExpr();
+                    this.advanceOver(TokenKind.CurlyR);
+                    termStack.push(new UnquoteExpr(innerExpr));
                     expectation = "operator";
                 }
                 else {

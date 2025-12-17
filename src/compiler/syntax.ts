@@ -418,3 +418,13 @@ export class QuoteExpr extends PrimaryExpr {
     }
 }
 
+export class UnquoteExpr extends PrimaryExpr {
+    constructor(innerExpr: Expr) {
+        super([innerExpr]);
+    }
+
+    get innerExpr(): Expr {
+        return this.children[0] as Expr;
+    }
+}
+
