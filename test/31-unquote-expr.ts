@@ -58,6 +58,25 @@ test("unquote expression", (t) => {
         t.is(run(program), "23");
     }
 
+    {
+        let program = `
+            macro swap(x, y) {
+                return code\`
+                    my temp = \${x};
+                    \${x} = \${y};
+                    \${y} = temp;
+                \`;
+            }
+
+            my a = 10;
+            my b = 20;
+            swap(a, b);
+            [a, b]
+        `;
+
+        t.is(run(program), "[20, 10]");
+    }
+
     t.throws(
         () => run("${13}"),
         { instanceOf: E303_UnquoteOutsideQuoteError },
