@@ -322,3 +322,14 @@ value) `none`.
 Written as `x +| y`, `x +& y`, `x +^ y`, `x +< y`, and `x +> y` (as in Raku);
 semantics identical to `bigint` semantics in JavaScript.
 
+## Intermediate representation 🪜🗺️
+
+The main thing is we're tired of the `Kont` types. Instead we create (per
+function) a directed graph, nodes representing instructions and directed edges
+representing transitions. The outdegree is either 1 for normal instructions, or
+2 for "branches". Ta-da, now everything's a graph. We establish a translator
+from the AST to this graph, and a much simpler evaluator for it.
+
+As an almost trivial second step, just turn the maximal sequences of
+1-transition nodes into basic blocks, represented as arrays.
+
