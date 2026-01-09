@@ -5,9 +5,9 @@ Take the traditional swap macro as an example.
 ```
 macro swap(x, y) {
     code`
-        my temp = ${x};
-        ${x} = ${y};
-        ${y} = temp;
+        my temp = $(x);
+        $(x) = $(y);
+        $(y) = temp;
     `;
 }
 ```

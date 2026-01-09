@@ -6,10 +6,14 @@ nested AST node constructors, a code quote is more direct, one layer of
 indirection _closer_ to the code we're representing.
 
 The syntax for the code quote is modeled on JavaScript's template strings. So
-is the syntax for interpolation, `${ }`. The evaluation is also analogous:
-first all the interpolation expressions are evaluated, left to right, and then
-the results are used to fill the corresponding holes and construct a complete
-AST.
+is the syntax for interpolation, `$( )`. (After some consideration, I decided
+to use parentheses rather than curly braces. Curly braces indicate something
+is a block/scope; parentheses surround an expression, and it's an expression
+that goes into the `$( )`.)
+
+The evaluation is also analogous: first all the interpolation expressions are
+evaluated, left to right, and then the results are used to fill the
+corresponding holes and construct a complete AST.
 
 There's one difference to template strings, though: since code quotes contain
 arbitrary code, they can also contain nested code quotes. This is not unheard
@@ -23,7 +27,7 @@ macro genMacro(a1, a2) {
     code`
         macro myMacro(b1, b2) {
             code`
-                // ...
+                # ...
             `;
         }
     `;
@@ -37,9 +41,9 @@ delimiters inside the string content itself, by backslashing them. With nested
 code quotes, however, no backslash is needed.
 
 Just like you can have two (or more) layers of code quotation, you can have two
-(or more) layers of interpolation: `${ ${ } }`. The "un-nesting" effect of the
+(or more) layers of interpolation: `$( $( ) )`. The "un-nesting" effect of the
 interpolation syntax is applied twice in this case; that would take you from
-the doubly code-quoted level of the `// ...` line to the level outside the
+the doubly code-quoted level of the `# ...` line to the level outside the
 outermost code quote, in the `genMacro` body.
 
 The ability to stack multiple interpolations like this means that outer code

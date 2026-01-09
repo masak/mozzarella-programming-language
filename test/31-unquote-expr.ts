@@ -6,21 +6,21 @@ import {
 } from "../src/go";
 
 test("unquote expression", (t) => {
-    t.is(run("my s = code`${9}`; s"), "<syntax IntLitExpr>");
-    t.is(run("my r = false; code`${r = true}`; r"), "true");
-    t.is(run('my s = code`${"rhubarb"}`; s'), "<syntax StrLitExpr>");
-    t.is(run("my s = code`${none}`; s"), "<syntax NoneLitExpr>");
+    t.is(run("my s = code`$(9)`; s"), "<syntax IntLitExpr>");
+    t.is(run("my r = false; code`$(r = true)`; r"), "true");
+    t.is(run('my s = code`$("rhubarb")`; s'), "<syntax StrLitExpr>");
+    t.is(run("my s = code`$(none)`; s"), "<syntax NoneLitExpr>");
 
-    t.is(run("macro m(x) { return code`${x} + ${x}`; }; m(2 * 3)"), "12");
-    t.is(run("macro m(x) { return code`${x} * ${x}`; }; m(4 + 5)"), "81");
+    t.is(run("macro m(x) { return code`$(x) + $(x)`; }; m(2 * 3)"), "12");
+    t.is(run("macro m(x) { return code`$(x) * $(x)`; }; m(4 + 5)"), "81");
 
     t.is(
-        run("my s1 = code`if 1 { 2 }`; my s2 = code`${s1}`; s2"),
+        run("my s1 = code`if 1 { 2 }`; my s2 = code`$(s1)`; s2"),
         "<syntax DoExpr>",
     );
 
     t.is(
-        run("macro m() { my s = code`if 1 { 2 }`; return code`${s}`; }; m()"),
+        run("macro m() { my s = code`if 1 { 2 }`; return code`$(s)`; }; m()"),
         "2",
     );
 
@@ -28,7 +28,7 @@ test("unquote expression", (t) => {
         let program = `
             my s = code\`true\`;
             for i in [1, 2, 3] {
-                s = code\`\${i} + \${do next}\`;
+                s = code\`\$(i) + \$(do next)\`;
             }
             s
         `;
@@ -36,8 +36,8 @@ test("unquote expression", (t) => {
         t.is(run(program), "<syntax BoolLitExpr>");
     }
 
-    t.is(run("my g = 0; func f() { code`1 + ${g = 51}`; }; f(); g"), "51");
-    t.is(run("my g = 0; code`1 + code`2 + ${g = 98}``; g"), "0");
+    t.is(run("my g = 0; func f() { code`1 + $(g = 51)`; }; f(); g"), "51");
+    t.is(run("my g = 0; code`1 + code`2 + $(g = 98)``; g"), "0");
 
     {
         let program = `
@@ -45,7 +45,7 @@ test("unquote expression", (t) => {
                 my v = 23;
                 return code\`
                     macro m2() {
-                        return code\` \${ \${ v } } \`;
+                        return code\` \$( \$( v ) ) \`;
                     }
 
                     m2();
@@ -62,9 +62,9 @@ test("unquote expression", (t) => {
         let program = `
             macro swap(x, y) {
                 return code\`
-                    my temp = \${x};
-                    \${x} = \${y};
-                    \${y} = temp;
+                    my temp = \$(x);
+                    \$(x) = \$(y);
+                    \$(y) = temp;
                 \`;
             }
 
@@ -78,19 +78,19 @@ test("unquote expression", (t) => {
     }
 
     t.throws(
-        () => run("${13}"),
+        () => run("$(13)"),
         { instanceOf: E303_UnquoteOutsideQuoteError },
     );
     t.throws(
-        () => run("${ ${none} }"),
+        () => run("$( $(none) )"),
         { instanceOf: E303_UnquoteOutsideQuoteError },
     );
     t.throws(
-        () => run("code` ${ ${7} } `"),
+        () => run("code` $( $(7) ) `"),
         { instanceOf: E303_UnquoteOutsideQuoteError },
     );
     t.throws(
-        () => run("func f() {}; code` ${ f } `"),
+        () => run("func f() {}; code` $( f ) `"),
         { instanceOf: E503_TypeError },
     );
 });

@@ -539,9 +539,9 @@ export class Parser {
                     expectation = "operator";
                 }
                 else if (token = this.accept(TokenKind.Dollar)!) {
-                    this.advanceOver(TokenKind.CurlyL);
+                    this.advanceOver(TokenKind.ParenL);
                     let innerExpr = this.parseExpr();
-                    this.advanceOver(TokenKind.CurlyR);
+                    this.advanceOver(TokenKind.ParenR);
                     termStack.push(new UnquoteExpr(innerExpr));
                     expectation = "operator";
                 }

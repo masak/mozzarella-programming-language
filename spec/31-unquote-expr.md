@@ -4,7 +4,7 @@
 
 **Context-free syntax**:
 
-* `UnquoteExpr ::= "$" "{" Expr "}" ;`
+* `UnquoteExpr ::= "$" "(" Expr ")" ;`
 
 ```
 | Syntax node kind       | Children                      |

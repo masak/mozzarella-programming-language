@@ -97,7 +97,7 @@ VarRefExpr -> identifier .
 CodeQuoteExpr -> "code" "`" "`" .
 CodeQuoteExpr -> "code" "`" StatementOrDeclList "`" .
 
-CodeUnquoteExpr -> "${" Expr "}" .
+CodeUnquoteExpr -> "$" "(" Expr ")" .
 
 DoExpr -> "do" Statement .
 ```
