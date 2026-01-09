@@ -238,20 +238,14 @@ removed (everywhere), and the remaining code simplified.
 
 ## Enums 🎰🔢
 
-Inspired by PiSigma, I'd like to try this syntax:
+Let's try to  be as standard as possible:
 
 ```mozzarella
-enum Season {
-    case .spring;
-    case .summer;
-    case .fall;
-    case .winter;
-}
+enum Season { spring, summer, fall, winter }
 ```
 
-These dotted names are then "public symbols" of a new type `Symbol`. Since any
-such symbol can belong to several enums, you can ask `.summer is Season` (which
-is `true`), but `type(.summer)` is `Symbol`.
+I was originally going for a different syntax, but it started to feel like
+having an axe to grind.
 
 ## Code formatting ✨🖊️
 
