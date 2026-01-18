@@ -8,6 +8,7 @@ import {
     IrInstr,
     IrInstrGetFalse,
     IrInstrGetInt,
+    IrInstrGetNone,
     IrInstrGetStr,
     IrInstrGetTrue,
 } from "./ir";
@@ -16,6 +17,7 @@ import {
     CompUnit,
     ExprStatement,
     IntLitExpr,
+    NoneLitExpr,
     StrLitExpr,
 } from "./syntax";
 import {
@@ -49,6 +51,9 @@ export function syntaxToIr(compUnit: CompUnit): IrCompUnit {
                 else {
                     instrs.push(new IrInstrGetFalse());
                 }
+            }
+            else if (expr instanceof NoneLitExpr) {
+                instrs.push(new IrInstrGetNone());
             }
             else {
                 throw new E000_InternalError(
