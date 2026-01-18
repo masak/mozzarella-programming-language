@@ -54,3 +54,9 @@ export class IrInstrGetStr extends IrInstr {
     }
 }
 
+export class IrInstrGetFalse extends IrInstr {
+}
+
+export class IrInstrGetTrue extends IrInstr {
+}
+
