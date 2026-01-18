@@ -60,3 +60,6 @@ export class IrInstrGetFalse extends IrInstr {
 export class IrInstrGetTrue extends IrInstr {
 }
 
+export class IrInstrGetNone extends IrInstr {
+}
+

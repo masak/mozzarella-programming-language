@@ -2,6 +2,7 @@ import {
     IrCompUnit,
     IrInstrGetFalse,
     IrInstrGetInt,
+    IrInstrGetNone,
     IrInstrGetStr,
     IrInstrGetTrue,
 } from "../compiler/ir";
@@ -10,6 +11,7 @@ import {
 } from "./error";
 import {
     BoolValue,
+    NoneValue,
     Value,
 } from "./value";
 
@@ -38,6 +40,9 @@ export function runIr(irCompUnit: IrCompUnit): Value {
         }
         else if (instr instanceof IrInstrGetTrue) {
             registers[index] = new BoolValue(true);
+        }
+        else if (instr instanceof IrInstrGetNone) {
+            registers[index] = new NoneValue();
         }
         else {
             throw new E000_InternalError(
