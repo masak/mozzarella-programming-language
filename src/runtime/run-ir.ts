@@ -1,12 +1,15 @@
 import {
     IrCompUnit,
+    IrInstrGetFalse,
     IrInstrGetInt,
     IrInstrGetStr,
+    IrInstrGetTrue,
 } from "../compiler/ir";
 import {
     E000_InternalError,
 } from "./error";
 import {
+    BoolValue,
     Value,
 } from "./value";
 
@@ -29,6 +32,12 @@ export function runIr(irCompUnit: IrCompUnit): Value {
         }
         else if (instr instanceof IrInstrGetStr) {
             registers[index] = instr.value;
+        }
+        else if (instr instanceof IrInstrGetFalse) {
+            registers[index] = new BoolValue(false);
+        }
+        else if (instr instanceof IrInstrGetTrue) {
+            registers[index] = new BoolValue(true);
         }
         else {
             throw new E000_InternalError(

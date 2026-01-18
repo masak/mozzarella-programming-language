@@ -6,10 +6,13 @@ import {
     IrCompUnit,
     IrFunc,
     IrInstr,
+    IrInstrGetFalse,
     IrInstrGetInt,
     IrInstrGetStr,
+    IrInstrGetTrue,
 } from "./ir";
 import {
+    BoolLitExpr,
     CompUnit,
     ExprStatement,
     IntLitExpr,
@@ -37,6 +40,15 @@ export function syntaxToIr(compUnit: CompUnit): IrCompUnit {
                 let valueToken = expr.valueToken;
                 let value = new StrValue(valueToken.payload as string);
                 instrs.push(new IrInstrGetStr(value));
+            }
+            else if (expr instanceof BoolLitExpr) {
+                let valueToken = expr.valueToken;
+                if (valueToken.payload as boolean) {
+                    instrs.push(new IrInstrGetTrue());
+                }
+                else {
+                    instrs.push(new IrInstrGetFalse());
+                }
             }
             else {
                 throw new E000_InternalError(
