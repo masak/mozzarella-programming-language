@@ -7,14 +7,17 @@ import {
     IrFunc,
     IrInstr,
     IrInstrGetInt,
+    IrInstrGetStr,
 } from "./ir";
 import {
     CompUnit,
     ExprStatement,
     IntLitExpr,
+    StrLitExpr,
 } from "./syntax";
 import {
     IntValue,
+    StrValue,
 } from "../runtime/value";
 
 export function syntaxToIr(compUnit: CompUnit): IrCompUnit {
@@ -29,6 +32,11 @@ export function syntaxToIr(compUnit: CompUnit): IrCompUnit {
                 let valueToken = expr.valueToken;
                 let value = new IntValue(valueToken.payload as bigint);
                 instrs.push(new IrInstrGetInt(value));
+            }
+            else if (expr instanceof StrLitExpr) {
+                let valueToken = expr.valueToken;
+                let value = new StrValue(valueToken.payload as string);
+                instrs.push(new IrInstrGetStr(value));
             }
             else {
                 throw new E000_InternalError(
