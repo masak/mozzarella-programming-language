@@ -63,3 +63,76 @@ export class IrInstrGetTrue extends IrInstr {
 export class IrInstrGetNone extends IrInstr {
 }
 
+export class IrInstrAddInts extends IrInstr {
+    leftInstr: IrInstr;
+    rightInstr: IrInstr;
+
+    constructor(leftInstr: IrInstr, rightInstr: IrInstr) {
+        super();
+        this.leftInstr = leftInstr;
+        this.rightInstr = rightInstr;
+    }
+}
+
+export class IrInstrPosInt extends IrInstr {
+    instr: IrInstr;
+
+    constructor(instr: IrInstr) {
+        super();
+        this.instr = instr;
+    }
+}
+
+export class IrInstrSubInts extends IrInstr {
+    leftInstr: IrInstr;
+    rightInstr: IrInstr;
+
+    constructor(leftInstr: IrInstr, rightInstr: IrInstr) {
+        super();
+        this.leftInstr = leftInstr;
+        this.rightInstr = rightInstr;
+    }
+}
+
+export class IrInstrNegInt extends IrInstr {
+    instr: IrInstr;
+
+    constructor(instr: IrInstr) {
+        super();
+        this.instr = instr;
+    }
+}
+
+export class IrInstrMulInts extends IrInstr {
+    leftInstr: IrInstr;
+    rightInstr: IrInstr;
+
+    constructor(leftInstr: IrInstr, rightInstr: IrInstr) {
+        super();
+        this.leftInstr = leftInstr;
+        this.rightInstr = rightInstr;
+    }
+}
+
+export class IrInstrFloorDivInts extends IrInstr {
+    leftInstr: IrInstr;
+    rightInstr: IrInstr;
+
+    constructor(leftInstr: IrInstr, rightInstr: IrInstr) {
+        super();
+        this.leftInstr = leftInstr;
+        this.rightInstr = rightInstr;
+    }
+}
+
+export class IrInstrModInts extends IrInstr {
+    leftInstr: IrInstr;
+    rightInstr: IrInstr;
+
+    constructor(leftInstr: IrInstr, rightInstr: IrInstr) {
+        super();
+        this.leftInstr = leftInstr;
+        this.rightInstr = rightInstr;
+    }
+}
+
