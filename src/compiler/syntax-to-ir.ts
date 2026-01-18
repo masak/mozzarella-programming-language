@@ -7,6 +7,7 @@ import {
     IrFunc,
     IrInstr,
     IrInstrAddInts,
+    IrInstrConcat,
     IrInstrFloorDivInts,
     IrInstrGetFalse,
     IrInstrGetInt,
@@ -18,6 +19,7 @@ import {
     IrInstrNegInt,
     IrInstrPosInt,
     IrInstrSubInts,
+    IrInstrToStr,
 } from "./ir";
 import {
     BoolLitExpr,
@@ -76,6 +78,10 @@ export function syntaxToIr(compUnit: CompUnit): IrCompUnit {
                 let operand = convertExpr(expr.operand);
                 instrs.push(new IrInstrNegInt(operand));
             }
+            else if (token.kind === TokenKind.Tilde) {
+                let operand = convertExpr(expr.operand);
+                instrs.push(new IrInstrToStr(operand));
+            }
             else {
                 throw new E000_InternalError(
                     `Unknown prefix op type ${token.kind.kind}`
@@ -108,6 +114,11 @@ export function syntaxToIr(compUnit: CompUnit): IrCompUnit {
                 let left = convertExpr(expr.lhs);
                 let right = convertExpr(expr.rhs);
                 instrs.push(new IrInstrModInts(left, right));
+            }
+            else if (token.kind === TokenKind.Tilde) {
+                let left = convertExpr(expr.lhs);
+                let right = convertExpr(expr.rhs);
+                instrs.push(new IrInstrConcat(left, right));
             }
             else {
                 throw new E000_InternalError(

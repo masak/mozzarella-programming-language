@@ -2,6 +2,7 @@ import {
     IrCompUnit,
     IrInstr,
     IrInstrAddInts,
+    IrInstrConcat,
     IrInstrFloorDivInts,
     IrInstrGetFalse,
     IrInstrGetInt,
@@ -13,6 +14,7 @@ import {
     IrInstrNegInt,
     IrInstrPosInt,
     IrInstrSubInts,
+    IrInstrToStr,
 } from "../compiler/ir";
 import {
     E000_InternalError,
@@ -20,9 +22,13 @@ import {
     E603_TypeError,
 } from "./error";
 import {
+    stringify,
+} from "./stringify";
+import {
     BoolValue,
     IntValue,
     NoneValue,
+    StrValue,
     Value,
 } from "./value";
 
@@ -146,6 +152,18 @@ export function runIr(irCompUnit: IrCompUnit): Value {
                 throw new E601_ZeroDivisionError("Division by 0");
             }
             registers[index] = new IntValue(left.payload % right.payload);
+        }
+        else if (instr instanceof IrInstrConcat) {
+            let left = computedValueOf(instr.leftInstr);
+            let strLeft = stringify(left);
+            let right = computedValueOf(instr.rightInstr);
+            let strRight = stringify(right);
+            registers[index]
+                = new StrValue(strLeft.payload + strRight.payload);
+        }
+        else if (instr instanceof IrInstrToStr) {
+            let operandValue = computedValueOf(instr.instr);
+            registers[index] = stringify(operandValue);
         }
         else {
             throw new E000_InternalError(

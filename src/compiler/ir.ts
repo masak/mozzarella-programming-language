@@ -136,3 +136,23 @@ export class IrInstrModInts extends IrInstr {
     }
 }
 
+export class IrInstrConcat extends IrInstr {
+    leftInstr: IrInstr;
+    rightInstr: IrInstr;
+
+    constructor(leftInstr: IrInstr, rightInstr: IrInstr) {
+        super();
+        this.leftInstr = leftInstr;
+        this.rightInstr = rightInstr;
+    }
+}
+
+export class IrInstrToStr extends IrInstr {
+    instr: IrInstr;
+
+    constructor(instr: IrInstr) {
+        super();
+        this.instr = instr;
+    }
+}
+
