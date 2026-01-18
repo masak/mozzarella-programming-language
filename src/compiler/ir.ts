@@ -1,5 +1,6 @@
 import {
     IntValue,
+    StrValue,
 } from "../runtime/value";
 
 export class IrCompUnit {
@@ -39,6 +40,15 @@ export class IrInstrGetInt extends IrInstr {
     value: IntValue;
 
     constructor(value: IntValue) {
+        super();
+        this.value = value;
+    }
+}
+
+export class IrInstrGetStr extends IrInstr {
+    value: StrValue;
+
+    constructor(value: StrValue) {
         super();
         this.value = value;
     }

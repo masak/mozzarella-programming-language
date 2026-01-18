@@ -1,6 +1,7 @@
 import {
     IrCompUnit,
     IrInstrGetInt,
+    IrInstrGetStr,
 } from "../compiler/ir";
 import {
     E000_InternalError,
@@ -24,6 +25,9 @@ export function runIr(irCompUnit: IrCompUnit): Value {
     let registers: Array<Value> = Array.from({ length: instrs.length });
     for (let [index, instr] of instrs.entries()) {
         if (instr instanceof IrInstrGetInt) {
+            registers[index] = instr.value;
+        }
+        else if (instr instanceof IrInstrGetStr) {
             registers[index] = instr.value;
         }
         else {
