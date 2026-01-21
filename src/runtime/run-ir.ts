@@ -1,5 +1,7 @@
 import {
+    IrBranchJump,
     IrCompUnit,
+    IrDirectJump,
     IrInstr,
     IrInstrAddInts,
     IrInstrConcat,
@@ -12,10 +14,17 @@ import {
     IrInstrModInts,
     IrInstrMulInts,
     IrInstrNegInt,
+    IrInstrPhi,
     IrInstrPosInt,
     IrInstrSubInts,
+    IrInstrToBool,
+    IrInstrToNegBool,
     IrInstrToStr,
+    IrInstrUpsilon,
 } from "../compiler/ir";
+import {
+    boolify,
+} from "./boolify";
 import {
     E000_InternalError,
     E601_ZeroDivisionError,
@@ -38,41 +47,45 @@ export function runIr(irCompUnit: IrCompUnit): Value {
         throw new E000_InternalError("No init func");
     }
 
-    let block = initFunc.blocks[0];
-    if (block === undefined) {
-        throw new E000_InternalError("No basic block");
-    }
-
-    let instrs = block.instrs;
-    let registers: Array<Value> = Array.from({ length: instrs.length });
+    let blocks = initFunc.blocks;
+    let registers: Array<Array<Value>> = Array.from(
+        { length: blocks.length },
+        (_, index) => Array.from( { length: blocks[index].instrs.length }),
+    );
+    let phiStorage: Array<Array<Value>> = Array.from(
+        { length: blocks.length },
+        (_, index) => Array.from( { length: blocks[index].instrs.length }),
+    );
 
     function computedValueOf(instr: IrInstr): Value {
-        let index = instrs.indexOf(instr);
-        if (index === -1) {
-            throw new E000_InternalError("Instruction not found");
+        for (let [blockIndex, block] of blocks.entries()) {
+            let instrIndex = block.instrs.indexOf(instr);
+            if (instrIndex !== -1) {
+                let value = registers[blockIndex][instrIndex];
+                if (value === undefined) {
+                    throw new E000_InternalError("Uninitialized value");
+                }
+                return value;
+            }
         }
-        let value = registers[index];
-        if (value === undefined) {
-            throw new E000_InternalError("Uninitialized value");
-        }
-        return value;
+        throw new E000_InternalError("Instruction not found");
     }
 
-    for (let [index, instr] of instrs.entries()) {
+    function runInstr(instr: IrInstr): Value {
         if (instr instanceof IrInstrGetInt) {
-            registers[index] = instr.value;
+            return instr.value;
         }
         else if (instr instanceof IrInstrGetStr) {
-            registers[index] = instr.value;
+            return instr.value;
         }
         else if (instr instanceof IrInstrGetFalse) {
-            registers[index] = new BoolValue(false);
+            return new BoolValue(false);
         }
         else if (instr instanceof IrInstrGetTrue) {
-            registers[index] = new BoolValue(true);
+            return new BoolValue(true);
         }
         else if (instr instanceof IrInstrGetNone) {
-            registers[index] = new NoneValue();
+            return new NoneValue();
         }
         else if (instr instanceof IrInstrAddInts) {
             let left = computedValueOf(instr.leftInstr);
@@ -83,14 +96,14 @@ export function runIr(irCompUnit: IrCompUnit): Value {
             if (!(right instanceof IntValue)) {
                 throw new E603_TypeError("Expected Int as rhs of +");
             }
-            registers[index] = new IntValue(left.payload + right.payload);
+            return new IntValue(left.payload + right.payload);
         }
         else if (instr instanceof IrInstrPosInt) {
             let operandValue = computedValueOf(instr.instr);
             if (!(operandValue instanceof IntValue)) {
                 throw new E603_TypeError("Expected Int as operand of +");
             }
-            registers[index] = new IntValue(operandValue.payload);
+            return new IntValue(operandValue.payload);
         }
         else if (instr instanceof IrInstrSubInts) {
             let left = computedValueOf(instr.leftInstr);
@@ -101,14 +114,14 @@ export function runIr(irCompUnit: IrCompUnit): Value {
             if (!(right instanceof IntValue)) {
                 throw new E603_TypeError("Expected Int as rhs of -");
             }
-            registers[index] = new IntValue(left.payload - right.payload);
+            return new IntValue(left.payload - right.payload);
         }
         else if (instr instanceof IrInstrNegInt) {
             let operandValue = computedValueOf(instr.instr);
             if (!(operandValue instanceof IntValue)) {
                 throw new E603_TypeError("Expected Int as operand of -");
             }
-            registers[index] = new IntValue(-operandValue.payload);
+            return new IntValue(-operandValue.payload);
         }
         else if (instr instanceof IrInstrMulInts) {
             let left = computedValueOf(instr.leftInstr);
@@ -119,7 +132,7 @@ export function runIr(irCompUnit: IrCompUnit): Value {
             if (!(right instanceof IntValue)) {
                 throw new E603_TypeError("Expected Int as rhs of *");
             }
-            registers[index] = new IntValue(left.payload * right.payload);
+            return new IntValue(left.payload * right.payload);
         }
         else if (instr instanceof IrInstrFloorDivInts) {
             let left = computedValueOf(instr.leftInstr);
@@ -136,8 +149,7 @@ export function runIr(irCompUnit: IrCompUnit): Value {
             let negative = left.payload < 0n !== right.payload < 0n;
             let nonZeroMod = left.payload % right.payload !== 0n;
             let diff = negative && nonZeroMod ? 1n : 0n;
-            registers[index]
-                = new IntValue(left.payload / right.payload - diff);
+            return new IntValue(left.payload / right.payload - diff);
         }
         else if (instr instanceof IrInstrModInts) {
             let left = computedValueOf(instr.leftInstr);
@@ -151,19 +163,50 @@ export function runIr(irCompUnit: IrCompUnit): Value {
             if (right.payload === 0n) {
                 throw new E601_ZeroDivisionError("Division by 0");
             }
-            registers[index] = new IntValue(left.payload % right.payload);
+            return new IntValue(left.payload % right.payload);
         }
         else if (instr instanceof IrInstrConcat) {
             let left = computedValueOf(instr.leftInstr);
             let strLeft = stringify(left);
             let right = computedValueOf(instr.rightInstr);
             let strRight = stringify(right);
-            registers[index]
-                = new StrValue(strLeft.payload + strRight.payload);
+            return new StrValue(strLeft.payload + strRight.payload);
         }
         else if (instr instanceof IrInstrToStr) {
             let operandValue = computedValueOf(instr.instr);
-            registers[index] = stringify(operandValue);
+            return stringify(operandValue);
+        }
+        else if (instr instanceof IrInstrToBool) {
+            let operandValue = computedValueOf(instr.instr);
+            return new BoolValue(boolify(operandValue));
+        }
+        else if (instr instanceof IrInstrToNegBool) {
+            let operandValue = computedValueOf(instr.instr);
+            return new BoolValue(!boolify(operandValue));
+        }
+        else if (instr instanceof IrInstrUpsilon) {
+            let value = computedValueOf(instr.instr);
+            for (let [blockIndex, block] of blocks.entries()) {
+                let instrIndex = block.instrs.indexOf(instr.phi);
+                if (instrIndex !== -1) {
+                    phiStorage[blockIndex][instrIndex] = value;
+                    return value;
+                }
+            }
+            throw new E000_InternalError("Phi instruction not found");
+        }
+        else if (instr instanceof IrInstrPhi) {
+            for (let [blockIndex, block] of blocks.entries()) {
+                let instrIndex = block.instrs.indexOf(instr);
+                if (instrIndex !== -1) {
+                    let value = phiStorage[blockIndex][instrIndex];
+                    if (value === undefined) {
+                        throw new E000_InternalError("Phi value not set");
+                    }
+                    return value;
+                }
+            }
+            throw new E000_InternalError("Phi instruction not found");
         }
         else {
             throw new E000_InternalError(
@@ -172,10 +215,52 @@ export function runIr(irCompUnit: IrCompUnit): Value {
         }
     }
 
-    let lastValue = registers[registers.length - 1];
-    if (lastValue === undefined) {
-        throw new E000_InternalError("No last value set");
+    let blockIndex = 0;
+    let currentBlock = initFunc.blocks[0];
+    if (currentBlock === undefined) {
+        throw new E000_InternalError("No basic block");
     }
-    return lastValue;
+
+    BLOCK:
+    while (true) {
+        let instrs = currentBlock.instrs;
+
+        for (let [instrIndex, instr] of instrs.entries()) {
+            registers[blockIndex][instrIndex] = runInstr(instr);
+        }
+
+        let jump = currentBlock.jump;
+        if (jump instanceof IrBranchJump) {
+            let value = computedValueOf(jump.instr);
+            if (!(value instanceof BoolValue)) {
+                throw new E000_InternalError("Not a Bool in branch jump");
+            }
+            currentBlock = value.payload ? jump.trueTarget : jump.falseTarget;
+            blockIndex = blocks.indexOf(currentBlock);
+            if (blockIndex === -1) {
+                throw new E000_InternalError("Block index not found");
+            }
+            continue BLOCK;
+        }
+        else if (jump instanceof IrDirectJump) {
+            currentBlock = jump.target;
+            blockIndex = blocks.indexOf(currentBlock);
+            if (blockIndex === -1) {
+                throw new E000_InternalError("Block index not found");
+            }
+            continue BLOCK;
+        }
+        else if (jump === null) {
+            let lastInstrIndex = currentBlock.instrs.length - 1;
+            let lastValue = registers[blockIndex][lastInstrIndex];
+            if (lastValue === undefined) {
+                throw new E000_InternalError("No last value set");
+            }
+            return lastValue;
+        }
+        else {
+            throw new Error(`Unknown jump type ${jump.constructor.name}`);
+        }
+    }
 }
 

@@ -8,8 +8,12 @@ export class IrCompUnit {
 
     constructor(options: {
         funcs: Array<IrFunc>,
+        fixups?: () => void,
     }) {
         this.funcs = options.funcs;
+        if (options.fixups) {
+            options.fixups();
+        }
     }
 }
 
@@ -25,16 +29,23 @@ export class IrFunc {
 
 export class IrBasicBlock {
     instrs: Array<IrInstr>;
+    jump: IrJump | null;
 
     constructor(options: {
         instrs: Array<IrInstr>,
+        jump?: IrJump,
     }) {
         this.instrs = options.instrs;
+        this.jump = options.jump ?? null;
     }
 }
 
+export const _b = new IrBasicBlock({ instrs: [] });
+
 export class IrInstr {
 }
+
+export const _i = new IrInstr();
 
 export class IrInstrGetInt extends IrInstr {
     value: IntValue;
@@ -153,6 +164,67 @@ export class IrInstrToStr extends IrInstr {
     constructor(instr: IrInstr) {
         super();
         this.instr = instr;
+    }
+}
+
+export class IrInstrToBool extends IrInstr {
+    instr: IrInstr;
+
+    constructor(instr: IrInstr) {
+        super();
+        this.instr = instr;
+    }
+}
+
+export class IrInstrToNegBool extends IrInstr {
+    instr: IrInstr;
+
+    constructor(instr: IrInstr) {
+        super();
+        this.instr = instr;
+    }
+}
+
+export class IrInstrUpsilon extends IrInstr {
+    instr: IrInstr;
+    phi: IrInstr;
+
+    constructor(instr: IrInstr, phi: IrInstr) {
+        super();
+        this.instr = instr;
+        this.phi = phi;
+    }
+}
+
+export class IrInstrPhi extends IrInstr {
+}
+
+export class IrJump {
+}
+
+export class IrBranchJump extends IrJump {
+    instr: IrInstr;
+    trueTarget: IrBasicBlock;
+    falseTarget: IrBasicBlock;
+
+    constructor(
+        instr: IrInstr,
+        trueTarget: IrBasicBlock,
+        falseTarget: IrBasicBlock,
+    ) {
+        super();
+        this.instr = instr;
+        this.trueTarget = trueTarget;
+        this.falseTarget = falseTarget;
+    }
+}
+
+export class IrDirectJump extends IrJump {
+    target: IrBasicBlock;
+
+    constructor(target: IrBasicBlock) {
+        super();
+        this.target = target;
     }
 }
 

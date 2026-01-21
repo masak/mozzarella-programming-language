@@ -2,8 +2,11 @@ import {
     E000_InternalError,
 } from "./error";
 import {
+    _i,
     IrBasicBlock,
+    IrBranchJump,
     IrCompUnit,
+    IrDirectJump,
     IrFunc,
     IrInstr,
     IrInstrAddInts,
@@ -17,9 +20,13 @@ import {
     IrInstrModInts,
     IrInstrMulInts,
     IrInstrNegInt,
+    IrInstrPhi,
     IrInstrPosInt,
     IrInstrSubInts,
+    IrInstrToBool,
+    IrInstrToNegBool,
     IrInstrToStr,
+    IrInstrUpsilon,
 } from "./ir";
 import {
     BoolLitExpr,
@@ -42,6 +49,18 @@ import {
 
 export function syntaxToIr(compUnit: CompUnit): IrCompUnit {
     let instrs: Array<IrInstr> = [];
+    let blocks: Array<IrBasicBlock> = [];
+    let currentBlock = blocks[0];
+
+    function lastBlock(): IrBasicBlock {
+        return blocks[blocks.length - 1];
+    }
+
+    function addBlock() {
+        instrs = [];
+        blocks.push(new IrBasicBlock({ instrs }));
+        currentBlock = lastBlock();
+    }
 
     function convertExpr(expr: Expr): IrInstr {
         let oldLength = instrs.length;
@@ -82,6 +101,14 @@ export function syntaxToIr(compUnit: CompUnit): IrCompUnit {
                 let operand = convertExpr(expr.operand);
                 instrs.push(new IrInstrToStr(operand));
             }
+            else if (token.kind === TokenKind.Quest) {
+                let operand = convertExpr(expr.operand);
+                instrs.push(new IrInstrToBool(operand));
+            }
+            else if (token.kind === TokenKind.Bang) {
+                let operand = convertExpr(expr.operand);
+                instrs.push(new IrInstrToNegBool(operand));
+            }
             else {
                 throw new E000_InternalError(
                     `Unknown prefix op type ${token.kind.kind}`
@@ -120,6 +147,64 @@ export function syntaxToIr(compUnit: CompUnit): IrCompUnit {
                 let right = convertExpr(expr.rhs);
                 instrs.push(new IrInstrConcat(left, right));
             }
+            else if (token.kind === TokenKind.AmpAmp) {
+                let left = convertExpr(expr.lhs);
+                let cond = new IrInstrToBool(left);
+                instrs.push(cond);
+                let branchBlock = currentBlock;
+
+                addBlock();
+                let right = convertExpr(expr.rhs);
+                let trueUpsilon = new IrInstrUpsilon(right, _i);
+                instrs.push(trueUpsilon);
+                let trueBlock = currentBlock;
+
+                addBlock();
+                let falseUpsilon = new IrInstrUpsilon(left, _i);
+                instrs.push(falseUpsilon);
+                let falseBlock = currentBlock;
+
+                addBlock();
+                let phi = new IrInstrPhi();
+                instrs.push(phi);
+                trueUpsilon.phi = phi;
+                falseUpsilon.phi = phi;
+                let joinBlock = currentBlock;
+
+                branchBlock.jump
+                    = new IrBranchJump(cond, trueBlock, falseBlock);
+                trueBlock.jump = new IrDirectJump(joinBlock);
+                falseBlock.jump = new IrDirectJump(joinBlock);
+            }
+            else if (token.kind === TokenKind.PipePipe) {
+                let left = convertExpr(expr.lhs);
+                let cond = new IrInstrToBool(left);
+                instrs.push(cond);
+                let branchBlock = currentBlock;
+
+                addBlock();
+                let trueUpsilon = new IrInstrUpsilon(left, _i);
+                instrs.push(trueUpsilon);
+                let trueBlock = currentBlock;
+
+                addBlock();
+                let right = convertExpr(expr.rhs);
+                let falseUpsilon = new IrInstrUpsilon(right, _i);
+                instrs.push(falseUpsilon);
+                let falseBlock = currentBlock;
+
+                addBlock();
+                let phi = new IrInstrPhi();
+                instrs.push(phi);
+                trueUpsilon.phi = phi;
+                falseUpsilon.phi = phi;
+                let joinBlock = currentBlock;
+
+                branchBlock.jump
+                    = new IrBranchJump(cond, trueBlock, falseBlock);
+                trueBlock.jump = new IrDirectJump(joinBlock);
+                falseBlock.jump = new IrDirectJump(joinBlock);
+            }
             else {
                 throw new E000_InternalError(
                     `Unknown prefix op type ${token.kind.kind}`
@@ -138,6 +223,8 @@ export function syntaxToIr(compUnit: CompUnit): IrCompUnit {
         return instrs[instrs.length - 1];
     }
 
+    addBlock();
+
     for (let statement of compUnit.children) {
         if (statement === null) {
             // skip
@@ -153,15 +240,8 @@ export function syntaxToIr(compUnit: CompUnit): IrCompUnit {
         }
     }
 
-    let irCompUnit = new IrCompUnit({
-        funcs: [
-            new IrFunc({
-                blocks: [
-                    new IrBasicBlock({ instrs }),
-                ],
-            }),
-        ],
-    });
+    let irFunc = new IrFunc({ blocks });
+    let irCompUnit = new IrCompUnit({ funcs: [irFunc] });
 
     return irCompUnit;
 }
