@@ -403,7 +403,7 @@ export function syntaxToIr(compUnit: CompUnit): IrCompUnit {
             /* ignore */ convertExpr(expr);
         }
         else if (statement instanceof EmptyStatement) {
-            // do nothing
+            instrs.push(new IrInstrGetNone());
         }
         else {
             throw new E000_InternalError(
