@@ -244,15 +244,17 @@ export function syntaxToIr(compUnit: CompUnit): IrCompUnit {
                 let branchBlock = currentBlock;
 
                 addBlock();
+                let trueTopBlock = currentBlock;
                 let right = convertExpr(expr.rhs);
                 let trueUpsilon = new IrInstrUpsilon(right, _i);
                 instrs.push(trueUpsilon);
-                let trueBlock = currentBlock;
+                let trueBottomBlock = currentBlock;
 
                 addBlock();
+                let falseTopBlock = currentBlock;
                 let falseUpsilon = new IrInstrUpsilon(left, _i);
                 instrs.push(falseUpsilon);
-                let falseBlock = currentBlock;
+                let falseBottomBlock = currentBlock;
 
                 addBlock();
                 let phi = new IrInstrPhi();
@@ -262,9 +264,9 @@ export function syntaxToIr(compUnit: CompUnit): IrCompUnit {
                 let joinBlock = currentBlock;
 
                 branchBlock.jump
-                    = new IrBranchJump(cond, trueBlock, falseBlock);
-                trueBlock.jump = new IrDirectJump(joinBlock);
-                falseBlock.jump = new IrDirectJump(joinBlock);
+                    = new IrBranchJump(cond, trueTopBlock, falseTopBlock);
+                trueBottomBlock.jump = new IrDirectJump(joinBlock);
+                falseBottomBlock.jump = new IrDirectJump(joinBlock);
             }
             else if (token.kind === TokenKind.PipePipe) {
                 let left = convertExpr(expr.lhs);
@@ -273,15 +275,17 @@ export function syntaxToIr(compUnit: CompUnit): IrCompUnit {
                 let branchBlock = currentBlock;
 
                 addBlock();
+                let trueTopBlock = currentBlock;
                 let trueUpsilon = new IrInstrUpsilon(left, _i);
                 instrs.push(trueUpsilon);
-                let trueBlock = currentBlock;
+                let trueBottomBlock = currentBlock;
 
                 addBlock();
+                let falseTopBlock = currentBlock;
                 let right = convertExpr(expr.rhs);
                 let falseUpsilon = new IrInstrUpsilon(right, _i);
                 instrs.push(falseUpsilon);
-                let falseBlock = currentBlock;
+                let falseBottomBlock = currentBlock;
 
                 addBlock();
                 let phi = new IrInstrPhi();
@@ -291,9 +295,9 @@ export function syntaxToIr(compUnit: CompUnit): IrCompUnit {
                 let joinBlock = currentBlock;
 
                 branchBlock.jump
-                    = new IrBranchJump(cond, trueBlock, falseBlock);
-                trueBlock.jump = new IrDirectJump(joinBlock);
-                falseBlock.jump = new IrDirectJump(joinBlock);
+                    = new IrBranchJump(cond, trueTopBlock, falseTopBlock);
+                trueBottomBlock.jump = new IrDirectJump(joinBlock);
+                falseBottomBlock.jump = new IrDirectJump(joinBlock);
             }
             else if (comparisonOps.has(token.kind)) {
                 let [exprs, ops] = findAllChainedOps(expr);
