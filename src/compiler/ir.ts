@@ -294,3 +294,95 @@ export class IrInstrNotEq extends IrInstr {
     }
 }
 
+export function dumpIr(irCompUnit: IrCompUnit): void {
+    for (let func of irCompUnit.funcs) {
+        const instrIndexOf = (soughtInstr: IrInstr) => {
+            if (soughtInstr === _i) {
+                return "_i";
+            }
+
+            let instrIndex = 0;
+            for (let block of func.blocks) {
+                for (let instr of block.instrs) {
+                    if (instr === soughtInstr) {
+                        return "i" + instrIndex;
+                    }
+                    ++instrIndex;
+                }
+            }
+            return "#MISSING#";
+        };
+
+        const blockIndexOf = (soughtBlock: IrBasicBlock) => {
+            if (soughtBlock === _b) {
+                return "_b";
+            }
+
+            for (let [blockIndex, block] of func.blocks.entries()) {
+                if (block === soughtBlock) {
+                    return "b" + blockIndex;
+                }
+            }
+            return "#MISSING#";
+        }
+
+        console.log("FUNC:");
+        let instrIndex = 0;
+        for (let [blockIndex, block] of func.blocks.entries()) {
+            console.log(`  BLOCK b${blockIndex}:`);
+            for (let instr of block.instrs) {
+                let args: string;
+                if (instr instanceof IrInstrGetInt) {
+                    args = String(instr.value.payload);
+                }
+                else if (instr instanceof IrInstrLess) {
+                    let left = instrIndexOf(instr.leftInstr);
+                    let right = instrIndexOf(instr.rightInstr);
+                    args = left + ", " + right;
+                }
+                else if (instr instanceof IrInstrGetTrue ||
+                         instr instanceof IrInstrGetFalse ||
+                         instr instanceof IrInstrPhi) {
+                    args = "";
+                }
+                else if (instr instanceof IrInstrUpsilon) {
+                    let value = instrIndexOf(instr.instr);
+                    let phi = instrIndexOf(instr.phi);
+                    args = value + ", ^" + phi;
+                }
+                else if (instr instanceof IrInstrToBool) {
+                    args = instrIndexOf(instr.instr);
+                }
+                else {
+                    throw new Error(
+                        `Unrecognized instruction ${instr.constructor.name}`
+                    );
+                }
+                console.log(
+                    `    i${instrIndex} = ${instr.constructor.name}(${args})`
+                );
+                ++instrIndex;
+            }
+            if (block.jump) {
+                let jump = block.jump;
+                let args: string;
+                if (jump instanceof IrDirectJump) {
+                    args = blockIndexOf(jump.target);
+                }
+                else if (jump instanceof IrBranchJump) {
+                    let value = instrIndexOf(jump.instr);
+                    let trueTarget = blockIndexOf(jump.trueTarget);
+                    let falseTarget = blockIndexOf(jump.falseTarget);
+                    args = value + ", " + trueTarget + ", " + falseTarget;
+                }
+                else {
+                    throw new Error(
+                        `Unrecognized jump ${jump.constructor.name}`
+                    );
+                }
+                console.log(`    -> ${block.jump.constructor.name}(${args})`);
+            }
+        }
+    }
+}
+
