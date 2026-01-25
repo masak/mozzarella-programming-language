@@ -39,6 +39,7 @@ import {
 import {
     BoolLitExpr,
     CompUnit,
+    EmptyStatement,
     Expr,
     ExprStatement,
     InfixOpExpr,
@@ -401,11 +402,18 @@ export function syntaxToIr(compUnit: CompUnit): IrCompUnit {
             let expr = statement.expr;
             /* ignore */ convertExpr(expr);
         }
+        else if (statement instanceof EmptyStatement) {
+            // do nothing
+        }
         else {
             throw new E000_InternalError(
                 `Unrecognized statement ${statement.constructor.name}`
             );
         }
+    }
+
+    if (instrs.length === 0) {
+        instrs.push(new IrInstrGetNone());
     }
 
     let irFunc = new IrFunc({ blocks });
