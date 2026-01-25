@@ -228,3 +228,69 @@ export class IrDirectJump extends IrJump {
     }
 }
 
+export class IrInstrLess extends IrInstr {
+    leftInstr: IrInstr;
+    rightInstr: IrInstr;
+
+    constructor(leftInstr: IrInstr, rightInstr: IrInstr) {
+        super();
+        this.leftInstr = leftInstr;
+        this.rightInstr = rightInstr;
+    }
+}
+
+export class IrInstrLessEq extends IrInstr {
+    leftInstr: IrInstr;
+    rightInstr: IrInstr;
+
+    constructor(leftInstr: IrInstr, rightInstr: IrInstr) {
+        super();
+        this.leftInstr = leftInstr;
+        this.rightInstr = rightInstr;
+    }
+}
+
+export class IrInstrGreater extends IrInstr {
+    leftInstr: IrInstr;
+    rightInstr: IrInstr;
+
+    constructor(leftInstr: IrInstr, rightInstr: IrInstr) {
+        super();
+        this.leftInstr = leftInstr;
+        this.rightInstr = rightInstr;
+    }
+}
+
+export class IrInstrGreaterEq extends IrInstr {
+    leftInstr: IrInstr;
+    rightInstr: IrInstr;
+
+    constructor(leftInstr: IrInstr, rightInstr: IrInstr) {
+        super();
+        this.leftInstr = leftInstr;
+        this.rightInstr = rightInstr;
+    }
+}
+
+export class IrInstrEq extends IrInstr {
+    leftInstr: IrInstr;
+    rightInstr: IrInstr;
+
+    constructor(leftInstr: IrInstr, rightInstr: IrInstr) {
+        super();
+        this.leftInstr = leftInstr;
+        this.rightInstr = rightInstr;
+    }
+}
+
+export class IrInstrNotEq extends IrInstr {
+    leftInstr: IrInstr;
+    rightInstr: IrInstr;
+
+    constructor(leftInstr: IrInstr, rightInstr: IrInstr) {
+        super();
+        this.leftInstr = leftInstr;
+        this.rightInstr = rightInstr;
+    }
+}
+

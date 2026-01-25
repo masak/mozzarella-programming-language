@@ -8,9 +8,10 @@ export class E500_OutOfFuel extends Error {
 export class E601_ZeroDivisionError extends Error {
 }
 
-export class E602_UnchainableOpsError extends Error {
-}
- 
+// Obsoleted E602_UnchainableOpsError:
+// This is now an error during IR generation instead
+// see E502_UnchainableOpsError
+
 export class E603_TypeError extends Error {
 }
 

@@ -1,7 +1,9 @@
 import {
     E000_InternalError,
+    E502_UnchainableOpsError,
 } from "./error";
 import {
+    _b,
     _i,
     IrBasicBlock,
     IrBranchJump,
@@ -11,15 +13,21 @@ import {
     IrInstr,
     IrInstrAddInts,
     IrInstrConcat,
+    IrInstrEq,
     IrInstrFloorDivInts,
     IrInstrGetFalse,
     IrInstrGetInt,
     IrInstrGetNone,
     IrInstrGetStr,
     IrInstrGetTrue,
+    IrInstrGreater,
+    IrInstrGreaterEq,
+    IrInstrLess,
+    IrInstrLessEq,
     IrInstrModInts,
     IrInstrMulInts,
     IrInstrNegInt,
+    IrInstrNotEq,
     IrInstrPhi,
     IrInstrPosInt,
     IrInstrSubInts,
@@ -40,12 +48,94 @@ import {
     StrLitExpr,
 } from "./syntax";
 import {
+    Token,
     TokenKind,
 } from "./token";
 import {
     IntValue,
     StrValue,
 } from "../runtime/value";
+
+const comparisonOps = new Set([
+    TokenKind.Less,
+    TokenKind.LessEq,
+    TokenKind.Greater,
+    TokenKind.GreaterEq,
+    TokenKind.EqEq,
+    TokenKind.BangEq,
+]);
+
+// Traverses down the left leg of an expression tree, collecting all comparison
+// operators and their operands, in left-to-right (top-to-bottom) order.
+function findAllChainedOps(root: Expr): [Array<Expr>, Array<Token>] {
+    if (!(root instanceof InfixOpExpr)
+        || !comparisonOps.has((root.children[1] as Token).kind)) {
+        throw new E000_InternalError(
+            "Precondition failed: root must be comparison expr"
+        );
+    }
+    let stack: Array<InfixOpExpr> = [root];
+    while (true) {
+        let lhs = stack[stack.length - 1].children[0];
+        if (lhs instanceof InfixOpExpr
+            && comparisonOps.has((lhs.children[1] as Token).kind)) {
+            stack.push(lhs);
+        }
+        else {
+            break;
+        }
+    }
+    let firstLhs: Expr = stack[stack.length - 1].children[0] as Expr;
+    let exprs: Array<Expr> = [firstLhs];
+    let ops: Array<Token> = [];
+    while (stack.length > 0) {
+        let expr = stack.pop()!;
+        let op = expr.children[1] as Token;
+        ops.push(op);
+        let rhs = expr.children[2] as Expr;
+        exprs.push(rhs);
+    }
+    return [exprs, ops];
+}
+
+// Upholds the following rules:
+//
+// - The != operator doesn't chain with anything (even itself)
+// - The (< <= ==) operators go together, as do the (> >= ==) operators, but
+//   any other combination of comparison operators is disallowed
+function checkForUnchainableOps(ops: Array<Token>) {
+    let hasNotEq = ops.some((op) => op.kind === TokenKind.BangEq);
+    if (hasNotEq && ops.length > 1) {
+        let notEqOpIndex = ops.findIndex((op) => op.kind === TokenKind.BangEq);
+        let otherOp = notEqOpIndex < ops.length - 1
+            ? ops[notEqOpIndex + 1]
+            : ops[notEqOpIndex - 1];
+        throw new E502_UnchainableOpsError(
+            `Cannot chain != and ${otherOp.kind.kind}`
+        );
+    }
+
+    let hasLessTypeOps = ops.some(
+        (op) => op.kind === TokenKind.Less || op.kind === TokenKind.LessEq
+    );
+    let hasGreaterTypeOps = ops.some(
+        (op) => op.kind === TokenKind.Greater
+            || op.kind === TokenKind.GreaterEq
+    );
+    if (hasLessTypeOps && hasGreaterTypeOps) {
+        let lessTypeOp = ops.find(
+            (op) => op.kind === TokenKind.Less || op.kind === TokenKind.LessEq
+        )!;
+        let greaterTypeOp = ops.find(
+            (op) => op.kind === TokenKind.Greater
+                || op.kind === TokenKind.GreaterEq
+        )!;
+        throw new E502_UnchainableOpsError(
+            `Cannot chain ${lessTypeOp.kind.kind} `
+                + `and ${greaterTypeOp.kind.kind}`
+        );
+    }
+}
 
 export function syntaxToIr(compUnit: CompUnit): IrCompUnit {
     let instrs: Array<IrInstr> = [];
@@ -204,6 +294,75 @@ export function syntaxToIr(compUnit: CompUnit): IrCompUnit {
                     = new IrBranchJump(cond, trueBlock, falseBlock);
                 trueBlock.jump = new IrDirectJump(joinBlock);
                 falseBlock.jump = new IrDirectJump(joinBlock);
+            }
+            else if (comparisonOps.has(token.kind)) {
+                let [exprs, ops] = findAllChainedOps(expr);
+                checkForUnchainableOps(ops);
+
+                let jumps: Array<IrBranchJump> = [];
+                let prev = convertExpr(exprs[0]);
+                for (let i = 0; i < ops.length; i++) {
+                    let next = convertExpr(exprs[i + 1]);
+                    let op = ops[i];
+                    let cond: IrInstr;
+                    if (op.kind === TokenKind.Less) {
+                        cond = new IrInstrLess(prev, next);
+                    }
+                    else if (op.kind === TokenKind.LessEq) {
+                        cond = new IrInstrLessEq(prev, next);
+                    }
+                    else if (op.kind === TokenKind.Greater) {
+                        cond = new IrInstrGreater(prev, next);
+                    }
+                    else if (op.kind === TokenKind.GreaterEq) {
+                        cond = new IrInstrGreaterEq(prev, next);
+                    }
+                    else if (op.kind === TokenKind.EqEq) {
+                        cond = new IrInstrEq(prev, next);
+                    }
+                    else if (op.kind === TokenKind.BangEq) {
+                        cond = new IrInstrNotEq(prev, next);
+                    }
+                    else {
+                        throw new E000_InternalError(
+                            "Unrecognized comparison op"
+                        );
+                    }
+                    instrs.push(cond);
+
+                    let jump = new IrBranchJump(cond, _b, _b);
+                    jumps.push(jump);
+                    currentBlock.jump = jump;
+
+                    addBlock();
+                    jump.trueTarget = currentBlock;
+                    prev = next;
+                }
+
+                let tt = new IrInstrGetTrue();
+                instrs.push(tt);
+                let u1 = new IrInstrUpsilon(tt, _i);
+                instrs.push(u1);
+                let trueBlock = currentBlock;
+
+                addBlock();
+                let ff = new IrInstrGetFalse();
+                instrs.push(ff);
+                let u2 = new IrInstrUpsilon(ff, _i);
+                instrs.push(u2);
+                let falseBlock = currentBlock;
+
+                for (let jump of jumps) {
+                    jump.falseTarget = falseBlock;
+                }
+
+                addBlock();
+                let phi = new IrInstrPhi();
+                instrs.push(phi);
+                u1.phi = phi;
+                u2.phi = phi;
+                trueBlock.jump = new IrDirectJump(currentBlock);
+                falseBlock.jump = new IrDirectJump(currentBlock);
             }
             else {
                 throw new E000_InternalError(

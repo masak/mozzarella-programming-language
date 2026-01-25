@@ -25,11 +25,11 @@ export {
     E301_RedeclarationError,
     E302_UseBeforeDeclarationError,
     E303_UnquoteOutsideQuoteError,
+    E502_UnchainableOpsError,
 } from "./compiler/error";
 export {
     E500_OutOfFuel,
     E601_ZeroDivisionError,
-    E602_UnchainableOpsError,
     E603_TypeError,
     E604_IndexError,
     E605_UninitializedError,

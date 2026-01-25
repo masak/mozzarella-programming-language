@@ -19,3 +19,6 @@ export class E303_UnquoteOutsideQuoteError extends Error {
 export class E401_IncompatibleSyntaxError extends Error {
 }
 
+export class E502_UnchainableOpsError extends Error {
+}
+ 

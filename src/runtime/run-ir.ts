@@ -5,15 +5,21 @@ import {
     IrInstr,
     IrInstrAddInts,
     IrInstrConcat,
+    IrInstrEq,
     IrInstrFloorDivInts,
     IrInstrGetFalse,
     IrInstrGetInt,
     IrInstrGetNone,
     IrInstrGetStr,
     IrInstrGetTrue,
+    IrInstrGreater,
+    IrInstrGreaterEq,
+    IrInstrLess,
+    IrInstrLessEq,
     IrInstrModInts,
     IrInstrMulInts,
     IrInstrNegInt,
+    IrInstrNotEq,
     IrInstrPhi,
     IrInstrPosInt,
     IrInstrSubInts,
@@ -25,6 +31,10 @@ import {
 import {
     boolify,
 } from "./boolify";
+import {
+    areEqual,
+    isLessThan,
+} from "./compare";
 import {
     E000_InternalError,
     E601_ZeroDivisionError,
@@ -207,6 +217,40 @@ export function runIr(irCompUnit: IrCompUnit): Value {
                 }
             }
             throw new E000_InternalError("Phi instruction not found");
+        }
+        else if (instr instanceof IrInstrLess) {
+            let left = computedValueOf(instr.leftInstr);
+            let right = computedValueOf(instr.rightInstr);
+            return new BoolValue(isLessThan(left, right));
+        }
+        else if (instr instanceof IrInstrLessEq) {
+            let left = computedValueOf(instr.leftInstr);
+            let right = computedValueOf(instr.rightInstr);
+            return new BoolValue(
+                areEqual(left, right) || isLessThan(left, right)
+            );
+        }
+        else if (instr instanceof IrInstrGreater) {
+            let left = computedValueOf(instr.leftInstr);
+            let right = computedValueOf(instr.rightInstr);
+            return new BoolValue(isLessThan(right, left));
+        }
+        else if (instr instanceof IrInstrGreaterEq) {
+            let left = computedValueOf(instr.leftInstr);
+            let right = computedValueOf(instr.rightInstr);
+            return new BoolValue(
+                areEqual(right, left) || isLessThan(right, left)
+            );
+        }
+        else if (instr instanceof IrInstrEq) {
+            let left = computedValueOf(instr.leftInstr);
+            let right = computedValueOf(instr.rightInstr);
+            return new BoolValue(areEqual(left, right));
+        }
+        else if (instr instanceof IrInstrNotEq) {
+            let left = computedValueOf(instr.leftInstr);
+            let right = computedValueOf(instr.rightInstr);
+            return new BoolValue(!areEqual(left, right));
         }
         else {
             throw new E000_InternalError(
