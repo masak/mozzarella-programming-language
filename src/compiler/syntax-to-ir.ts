@@ -40,6 +40,7 @@ import {
     BlockStatement,
     BoolLitExpr,
     CompUnit,
+    DoExpr,
     EmptyStatement,
     Expr,
     ExprStatement,
@@ -381,6 +382,9 @@ export function syntaxToIr(compUnit: CompUnit): IrCompUnit {
         }
         else if (expr instanceof ParenExpr) {
             return convertExpr(expr.innerExpr);
+        }
+        else if (expr instanceof DoExpr) {
+            return convertStatement(expr.statement);
         }
         else {
             throw new E000_InternalError(
