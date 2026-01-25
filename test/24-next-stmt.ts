@@ -1,6 +1,6 @@
 import test from "ava";
 import {
-    E510_NextOutsideLoopError,
+    E610_NextOutsideLoopError,
     run,
 } from "../src/go";
 
@@ -42,6 +42,6 @@ test("'next' statement", (t) => {
         t.is(run(program), "9");
     }
 
-    t.throws(() => run("next;"), { instanceOf: E510_NextOutsideLoopError });
+    t.throws(() => run("next;"), { instanceOf: E610_NextOutsideLoopError });
 });
 

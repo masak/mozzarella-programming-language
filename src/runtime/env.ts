@@ -1,6 +1,6 @@
 import {
-    E505_UninitializedError,
-    E506_UndeclaredError,
+    E605_UninitializedError,
+    E606_UndeclaredError,
 } from "./error";
 import {
     UninitValue,
@@ -41,7 +41,7 @@ export function lookup(env: Env | null, name: string): Value {
         if (binding = env.bindings.get(name)!) {
             let value = binding.value;
             if (value instanceof UninitValue) {
-                throw new E505_UninitializedError(
+                throw new E605_UninitializedError(
                     `Uninitialized variable '${name}'`
                 );
             }
@@ -49,7 +49,7 @@ export function lookup(env: Env | null, name: string): Value {
         }
         env = env.outer;
     }
-    throw new E506_UndeclaredError(`Undeclared variable '${name}'`);
+    throw new E606_UndeclaredError(`Undeclared variable '${name}'`);
 }
 
 // Used when looking up the names for macro calls; in this scenario, both
@@ -79,7 +79,7 @@ export function findEnvOfName(env: Env | null, name: string): [boolean, Env] {
         }
         env = env.outer;
     }
-    throw new E506_UndeclaredError(`Undeclared variable '${name}'`);
+    throw new E606_UndeclaredError(`Undeclared variable '${name}'`);
 }
 
 export function bindMutable(env: Env, name: string, value: Value): void {

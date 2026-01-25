@@ -1,8 +1,8 @@
 import test from "ava";
 import {
     E302_UseBeforeDeclarationError,
-    E505_UninitializedError,
-    E506_UndeclaredError,
+    E605_UninitializedError,
+    E606_UndeclaredError,
     run,
 } from "../src/go";
 
@@ -14,8 +14,8 @@ test("variable reference", (t) => {
     t.is(run("my x = 4; my y = x; y"), "4");
     t.is(run("my w = 11; { w }"), "11");
 
-    t.throws(() => run("my x; x"), { instanceOf: E505_UninitializedError });
-    t.throws(() => run("x"), { instanceOf: E506_UndeclaredError });
+    t.throws(() => run("my x; x"), { instanceOf: E605_UninitializedError });
+    t.throws(() => run("x"), { instanceOf: E606_UndeclaredError });
     t.throws(
         () => run("x; my x = 3"),
         { instanceOf: E302_UseBeforeDeclarationError },

@@ -1,10 +1,10 @@
 import test from "ava";
 import {
     E500_OutOfFuel,
-    E501_ZeroDivisionError,
-    E509_LastOutsideLoopError,
-    E510_NextOutsideLoopError,
-    E511_TooManyArgumentsError,
+    E601_ZeroDivisionError,
+    E609_LastOutsideLoopError,
+    E610_NextOutsideLoopError,
+    E611_TooManyArgumentsError,
     run,
     runWithFuel,
 } from "../src/go";
@@ -32,19 +32,19 @@ test("call expression", (t) => {
 
     t.throws(
         () => run("func f() {}; f(5)"),
-        { instanceOf: E511_TooManyArgumentsError },
+        { instanceOf: E611_TooManyArgumentsError },
     );
     t.throws(
         () => run("func f() { 1 // 0 }; f()"),
-        { instanceOf: E501_ZeroDivisionError },
+        { instanceOf: E601_ZeroDivisionError },
     );
     t.throws(
         () => run("func f() { last; }; for x in [1] { f() }"),
-        { instanceOf: E509_LastOutsideLoopError },
+        { instanceOf: E609_LastOutsideLoopError },
     );
     t.throws(
         () => run("func f() { next; }; for x in [1] { f() }"),
-        { instanceOf: E510_NextOutsideLoopError },
+        { instanceOf: E610_NextOutsideLoopError },
     );
 
     t.throws(

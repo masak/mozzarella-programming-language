@@ -1,6 +1,6 @@
 import test from "ava";
 import {
-    E513_ReturnOutsideRoutineError,
+    E613_ReturnOutsideRoutineError,
     run,
 } from "../src/go";
 
@@ -15,7 +15,7 @@ test("'return' statement", (t) => {
 
     t.throws(
         () => run("return 10;"),
-        { instanceOf: E513_ReturnOutsideRoutineError },
+        { instanceOf: E613_ReturnOutsideRoutineError },
     );
 });
 

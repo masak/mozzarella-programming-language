@@ -5,45 +5,45 @@ export {
 export class E500_OutOfFuel extends Error {
 }
 
-export class E501_ZeroDivisionError extends Error {
+export class E601_ZeroDivisionError extends Error {
 }
 
-export class E502_UnchainableOpsError extends Error {
+export class E602_UnchainableOpsError extends Error {
 }
  
-export class E503_TypeError extends Error {
+export class E603_TypeError extends Error {
 }
 
-export class E504_IndexError extends Error {
+export class E604_IndexError extends Error {
 }
 
-export class E505_UninitializedError extends Error {
+export class E605_UninitializedError extends Error {
 }
 
-export class E506_UndeclaredError extends Error {
+export class E606_UndeclaredError extends Error {
 }
 
-export class E507_CannotAssignError extends Error {
+export class E607_CannotAssignError extends Error {
 }
 
-export class E508_ReadonlyError extends Error {
+export class E608_ReadonlyError extends Error {
 }
 
-export class E509_LastOutsideLoopError extends Error {
+export class E609_LastOutsideLoopError extends Error {
 }
 
-export class E510_NextOutsideLoopError extends Error {
+export class E610_NextOutsideLoopError extends Error {
 }
 
-export class E511_TooManyArgumentsError extends Error {
+export class E611_TooManyArgumentsError extends Error {
 }
 
-export class E512_NotEnoughArgumentsError extends Error {
+export class E612_NotEnoughArgumentsError extends Error {
 }
 
-export class E513_ReturnOutsideRoutineError extends Error {
+export class E613_ReturnOutsideRoutineError extends Error {
 }
 
-export class E514_MacroAtRuntimeError extends Error {
+export class E614_MacroAtRuntimeError extends Error {
 }
 

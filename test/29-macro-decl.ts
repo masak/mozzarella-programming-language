@@ -1,13 +1,13 @@
 import test from "ava";
 import {
     E301_RedeclarationError,
-    E501_ZeroDivisionError,
-    E508_ReadonlyError,
-    E509_LastOutsideLoopError,
-    E510_NextOutsideLoopError,
-    E511_TooManyArgumentsError,
-    E512_NotEnoughArgumentsError,
-    E514_MacroAtRuntimeError,
+    E601_ZeroDivisionError,
+    E608_ReadonlyError,
+    E609_LastOutsideLoopError,
+    E610_NextOutsideLoopError,
+    E611_TooManyArgumentsError,
+    E612_NotEnoughArgumentsError,
+    E614_MacroAtRuntimeError,
     run,
 } from "../src/go";
 
@@ -39,11 +39,11 @@ test("macro declaration", (t) => {
     );
     t.throws(
         () => run("macro m() {}; m = 19;"),
-        { instanceOf: E508_ReadonlyError },
+        { instanceOf: E608_ReadonlyError },
     );
     t.throws(
         () => run("m = false; macro m() {}"),
-        { instanceOf: E508_ReadonlyError },
+        { instanceOf: E608_ReadonlyError },
     );
 
     t.is(run("macro m() {}; m()"), "none");
@@ -52,19 +52,19 @@ test("macro declaration", (t) => {
 
     t.throws(
         () => run("macro m() {}; m(5)"),
-        { instanceOf: E511_TooManyArgumentsError },
+        { instanceOf: E611_TooManyArgumentsError },
     );
     t.throws(
         () => run("macro m() { 1 // 0 }; m()"),
-        { instanceOf: E501_ZeroDivisionError },
+        { instanceOf: E601_ZeroDivisionError },
     );
     t.throws(
         () => run("macro m() { last; }; m()"),
-        { instanceOf: E509_LastOutsideLoopError },
+        { instanceOf: E609_LastOutsideLoopError },
     );
     t.throws(
         () => run("macro m() { next; }; m()"),
-        { instanceOf: E510_NextOutsideLoopError },
+        { instanceOf: E610_NextOutsideLoopError },
     );
 
     t.is(run("macro m(x) { x; }; m(1)"), "none");
@@ -74,19 +74,19 @@ test("macro declaration", (t) => {
 
     t.throws(
         () => run("macro m(x) {}; m()"),
-        { instanceOf: E512_NotEnoughArgumentsError },
+        { instanceOf: E612_NotEnoughArgumentsError },
     );
     t.throws(
         () => run("macro m(x) {}; m(1, 2)"),
-        { instanceOf: E511_TooManyArgumentsError },
+        { instanceOf: E611_TooManyArgumentsError },
     );
     t.throws(
         () => run("macro m(x, y) {}; m(1)"),
-        { instanceOf: E512_NotEnoughArgumentsError },
+        { instanceOf: E612_NotEnoughArgumentsError },
     );
     t.throws(
         () => run("macro m(x, y) {}; m()"),
-        { instanceOf: E512_NotEnoughArgumentsError },
+        { instanceOf: E612_NotEnoughArgumentsError },
     );
 
     t.is(run("macro m(x) { return x; }; m(1)"), "1");
@@ -109,15 +109,15 @@ test("macro declaration", (t) => {
 
     t.throws(
         () => run("macro m() {}; (m)()"),
-        { instanceOf: E514_MacroAtRuntimeError },
+        { instanceOf: E614_MacroAtRuntimeError },
     );
     t.throws(
         () => run("macro m() {}; (do m)()"),
-        { instanceOf: E514_MacroAtRuntimeError },
+        { instanceOf: E614_MacroAtRuntimeError },
     );
     t.throws(
         () => run("macro m() {}; func f(p) { p() }; f(m)"),
-        { instanceOf: E514_MacroAtRuntimeError },
+        { instanceOf: E614_MacroAtRuntimeError },
     );
 
     t.is(run('my v; macro m() { v = "set" }; m(); v'), '"set"');

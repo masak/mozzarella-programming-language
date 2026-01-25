@@ -8,8 +8,8 @@ import {
 } from "../compiler/token";
 import {
     E000_InternalError,
-    E502_UnchainableOpsError,
-    E503_TypeError,
+    E602_UnchainableOpsError,
+    E603_TypeError,
 } from "./error";
 import {
     ArrayValue,
@@ -30,7 +30,7 @@ function isLessThan(left: Value, right: Value): boolean {
     let comparable = isComparable(left) && isComparable(right);
     let sameType = left.constructor === right.constructor;
     if (!(comparable && sameType)) {
-        throw new E503_TypeError(
+        throw new E603_TypeError(
             `Cannot compare ${left.constructor.name} ` +
                 `and ${right.constructor.name}`
         );
@@ -184,7 +184,7 @@ export function checkForUnchainableOps(ops: Array<Token>) {
         let otherOp = notEqOpIndex < ops.length - 1
             ? ops[notEqOpIndex + 1]
             : ops[notEqOpIndex - 1];
-        throw new E502_UnchainableOpsError(
+        throw new E602_UnchainableOpsError(
             `Cannot chain != and ${otherOp.kind.kind}`
         );
     }
@@ -204,7 +204,7 @@ export function checkForUnchainableOps(ops: Array<Token>) {
             (op) => op.kind === TokenKind.Greater
                 || op.kind === TokenKind.GreaterEq
         )!;
-        throw new E502_UnchainableOpsError(
+        throw new E602_UnchainableOpsError(
             `Cannot chain ${lessTypeOp.kind.kind} `
                 + `and ${greaterTypeOp.kind.kind}`
         );

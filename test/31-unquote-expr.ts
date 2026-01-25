@@ -1,7 +1,7 @@
 import test from "ava";
 import {
     E303_UnquoteOutsideQuoteError,
-    E503_TypeError,
+    E603_TypeError,
     run,
 } from "../src/go";
 
@@ -91,7 +91,7 @@ test("unquote expression", (t) => {
     );
     t.throws(
         () => run("func f() {}; code` $( f ) `"),
-        { instanceOf: E503_TypeError },
+        { instanceOf: E603_TypeError },
     );
 });
 

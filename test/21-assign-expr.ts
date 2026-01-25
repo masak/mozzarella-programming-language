@@ -1,9 +1,9 @@
 import test from "ava";
 import {
-    E504_IndexError,
-    E506_UndeclaredError,
-    E507_CannotAssignError,
-    E508_ReadonlyError,
+    E604_IndexError,
+    E606_UndeclaredError,
+    E607_CannotAssignError,
+    E608_ReadonlyError,
     run,
 } from "../src/go";
 
@@ -22,39 +22,39 @@ test("assignment expression", (t) => {
     t.is(run("my L = [1, 2]; L[1] = do { L = [4, 5]; none }; L"), "[4, 5]");
     t.is(run("my a = [7, 8]; my b = a; a[0] = -1; b"), "[-1, 8]");
 
-    t.throws(() => run("x = 21"), { instanceOf: E506_UndeclaredError });
+    t.throws(() => run("x = 21"), { instanceOf: E606_UndeclaredError });
     t.throws(
         () => run("[1, 2, 3] = 4"),
-        { instanceOf: E507_CannotAssignError },
+        { instanceOf: E607_CannotAssignError },
     );
-    t.throws(() => run("2 + 2 = 4"), { instanceOf: E507_CannotAssignError });
+    t.throws(() => run("2 + 2 = 4"), { instanceOf: E607_CannotAssignError });
     t.throws(
         () => run("true = false"),
-        { instanceOf: E507_CannotAssignError },
+        { instanceOf: E607_CannotAssignError },
     );
     t.throws(
         () => run("my L = [0]; L[3] = 5"),
-        { instanceOf: E504_IndexError },
+        { instanceOf: E604_IndexError },
     );
     t.throws(
         () => run('for x in [1, 2, 3] { x = "tomato"; }'),
-        { instanceOf: E508_ReadonlyError },
+        { instanceOf: E608_ReadonlyError },
     );
     t.throws(
         () => run("for x in x = [1, 2, 3] {}"),
-        { instanceOf: E508_ReadonlyError },
+        { instanceOf: E608_ReadonlyError },
     );
     t.throws(
         () => run("do {} = 3"),
-        { instanceOf: E507_CannotAssignError },
+        { instanceOf: E607_CannotAssignError },
     );
     t.throws(
         () => run("my x; do if false { x } = 8"),
-        { instanceOf: E507_CannotAssignError },
+        { instanceOf: E607_CannotAssignError },
     );
     t.throws(
         () => run("my x; do if 1 + 1 == 3 { x } else if 0 == 3 { x } = 19"),
-        { instanceOf: E507_CannotAssignError },
+        { instanceOf: E607_CannotAssignError },
     );
 });
 

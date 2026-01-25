@@ -1,7 +1,7 @@
 import test from "ava";
 import {
     E301_RedeclarationError,
-    E501_ZeroDivisionError,
+    E601_ZeroDivisionError,
     run,
 } from "../src/go";
 
@@ -23,7 +23,7 @@ test("variable declaration", (t) => {
     );
     t.throws(
         () => run("my divByZero = 1 // 0;"),
-        { instanceOf: E501_ZeroDivisionError },
+        { instanceOf: E601_ZeroDivisionError },
     );
 });
 

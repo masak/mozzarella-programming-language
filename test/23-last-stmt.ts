@@ -1,6 +1,6 @@
 import test from "ava";
 import {
-    E509_LastOutsideLoopError,
+    E609_LastOutsideLoopError,
     run,
 } from "../src/go";
 
@@ -61,6 +61,6 @@ test("'last' statement", (t) => {
         t.is(run(program), "[0, 0, 0, 0]");
     }
 
-    t.throws(() => run("last;"), { instanceOf: E509_LastOutsideLoopError });
+    t.throws(() => run("last;"), { instanceOf: E609_LastOutsideLoopError });
 });
 
