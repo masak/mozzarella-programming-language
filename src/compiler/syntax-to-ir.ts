@@ -37,6 +37,7 @@ import {
     IrInstrUpsilon,
 } from "./ir";
 import {
+    BlockStatement,
     BoolLitExpr,
     CompUnit,
     EmptyStatement,
@@ -47,6 +48,7 @@ import {
     NoneLitExpr,
     ParenExpr,
     PrefixOpExpr,
+    Statement,
     StrLitExpr,
 } from "./syntax";
 import {
@@ -392,23 +394,49 @@ export function syntaxToIr(compUnit: CompUnit): IrCompUnit {
         return instrs[instrs.length - 1];
     }
 
+    function convertStatement(statement: Statement): IrInstr {
+        if (statement instanceof ExprStatement) {
+            let expr = statement.expr;
+            return convertExpr(expr);
+        }
+        else if (statement instanceof EmptyStatement) {
+            let none = new IrInstrGetNone();
+            instrs.push(none);
+            return none;
+        }
+        else if (statement instanceof BlockStatement) {
+            let block = statement.block;
+            let statements = block.statements;
+            for (let statement of statements) {
+                if (statement === null) {
+                    // skip
+                }
+                else {
+                    let instr = convertStatement(statement);
+                    if (statement == statements[statements.length - 1]) {
+                        return instr;
+                    }
+                }
+            }
+            let none = new IrInstrGetNone();
+            instrs.push(none);
+            return none;
+        }
+        else {
+            throw new E000_InternalError(
+                `Unrecognized statement ${statement.constructor.name}`
+            );
+        }
+    }
+
     addBlock();
 
     for (let statement of compUnit.children) {
         if (statement === null) {
             // skip
         }
-        else if (statement instanceof ExprStatement) {
-            let expr = statement.expr;
-            /* ignore */ convertExpr(expr);
-        }
-        else if (statement instanceof EmptyStatement) {
-            instrs.push(new IrInstrGetNone());
-        }
         else {
-            throw new E000_InternalError(
-                `Unrecognized statement ${statement.constructor.name}`
-            );
+            /* ignore */ convertStatement(statement);
         }
     }
 
