@@ -44,6 +44,7 @@ import {
     InfixOpExpr,
     IntLitExpr,
     NoneLitExpr,
+    ParenExpr,
     PrefixOpExpr,
     StrLitExpr,
 } from "./syntax";
@@ -153,6 +154,7 @@ export function syntaxToIr(compUnit: CompUnit): IrCompUnit {
     }
 
     function convertExpr(expr: Expr): IrInstr {
+        let oldBlock = currentBlock;
         let oldLength = instrs.length;
 
         if (expr instanceof IntLitExpr) {
@@ -374,13 +376,16 @@ export function syntaxToIr(compUnit: CompUnit): IrCompUnit {
                 );
             }
         }
+        else if (expr instanceof ParenExpr) {
+            return convertExpr(expr.innerExpr);
+        }
         else {
             throw new E000_InternalError(
                 `Unrecognized expr ${expr.constructor.name}`
             );
         }
 
-        if (instrs.length <= oldLength) {
+        if (currentBlock === oldBlock && instrs.length <= oldLength) {
             throw new E000_InternalError("No instructions added");
         }
         return instrs[instrs.length - 1];
