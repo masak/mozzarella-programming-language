@@ -56,6 +56,7 @@ to be able to correctly guess the intended implementation.
 
 ## Design documents
 
+- [ARCHITECTURE.md](https://github.com/masak/mozzarella-programming-language/blob/main/ARCHITECTURE.md)
 - [Example](https://github.com/masak/mozzarella-programming-language/blob/main/docs/01-example.md)
 - [Code quoting](https://github.com/masak/mozzarella-programming-language/blob/main/docs/02-code-quoting.md)
 - [The outer of the injectile](https://github.com/masak/mozzarella-programming-language/blob/main/docs/03-injectile.md)
