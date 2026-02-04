@@ -1,3 +1,8 @@
+// The evaluator
+//
+// Can be described as a CEKJ machine. The CEK part is standard: code,
+// environment, kontinuation with a "k". What's with the J part? It contains
+// a table of _jump targets_, making `next`/`last`/`return` work.
 import {
     Argument,
     ArrayInitializerExpr,
