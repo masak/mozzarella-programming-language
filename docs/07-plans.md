@@ -333,3 +333,11 @@ from the AST to this graph, and a much simpler evaluator for it.
 As an almost trivial second step, just turn the maximal sequences of
 1-transition nodes into basic blocks, represented as arrays.
 
+## Regular expressions
+
+Kind of a rationalized version of what's already in Perl 5, Raku, Python, and
+JavaScript. Maybe a slightly clearer focus on the automaton aspects of regexes,
+with a built-in way to do set operations (union, intersection, subset relation)
+directly on the regexes. Also would be good to consider from the start a story
+that leads to the straightforward specification of a lexer.
+
