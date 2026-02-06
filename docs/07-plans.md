@@ -66,13 +66,18 @@ func f(named => x) {
 f(named => 42);
 ```
 
+## Property lookup
+
+Support for the `obj.prop` operator, for politely asking `obj` what `prop`
+might be like.
+
+Maybe start with something clearly useful, like `.length` for `Array`
+instances.
+
 ## Objects and classes 🪐🎓
 
-Primarily, support for the `obj.prop` operator, for politely asking `obj` what
-`prop` might be like.
-
-Along with that, `class` declarations, and `has` declarations. `@get` and
-`@set` annotations. Maybe more than that.
+Have `class` declarations, and `has` declarations. `@get` and `@set`
+annotations. Maybe more than that.
 
 ## The `is` operator 🔍✅
 
