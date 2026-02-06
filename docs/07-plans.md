@@ -148,10 +148,16 @@ whatever, so that the program will definitely fail. There are many other
 examples like that, where we can statically catch a thing that will definitely
 fail at runtime.
 
-## Optional type checking 🧪🤷
+## Optional type annotations + type checking 🧪🤷
 
 Add (optional) _type annotations_ on variable declarations, parameters,
-function return types. Also add the `as` operator.
+function return types.
+
+We say optional, but the goal is to make this type system truly _gradual_;
+which is to say, whenever type annotations appear, they are enforced and
+respected &mdash; but when they don't, there are no restrictions.
+
+Also add the `as` operator, which has only a static effect, like in TypeScript.
 
 ## `Rat` and `Num` types 🐀🌊
 
