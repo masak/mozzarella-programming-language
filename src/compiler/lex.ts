@@ -28,6 +28,17 @@ export function* lex(input: string): Generator<Token, undefined> {
         return pos < input.length && input.charAt(pos) === char;
     }
    
+    function expected(char: string, pos: number): never {
+        if (pos >= input.length) {
+            throw new E101_LexerError(`Expected '${char}', found eof`);
+        }
+        else {
+            throw new E101_LexerError(
+                `Expected '${char}', found ${input.charAt(pos)}`
+            );
+        }
+    }
+
     while (true) {
         let oldPos = pos;
 
@@ -50,6 +61,56 @@ export function* lex(input: string): Generator<Token, undefined> {
             }
             let n = BigInt(digits.join(""));
             yield new Token(TokenKind.IntLit, n);
+        }
+        else if (seeingChar('"', pos)) {
+            pos += 1;
+            let characters: Array<string> = [];
+            while (!seeingEof(pos) && !seeingChar('"', pos)) {
+                if (seeingChar("\\", pos)) {   // escaped character
+                    pos += 1;
+                    if (seeingChar("n", pos)) {
+                        characters.push("\n");
+                    }
+                    else if (seeingChar("r", pos)) {
+                        characters.push("\r");
+                    }
+                    else if (seeingChar("t", pos)) {
+                        characters.push("\t");
+                    }
+                    else if (seeingChar('"', pos)) {
+                        characters.push('"');
+                    }
+                    else if (seeingChar("\\", pos)) {
+                        characters.push("\\");
+                        characters.push("\n");
+                    }
+                    else if (seeingChar("r", pos)) {
+                        characters.push("\r");
+                    }
+                    else if (seeingChar("t", pos)) {
+                        characters.push("\t");
+                    }
+                    else if (seeingChar('"', pos)) {
+                        characters.push('"');
+                    }
+                    else if (seeingChar("\\", pos)) {
+                        characters.push("\\");
+                    }
+                    else {
+                        throw new Error("Unrecognized escape character");
+                    }
+                }
+                else {
+                    characters.push(input.charAt(pos));
+                }
+                pos += 1;
+            }
+            if (!seeingChar('"', pos)) {
+                expected('"', pos);
+            }
+            pos += 1;
+            let s = characters.join("");
+            yield new Token(TokenKind.StrLit, s);
         }
         else {
             let tokenGuess = input
