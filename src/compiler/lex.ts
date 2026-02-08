@@ -8,7 +8,7 @@ import {
 
 const WHITESPACE = /^\s*/;
 
-export function* lex(input: string): Generator<Token, undefined> {
+export function* lex(input: string): Generator<Token> {
     let pos: number = 0;
 
     function skipWhitespace(): void {
@@ -20,15 +20,19 @@ export function* lex(input: string): Generator<Token, undefined> {
         return pos >= input.length;
     }
 
-    function seeingDigit(pos: number): boolean {
+    function seeingDigit(): boolean {
         return pos < input.length && /^\d/.test(input.charAt(pos));
     }
 
-    function seeingChar(char: string, pos: number): boolean {
+    function seeingLetter(): boolean {
+        return pos < input.length && /^[a-zA-Z]/.test(input.charAt(pos));
+    }
+
+    function seeingChar(char: string): boolean {
         return pos < input.length && input.charAt(pos) === char;
     }
    
-    function expected(char: string, pos: number): never {
+    function expected(char: string): never {
         if (pos >= input.length) {
             throw new E101_LexerError(`Expected '${char}', found eof`);
         }
@@ -47,13 +51,13 @@ export function* lex(input: string): Generator<Token, undefined> {
         if (seeingEof(pos)) {
             return;
         }
-        else if (seeingDigit(pos)) {
+        else if (seeingDigit()) {
             let digits: Array<string> = [];
-            while (seeingDigit(pos) || seeingChar("_", pos)) {
-                if (seeingChar("_", pos)) {
+            while (seeingDigit() || seeingChar("_")) {
+                if (seeingChar("_")) {
                     pos += 1;
                 }
-                if (!seeingDigit(pos)) {
+                if (!seeingDigit()) {
                     throw new E101_LexerError("Lexer: expected digit");
                 }
                 digits.push(input.charAt(pos));
@@ -62,38 +66,34 @@ export function* lex(input: string): Generator<Token, undefined> {
             let n = BigInt(digits.join(""));
             yield new Token(TokenKind.IntLit, n);
         }
-        else if (seeingChar('"', pos)) {
+        else if (seeingChar('"')) {
             pos += 1;
             let characters: Array<string> = [];
-            while (!seeingEof(pos) && !seeingChar('"', pos)) {
-                if (seeingChar("\\", pos)) {   // escaped character
+            while (!seeingEof(pos) && !seeingChar('"')) {
+                if (seeingChar("\\")) {   // escaped character
                     pos += 1;
-                    if (seeingChar("n", pos)) {
+                    if (seeingChar("n")) {
                         characters.push("\n");
                     }
-                    else if (seeingChar("r", pos)) {
+                    else if (seeingChar("r")) {
                         characters.push("\r");
                     }
-                    else if (seeingChar("t", pos)) {
+                    else if (seeingChar("t")) {
                         characters.push("\t");
                     }
-                    else if (seeingChar('"', pos)) {
+                    else if (seeingChar('"')) {
                         characters.push('"');
                     }
-                    else if (seeingChar("\\", pos)) {
-                        characters.push("\\");
-                        characters.push("\n");
-                    }
-                    else if (seeingChar("r", pos)) {
+                    else if (seeingChar("r")) {
                         characters.push("\r");
                     }
-                    else if (seeingChar("t", pos)) {
+                    else if (seeingChar("t")) {
                         characters.push("\t");
                     }
-                    else if (seeingChar('"', pos)) {
+                    else if (seeingChar('"')) {
                         characters.push('"');
                     }
-                    else if (seeingChar("\\", pos)) {
+                    else if (seeingChar("\\")) {
                         characters.push("\\");
                     }
                     else {
@@ -105,12 +105,30 @@ export function* lex(input: string): Generator<Token, undefined> {
                 }
                 pos += 1;
             }
-            if (!seeingChar('"', pos)) {
-                expected('"', pos);
+            if (!seeingChar('"')) {
+                expected('"');
             }
             pos += 1;
             let s = characters.join("");
             yield new Token(TokenKind.StrLit, s);
+        }
+        else if (seeingLetter() || seeingChar("_")) {
+            let characters: Array<string> = [];
+            while (seeingLetter() || seeingDigit() || seeingChar("_")) {
+                characters.push(input.charAt(pos));
+                pos += 1;
+            }
+            let name = characters.join("");
+            if (name === "true") {
+                yield new Token(TokenKind.TrueKeyword, true);
+            }
+            else if (name === "false") {
+                yield new Token(TokenKind.FalseKeyword, false);
+            }
+            else {
+                throw new Error(`Unexpected identifier ${name}`);
+                // yield new Token(TokenKind.Identifier, name);
+            }
         }
         else {
             let tokenGuess = input
