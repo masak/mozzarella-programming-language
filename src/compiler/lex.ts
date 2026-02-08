@@ -37,6 +37,9 @@ const choiceTree: ChoiceTree = new Map([
     [";", [TokenKind.Semi, null]],
     ["{", [TokenKind.CurlyL, null]],
     ["}", [TokenKind.CurlyR, null]],
+    ["[", [TokenKind.SquareL, null]],
+    ["]", [TokenKind.SquareR, null]],
+    [",", [TokenKind.Comma, null]],
 ]);
 
 export function* lex(input: string): Generator<Token> {
