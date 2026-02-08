@@ -3,7 +3,7 @@ import {
     E201_SyntaxError,
 } from "./error";
 import {
-    Lexer,
+    lex,
 } from "./lex";
 import {
     Argument,
@@ -179,23 +179,41 @@ const declStartTokens = new Set([
 ]);
 
 export class Parser {
-    lexer: Lexer;
+    tokenStream: Generator<Token>;
+    lookahead: Token;
 
-    constructor(lexer: Lexer) {
-        this.lexer = lexer;
+    constructor(input: string) {
+        this.tokenStream = lex(input);
+        let next = this.tokenStream.next();
+        if (next.done) {
+            this.lookahead = new Token(TokenKind.Eof);
+        }
+        else {
+            this.lookahead = next.value;
+        }
     }
 
     // low-level helper methods:
+    
+    private advance() {
+        let next = this.tokenStream.next();
+        if (next.done) {
+            this.lookahead = new Token(TokenKind.Eof);
+        }
+        else {
+            this.lookahead = next.value;
+        }
+    }
 
     private parseFail(expectation: string): never {
         throw new E201_SyntaxError(
             `Expected ${expectation}, ` +
-            `found ${this.lexer.lookahead().kind.kind}`
+            `found ${this.lookahead.kind.kind}`
         );
     }
 
     private seeing(kind: TokenKind): boolean {
-        return this.lexer.lookahead().kind === kind;
+        return this.lookahead.kind === kind;
     }
 
     private seeingStartOfStatementOrDecl(): boolean {
@@ -203,30 +221,30 @@ export class Parser {
     }
 
     private seeingStartOfStatement(): boolean {
-        let lookahead = this.lexer.lookahead().kind;
-        return statementStartTokens.has(lookahead);
+        let lookaheadKind = this.lookahead.kind;
+        return statementStartTokens.has(lookaheadKind);
     }
 
     private seeingStartOfDecl(): boolean {
-        let lookahead = this.lexer.lookahead().kind;
-        return declStartTokens.has(lookahead);
+        let lookaheadKind = this.lookahead.kind;
+        return declStartTokens.has(lookaheadKind);
     }
 
     private seeingStartOfExpr(): boolean {
-        let lookahead = this.lexer.lookahead().kind;
-        return termStartTokens.has(lookahead);
+        let lookaheadKind = this.lookahead.kind;
+        return termStartTokens.has(lookaheadKind);
     }
 
     private expect(kind: TokenKind): void {
-        if (this.lexer.lookahead().kind !== kind) {
+        if (this.lookahead.kind !== kind) {
             this.parseFail(`token ${kind.kind}`);
         }
     }
 
     private accept(kind: TokenKind): Token | null {
-        let token = this.lexer.lookahead();
+        let token = this.lookahead;
         if (token.kind === kind) {
-            this.lexer.advance();
+            this.advance();
             return token;
         }
         return null;
@@ -244,7 +262,7 @@ export class Parser {
 
     private advanceOver(kind: TokenKind): void {
         this.expect(kind);
-        this.lexer.advance();
+        this.advance();
     }
 
     // parse methods:

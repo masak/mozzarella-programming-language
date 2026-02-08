@@ -1,7 +1,4 @@
 import {
-    Lexer,
-} from "./compiler/lex";
-import {
     macroExpandCompUnit,
 } from "./compiler/expand";
 import {
@@ -50,8 +47,7 @@ export {
 } from "./runtime/error";
 
 export function run(source: string): string {
-    let lexer = new Lexer(source);
-    let parser = new Parser(lexer);
+    let parser = new Parser(source);
     let compUnit = parser.parseCompUnit();
     validateCompUnit(compUnit);
     let staticEnvs = new Map<CompUnit | Block, Env>();
@@ -61,8 +57,7 @@ export function run(source: string): string {
 }
 
 export function runWithFuel(source: string, fuel: number): string {
-    let lexer = new Lexer(source);
-    let parser = new Parser(lexer);
+    let parser = new Parser(source);
     let compUnit = parser.parseCompUnit();
     validateCompUnit(compUnit);
     let staticEnvs = new Map<CompUnit | Block, Env>();

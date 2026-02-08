@@ -44,76 +44,53 @@ const choiceTree: ChoiceTree = new Map([
     ["$", [TokenKind.Dollar, null]],
 ]);
 
-export class Lexer {
-    input: string;
-    pos: number = 0;
-    lookaheadPos: number = 0;
-    cachedLookahead: Token = new Token(TokenKind.Eof);
+export function* lex(input: string): Generator<Token> {
+    let pos: number = 0;
 
-    constructor(input: string) {
-        this.input = input;
-    }
-
-    // low-level helper methods:
-
-    private skipWhitespace(): void {
-        let n = this.input.substring(this.pos).match(WHITESPACE)![0].length;
-        this.pos += n;
-        this.lookaheadPos = this.pos;
+    function skipWhitespace(): void {
+        let n = input.substring(pos).match(WHITESPACE)![0].length;
+        pos += n;
     }
     
-    private seeingEof(pos: number): boolean {
-        return pos >= this.input.length;
-    }
-    
-    private seeingDigit(pos: number): boolean {
-        return pos < this.input.length && /^\d/.test(this.charAt(pos));
+    function seeingEof(pos: number): boolean {
+        return pos >= input.length;
     }
 
-    private seeingLetter(pos: number): boolean {
-        return pos < this.input.length && /^[a-zA-Z]/.test(this.charAt(pos));
+    function seeingDigit(): boolean {
+        return pos < input.length && /^\d/.test(input.charAt(pos));
     }
 
-    private seeingChar(char: string, pos: number): boolean {
-        return pos < this.input.length && this.charAt(pos) === char;
+    function seeingLetter(): boolean {
+        return pos < input.length && /^[a-zA-Z]/.test(input.charAt(pos));
     }
 
-    private charAt(pos: number): string {
-        if (pos >= this.input.length) {
-            throw new E101_LexerError("Character at end of string");
-        }
-        return this.input.charAt(pos);
+    function seeingChar(char: string): boolean {
+        return pos < input.length && input.charAt(pos) === char;
     }
-
-    private expected(char: string, pos: number): never {
-        if (pos >= this.input.length) {
+   
+    function expected(char: string): never {
+        if (pos >= input.length) {
             throw new E101_LexerError(`Expected '${char}', found eof`);
         }
         else {
             throw new E101_LexerError(
-                `Expected '${char}', found ${this.charAt(pos)}`
+                `Expected '${char}', found ${input.charAt(pos)}`
             );
         }
     }
 
-    // lex methods:
+    while (true) {
+        let oldPos = pos;
 
-    lookahead(): Token {
-        if (this.lookaheadPos === this.pos) {
-            [this.lookaheadPos, this.cachedLookahead] =
-                this.computeLookahead();
-        }
-        return this.cachedLookahead;
-    }
+        skipWhitespace();
 
-    private computeLookahead(): [number, Token] {
-        this.skipWhitespace();
         let choice: [TokenKind | null, [string, TokenKind] | null];
-        if (this.seeingEof(this.pos)) {
-            return [this.pos, new Token(TokenKind.Eof)];
+
+        if (seeingEof(pos)) {
+            return;
         }
-        else if (choice = choiceTree.get(this.charAt(this.pos))!) {
-            let pos = this.pos + 1;
+        else if (choice = choiceTree.get(input.charAt(pos))!) {
+            pos += 1;
             let [tokenKind1, ch2Info] = choice;
             if (tokenKind1 === null) {
                 if (ch2Info === null) {
@@ -122,165 +99,161 @@ export class Lexer {
                     );
                 }
                 let [ch2, tokenKind2] = ch2Info;
-                if (!this.seeingChar(ch2, pos)) {
+                if (!seeingChar(ch2)) {
                     throw new E101_LexerError(
-                        "Unrecognized character after '" +
-                            this.charAt(this.pos) + "'"
+                        "Unrecognized character after '" + input.charAt(pos)
+                            + "'"
                     );
                 }
                 pos += 1;
-                return [pos, new Token(tokenKind2)];
+                yield new Token(tokenKind2);
             }
             else {
                 if (ch2Info === null) {
-                    return [pos, new Token(tokenKind1)];
+                    yield new Token(tokenKind1);
                 }
                 else {
                     let [ch2, tokenKind2] = ch2Info;
-                    if (this.seeingChar(ch2, pos)) {
+                    if (seeingChar(ch2)) {
                         pos += 1;
-                        return [pos, new Token(tokenKind2)];
+                        yield new Token(tokenKind2);
                     }
-                    return [pos, new Token(tokenKind1)];
+                    else {
+                        yield new Token(tokenKind1);
+                    }
                 }
             }
         }
-        else if (this.seeingDigit(this.pos)) {
-            let pos = this.pos;
+        else if (seeingDigit()) {
             let digits: Array<string> = [];
-            while (this.seeingDigit(pos) || this.seeingChar("_", pos)) {
-                if (this.seeingChar("_", pos)) {
+            while (seeingDigit() || seeingChar("_")) {
+                if (seeingChar("_")) {
                     pos += 1;
                 }
-                if (!this.seeingDigit(pos)) {
+                if (!seeingDigit()) {
                     throw new E101_LexerError("Lexer: expected digit");
                 }
-                digits.push(this.charAt(pos));
+                digits.push(input.charAt(pos));
                 pos += 1;
             }
             let n = BigInt(digits.join(""));
-            return [pos, new Token(TokenKind.IntLit, n)];
+            yield new Token(TokenKind.IntLit, n);
         }
-        else if (this.seeingChar('"', this.pos)) {
-            let pos = this.pos + 1;
+        else if (seeingChar('"')) {
+            pos += 1;
             let characters: Array<string> = [];
-            while (!this.seeingEof(pos) && !this.seeingChar('"', pos)) {
-                if (this.seeingChar("\\", pos)) {   // escaped character
+            while (!seeingEof(pos) && !seeingChar('"')) {
+                if (seeingChar("\\")) {   // escaped character
                     pos += 1;
-                    if (this.seeingChar("n", pos)) {
+                    if (seeingChar("n")) {
                         characters.push("\n");
                     }
-                    else if (this.seeingChar("r", pos)) {
+                    else if (seeingChar("r")) {
                         characters.push("\r");
                     }
-                    else if (this.seeingChar("t", pos)) {
+                    else if (seeingChar("t")) {
                         characters.push("\t");
                     }
-                    else if (this.seeingChar('"', pos)) {
+                    else if (seeingChar('"')) {
                         characters.push('"');
                     }
-                    else if (this.seeingChar("\\", pos)) {
+                    else if (seeingChar("r")) {
+                        characters.push("\r");
+                    }
+                    else if (seeingChar("t")) {
+                        characters.push("\t");
+                    }
+                    else if (seeingChar('"')) {
+                        characters.push('"');
+                    }
+                    else if (seeingChar("\\")) {
                         characters.push("\\");
                     }
                     else {
-                        throw new E101_LexerError(
+                        throw new E000_InternalError(
                             "Unrecognized escape character"
                         );
                     }
                 }
                 else {
-                    characters.push(this.charAt(pos));
+                    characters.push(input.charAt(pos));
                 }
                 pos += 1;
             }
-            if (!this.seeingChar('"', pos)) {
-                this.expected('"', pos);
+            if (!seeingChar('"')) {
+                expected('"');
             }
             pos += 1;
             let s = characters.join("");
-            return [pos, new Token(TokenKind.StrLit, s)];
+            yield new Token(TokenKind.StrLit, s);
         }
-        else if (this.seeingLetter(this.pos)
-                    || this.seeingChar("_", this.pos)) {
-            let pos = this.pos;
+        else if (seeingLetter() || seeingChar("_")) {
             let characters: Array<string> = [];
-            while (this.seeingLetter(pos) || this.seeingDigit(pos)
-                    || this.seeingChar("_", pos)) {
-                characters.push(this.charAt(pos));
+            while (seeingLetter() || seeingDigit() || seeingChar("_")) {
+                characters.push(input.charAt(pos));
                 pos += 1;
             }
             let name = characters.join("");
-            if (name === "_") {
-                return [pos, new Token(TokenKind.Identifier, name)];
-            }
-            else if (name.match(/_/)) {
-                throw new E101_LexerError("Illegal identifier");
-            }
-            else if (name === "true") {
-                return [pos, new Token(TokenKind.TrueKeyword, true)];
+            if (name === "true") {
+                yield new Token(TokenKind.TrueKeyword, true);
             }
             else if (name === "false") {
-                return [pos, new Token(TokenKind.FalseKeyword, false)];
+                yield new Token(TokenKind.FalseKeyword, false);
             }
             else if (name === "none") {
-                return [pos, new Token(TokenKind.NoneKeyword)];
+                yield new Token(TokenKind.NoneKeyword);
             }
             else if (name === "do") {
-                return [pos, new Token(TokenKind.DoKeyword)];
+                yield new Token(TokenKind.DoKeyword);
             }
             else if (name === "if") {
-                return [pos, new Token(TokenKind.IfKeyword)];
+                yield new Token(TokenKind.IfKeyword);
             }
             else if (name === "else") {
-                return [pos, new Token(TokenKind.ElseKeyword)];
+                yield new Token(TokenKind.ElseKeyword);
             }
             else if (name === "my") {
-                return [pos, new Token(TokenKind.MyKeyword)];
+                yield new Token(TokenKind.MyKeyword);
             }
             else if (name === "for") {
-                return [pos, new Token(TokenKind.ForKeyword)];
+                yield new Token(TokenKind.ForKeyword);
             }
             else if (name === "in") {
-                return [pos, new Token(TokenKind.InKeyword)];
+                yield new Token(TokenKind.InKeyword);
             }
             else if (name === "while") {
-                return [pos, new Token(TokenKind.WhileKeyword)];
+                yield new Token(TokenKind.WhileKeyword);
             }
             else if (name === "last") {
-                return [pos, new Token(TokenKind.LastKeyword)];
+                yield new Token(TokenKind.LastKeyword);
             }
             else if (name === "next") {
-                return [pos, new Token(TokenKind.NextKeyword)];
+                yield new Token(TokenKind.NextKeyword);
             }
             else if (name === "func") {
-                return [pos, new Token(TokenKind.FuncKeyword)];
+                yield new Token(TokenKind.FuncKeyword);
             }
             else if (name === "return") {
-                return [pos, new Token(TokenKind.ReturnKeyword)];
+                yield new Token(TokenKind.ReturnKeyword);
             }
             else if (name === "macro") {
-                return [pos, new Token(TokenKind.MacroKeyword)];
+                yield new Token(TokenKind.MacroKeyword);
             }
             else {
-                return [pos, new Token(TokenKind.Identifier, name)];
+                yield new Token(TokenKind.Identifier, name);
             }
         }
         else {
-            let tokenGuess = this.input
-                .substring(this.pos, this.pos + 10)
+            let tokenGuess = input
+                .substring(pos, pos + 10)
                 .replace(/\s.*/, "")
                 .replace(/\w+$/, "");
             throw new E101_LexerError(`Unrecognized token '${tokenGuess}'`);
         }
-    }
 
-    advance(): void {
-        if (this.pos >= this.lookaheadPos) {
-            throw new E000_InternalError(
-                "Trying to advance but nothing to advance to"
-            );
+        if (pos === oldPos) {
+            throw new E101_LexerError("Position didn't advance");
         }
-        this.pos = this.lookaheadPos;
     }
 }
 
