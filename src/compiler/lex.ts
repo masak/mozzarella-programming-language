@@ -20,11 +20,18 @@ const choiceTree: ChoiceTree = new Map([
     ["%", [TokenKind.Mod, null]],
     ["~", [TokenKind.Tilde, null]],
     ["?", [TokenKind.Quest, null]],
-    ["!", [TokenKind.Bang, null]],
+    ["!", [TokenKind.Bang,
+        ["=", TokenKind.BangEq]]],
     ["&", [null,
         ["&", TokenKind.AmpAmp]]],
     ["|", [null,
         ["|", TokenKind.PipePipe]]],
+    ["<", [TokenKind.Less,
+        ["=", TokenKind.LessEq]]],
+    [">", [TokenKind.Greater,
+        ["=", TokenKind.GreaterEq]]],
+    ["=", [TokenKind.Assign,
+        ["=", TokenKind.EqEq]]],
 ]);
 
 export function* lex(input: string): Generator<Token> {
@@ -101,7 +108,9 @@ export function* lex(input: string): Generator<Token> {
                         pos += 1;
                         yield new Token(tokenKind2);
                     }
-                    yield new Token(tokenKind1);
+                    else {
+                        yield new Token(tokenKind1);
+                    }
                 }
             }
         }
