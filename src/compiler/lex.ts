@@ -219,6 +219,9 @@ export function* lex(input: string): Generator<Token> {
             else if (name === "in") {
                 yield new Token(TokenKind.InKeyword);
             }
+            else if (name === "while") {
+                yield new Token(TokenKind.WhileKeyword);
+            }
             else {
                 yield new Token(TokenKind.Identifier, name);
             }
