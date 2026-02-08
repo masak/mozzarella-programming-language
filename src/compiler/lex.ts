@@ -125,6 +125,9 @@ export function* lex(input: string): Generator<Token> {
             else if (name === "false") {
                 yield new Token(TokenKind.FalseKeyword, false);
             }
+            else if (name === "none") {
+                yield new Token(TokenKind.NoneKeyword);
+            }
             else {
                 throw new Error(`Unexpected identifier ${name}`);
                 // yield new Token(TokenKind.Identifier, name);
