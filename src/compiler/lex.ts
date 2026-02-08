@@ -198,6 +198,9 @@ export function* lex(input: string): Generator<Token> {
             else if (name === "none") {
                 yield new Token(TokenKind.NoneKeyword);
             }
+            else if (name === "do") {
+                yield new Token(TokenKind.DoKeyword);
+            }
             else {
                 throw new Error(`Unexpected identifier ${name}`);
                 // yield new Token(TokenKind.Identifier, name);
