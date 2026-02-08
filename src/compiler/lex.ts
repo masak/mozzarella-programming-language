@@ -40,6 +40,7 @@ const choiceTree: ChoiceTree = new Map([
     ["[", [TokenKind.SquareL, null]],
     ["]", [TokenKind.SquareR, null]],
     [",", [TokenKind.Comma, null]],
+    ["`", [TokenKind.Backquote, null]],
 ]);
 
 export function* lex(input: string): Generator<Token> {
