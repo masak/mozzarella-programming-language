@@ -210,9 +210,11 @@ export function* lex(input: string): Generator<Token> {
             else if (name === "else") {
                 yield new Token(TokenKind.ElseKeyword);
             }
+            else if (name === "my") {
+                yield new Token(TokenKind.MyKeyword);
+            }
             else {
-                throw new Error(`Unexpected identifier ${name}`);
-                // yield new Token(TokenKind.Identifier, name);
+                yield new Token(TokenKind.Identifier, name);
             }
         }
         else {
