@@ -213,6 +213,12 @@ export function* lex(input: string): Generator<Token> {
             else if (name === "my") {
                 yield new Token(TokenKind.MyKeyword);
             }
+            else if (name === "for") {
+                yield new Token(TokenKind.ForKeyword);
+            }
+            else if (name === "in") {
+                yield new Token(TokenKind.InKeyword);
+            }
             else {
                 yield new Token(TokenKind.Identifier, name);
             }
