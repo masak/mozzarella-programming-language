@@ -225,6 +225,9 @@ export function* lex(input: string): Generator<Token> {
             else if (name === "last") {
                 yield new Token(TokenKind.LastKeyword);
             }
+            else if (name === "next") {
+                yield new Token(TokenKind.NextKeyword);
+            }
             else {
                 yield new Token(TokenKind.Identifier, name);
             }
