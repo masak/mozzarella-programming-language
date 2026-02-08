@@ -1,4 +1,5 @@
 import {
+    E000_InternalError,
     E101_LexerError,
 } from "./error";
 import {
@@ -7,6 +8,17 @@ import {
 } from "./token";
 
 const WHITESPACE = /^\s*/;
+
+type ChoiceTree = Map<string, [TokenKind | null, [string, TokenKind] | null]>;
+
+const choiceTree: ChoiceTree = new Map([
+    ["+", [TokenKind.Plus, null]],
+    ["-", [TokenKind.Minus, null]],
+    ["*", [TokenKind.Mult, null]],
+    ["/", [null,
+        ["/", TokenKind.FloorDiv]]],
+    ["%", [TokenKind.Mod, null]],
+]);
 
 export function* lex(input: string): Generator<Token> {
     let pos: number = 0;
@@ -48,8 +60,43 @@ export function* lex(input: string): Generator<Token> {
 
         skipWhitespace();
 
+        let choice: [TokenKind | null, [string, TokenKind] | null];
+
         if (seeingEof(pos)) {
             return;
+        }
+        else if (choice = choiceTree.get(input.charAt(pos))!) {
+            pos += 1;
+            let [tokenKind1, ch2Info] = choice;
+            if (tokenKind1 === null) {
+                if (ch2Info === null) {
+                    throw new E000_InternalError(
+                        "Precondition failed: both components null"
+                    );
+                }
+                let [ch2, tokenKind2] = ch2Info;
+                if (!seeingChar(ch2)) {
+                    throw new E101_LexerError(
+                        "Unrecognized character after '" + input.charAt(pos)
+                            + "'"
+                    );
+                }
+                pos += 1;
+                yield new Token(tokenKind2);
+            }
+            else {
+                if (ch2Info === null) {
+                    yield new Token(tokenKind1);
+                }
+                else {
+                    let [ch2, tokenKind2] = ch2Info;
+                    if (seeingChar(ch2)) {
+                        pos += 1;
+                        yield new Token(tokenKind2);
+                    }
+                    yield new Token(tokenKind1);
+                }
+            }
         }
         else if (seeingDigit()) {
             let digits: Array<string> = [];
@@ -97,7 +144,9 @@ export function* lex(input: string): Generator<Token> {
                         characters.push("\\");
                     }
                     else {
-                        throw new Error("Unrecognized escape character");
+                        throw new E000_InternalError(
+                            "Unrecognized escape character"
+                        );
                     }
                 }
                 else {
