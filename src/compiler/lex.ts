@@ -234,6 +234,9 @@ export function* lex(input: string): Generator<Token> {
             else if (name === "return") {
                 yield new Token(TokenKind.ReturnKeyword);
             }
+            else if (name === "macro") {
+                yield new Token(TokenKind.MacroKeyword);
+            }
             else {
                 yield new Token(TokenKind.Identifier, name);
             }
