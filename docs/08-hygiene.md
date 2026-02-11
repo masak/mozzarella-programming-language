@@ -41,6 +41,17 @@ macro expansion:
   here. Via the wonderful process of macro expansion, it's possible for a
   variable reference to end up _not in the scope_ of its declarator.
 
-This document is meant to continue by outlining a solution to the above
-troubles. But it doesn't, yet.
+Let's try to fix the first problem first. We need to treat identifiers as
+having two parts &mdash; the original string name (which isn't enough), and
+a new, unique identity:
+
+```
+class Identifier {
+    displayName: string;
+    identity: object;
+}
+```
+
+When are two `Identifier` instances considered equivalent? When their
+`.identity` properties are reference-equal.
 
