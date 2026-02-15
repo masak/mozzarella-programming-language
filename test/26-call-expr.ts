@@ -30,6 +30,44 @@ test("call expression", (t) => {
         t.is(run(program), "3");
     }
 
+    {
+        let program = `
+            my result = "unset";
+
+            func f() {
+                result = "outer";
+            }
+
+            {
+                f();
+            }
+
+            result;
+        `;
+        t.is(run(program), '"outer"');
+    }
+
+    {
+        let program = `
+            my result = "unset";
+
+            func f() {
+                result = "outer";
+            }
+
+            {
+                f();
+
+                func f() {
+                    result = "inner";
+                }
+            }
+
+            result;
+        `;
+        t.is(run(program), '"inner"');
+    }
+
     t.throws(
         () => run("func f() {}; f(5)"),
         { instanceOf: E611_TooManyArgumentsError },
