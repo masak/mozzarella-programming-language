@@ -158,5 +158,43 @@ test("macro declaration", (t) => {
         `;
         t.is(run(program), "false");
     }
+
+    {
+        let program = `
+            my result;
+
+            macro m() {
+                result = "outer";
+            }
+
+            {
+                m();
+            }
+
+            result;
+        `;
+        t.is(run(program), '"outer"');
+    }
+
+    {
+        let program = `
+            my result;
+
+            macro m() {
+                result = "outer";
+            }
+
+            {
+                m();
+
+                macro m() {
+                    result = "inner";
+                }
+            }
+
+            result;
+        `;
+        t.is(run(program), '"inner"');
+    }
 });
 
