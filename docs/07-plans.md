@@ -5,8 +5,8 @@
 This is part of Hoare's minimum requirements for a language: that the error is
 identified _in the source code_, so that the programmer knows where to look in
 order to fix the problem. This is probably where we introduce "spans" in the
-code, but also spend some time thinking about how to format compiler/runtime
-diagnostics to be maximally informative.
+syntax tree data structure, but also spend some time thinking about how to
+format compiler/runtime diagnostics to be maximally informative.
 
 ## Web IDE 🕸🛠
 
@@ -169,7 +169,7 @@ Also add the `as` operator, which has only a static effect, like in TypeScript.
 With `Rat` being arbitrary-precision rationals, and `Num` being 64-bit
 floating-point numbers. The regular arithmetic operators are defined for them
 (but only within the same type; there's no casting going on); additionally, the
-`/` operator is defined for both `Ret` and `Num` operands.
+`/` operator is defined for both `Rat` and `Num` operands.
 
 ## Optional parameters 🎁🤷
 
@@ -210,10 +210,11 @@ Instead of `func` and `method`, one can declare `multi func` and `multi method`
 with the semantic difference that several functions or methods with the same
 name can coexist in the same scope.
 
-Bound to that name is a _dispatcher function_ or _dispatcher method_, whose job
-it is to accept the arguments from the caller, and use them to determine which
-actual function or method to call. There needs to be a narrowest matching
-function or method; otherwise throws a runtime error.
+The single thing that is bound to the name is a _dispatcher function_ or
+_dispatcher method_, whose job it is to accept the arguments from the caller,
+and use them to determine which actual function or method to call. There needs
+to be a narrowest matching function or method; otherwise throws a runtime
+error.
 
 ## Test module 🧪📦
 
@@ -249,7 +250,7 @@ removed (everywhere), and the remaining code simplified.
 
 ## Enums 🎰🔢
 
-Let's try to  be as standard as possible:
+Let's try to be as standard as possible:
 
 ```mozzarella
 enum Season { spring, summer, fall, winter }
