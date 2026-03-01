@@ -353,3 +353,9 @@ with a built-in way to do set operations (union, intersection, subset relation)
 directly on the regexes. Also would be good to consider from the start a story
 that leads to the straightforward specification of a lexer.
 
+## Z3 solver integration
+
+Python has this (via FFI, one presumes). We still need some design for the
+wrapper types and operators; which means this idea needs to wait until after
+we have class declarations and user-defined operators.
+
