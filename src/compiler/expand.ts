@@ -251,7 +251,7 @@ export function macroExpandCompUnit(
                             }
                         }
                         else {
-                            throw new E000_InternalError(
+                            throw new E401_IncompatibleSyntaxError(
                                 "Unexpected macro result type " +
                                     resultValue.constructor.name
                             );

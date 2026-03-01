@@ -1,6 +1,7 @@
 import test from "ava";
 import {
     E301_RedeclarationError,
+    E401_IncompatibleSyntaxError,
     E601_ZeroDivisionError,
     E608_ReadonlyError,
     E609_LastOutsideLoopError,
@@ -106,6 +107,19 @@ test("macro declaration", (t) => {
     t.is(run('macro m() { return "sundry" }; m()'), '"sundry"');
     t.is(run("macro m() { return true; }; m()"), "true");
     t.is(run("macro m() { return false }; m()"), "false");
+
+    t.throws(
+        () => run("macro m() { return [] }; m()"),
+        { instanceOf: E401_IncompatibleSyntaxError },
+    );
+    t.throws(
+        () => run("macro m() { return m }; m()"),
+        { instanceOf: E401_IncompatibleSyntaxError },
+    );
+    t.throws(
+        () => run("func f() {}; macro m() { return f }; m()"),
+        { instanceOf: E401_IncompatibleSyntaxError },
+    );
 
     t.throws(
         () => run("macro m() {}; (m)()"),

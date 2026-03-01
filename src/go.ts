@@ -27,6 +27,7 @@ export {
     E301_RedeclarationError,
     E302_UseBeforeDeclarationError,
     E303_UnquoteOutsideQuoteError,
+    E401_IncompatibleSyntaxError,
 } from "./compiler/error";
 export {
     E500_OutOfFuel,
