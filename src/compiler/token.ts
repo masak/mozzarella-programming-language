@@ -3,10 +3,10 @@ import {
 } from "./error";
 
 export class TokenKind {
-    kind: string;
+    name: string;
 
-    constructor(kind: string) {
-        this.kind = kind;
+    constructor(name: string) {
+        this.name = name;
     }
 
     static IntLit = new TokenKind("IntLit");
@@ -120,6 +120,6 @@ export function opTokenName(token: Token): string {
         return "=";
     }
     else {
-        throw new E000_InternalError(`Unknown op token ${token.kind.kind}`);
+        throw new E000_InternalError(`Unknown op token ${token.kind.name}`);
     }
 }

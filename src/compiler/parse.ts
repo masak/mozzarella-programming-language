@@ -211,8 +211,7 @@ export class Parser {
 
     private parseFail(expectation: string): never {
         throw new E201_SyntaxError(
-            `Expected ${expectation}, ` +
-            `found ${this.lookahead.kind.kind}`
+            `Expected ${expectation}, found ${this.lookahead.kind.name}`
         );
     }
 
@@ -241,7 +240,7 @@ export class Parser {
 
     private expect(kind: TokenKind): void {
         if (this.lookahead.kind !== kind) {
-            this.parseFail(`token ${kind.kind}`);
+            this.parseFail(`token ${kind.name}`);
         }
     }
 
