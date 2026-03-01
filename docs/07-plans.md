@@ -149,9 +149,19 @@ they were, but maybe they were not. Less bad, but still bad.
 
 Also, even without type annotations, we can trace through the programs and
 conclude that some operation is trying to `+` together two `Bool` values or
-whatever, so that the program will definitely fail. There are many other
-examples like that, where we can statically catch a thing that will definitely
-fail at runtime.
+whatever, so that the program will definitely fail.
+
+With enough knowledge of what function we are calling, we can give an error
+about it having the wrong number of types of arguments.
+
+With enough knowledge about the type of some expression, we will know whether
+or not it has a given property, and the type of that property. We can detect
+assignments to variables, parameters, properties or array elements that will
+fail at runtime because their bindings are readonly, or because the surrounding
+data structure is immutable.
+
+We can determine that some branch is always taken, or never taken, or some
+subexpression of a conditional is always truthy or always falsy.
 
 ## Optional type annotations + type checking 🧪🤷
 
