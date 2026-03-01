@@ -4,9 +4,32 @@
 
 This is part of Hoare's minimum requirements for a language: that the error is
 identified _in the source code_, so that the programmer knows where to look in
-order to fix the problem. This is probably where we introduce "spans" in the
-syntax tree data structure, but also spend some time thinking about how to
-format compiler/runtime diagnostics to be maximally informative.
+order to fix the problem.
+
+Quoting Tony Hoare in his [Hints for programming-language
+design](https://flint.cs.yale.edu/cs428/doc/HintsPL.pdf):
+
+> But even the best-designed and best-documented programs will contain errors
+> and inadequacies, which the computer itself can help to eliminate. A good
+> programming language will give maximum assistance in this. Firstly, the
+> notations should be designed to reduce as far as possible the scope for
+> coding error; or at least to guarantee that such errors can be detected by a
+> compiler, before the program even begins to run. Certain programming errors
+> cannot always be detected in this way, and must be cheaply detectable at run
+> time; in no case can they be allowed to give rise to machine- or
+> implementation-dependent effects, which are inexplicable in terms of the
+> language itself. This is a criterion to which I give the name _security_.
+
+Maybe I'm reading too much into this quote, but I imagine these helpful
+compiler errors or run-time errors competently identifying a particular part of
+the source text, even in cases when this source text is long since analyzed
+into more refined formats such as AST, IR, or even bytecode. Whether they are
+is an irrelevant implementation detail which we should not use as an excuse for
+not clearly indicating the cause in the relevant bit of source text.
+
+This is probably where we introduce "spans" in the syntax tree data structure,
+but also spend some time thinking about how to format compiler/runtime
+diagnostics to be maximally informative.
 
 ## Web IDE 🕸🛠
 
