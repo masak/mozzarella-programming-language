@@ -5,6 +5,7 @@ import {
     Block,
     BlockStatement,
     BoolLitExpr,
+    BoolNode,
     CallExpr,
     CompUnit,
     Decl,
@@ -20,6 +21,7 @@ import {
     IndexingExpr,
     InfixOpExpr,
     IntLitExpr,
+    IntNode,
     LastStatement,
     MacroDecl,
     NextStatement,
@@ -32,16 +34,13 @@ import {
     ReturnStatement,
     Statement,
     StrLitExpr,
+    StrNode,
     SyntaxNode,
     UnquoteExpr,
     VarDecl,
     VarRefExpr,
     WhileStatement,
 } from "../compiler/syntax";
-import {
-    Token,
-    TokenKind,
-} from "../compiler/token";
 import {
     E000_InternalError,
 } from "./error";
@@ -52,6 +51,7 @@ import {
     SYNTAX_KIND__BLOCK,
     SYNTAX_KIND__BLOCK_STATEMENT,
     SYNTAX_KIND__BOOL_LIT_EXPR,
+    SYNTAX_KIND__BOOL_NODE,
     SYNTAX_KIND__CALL_EXPR,
     SYNTAX_KIND__COMPUNIT,
     SYNTAX_KIND__DECL,
@@ -67,6 +67,7 @@ import {
     SYNTAX_KIND__INDEXING_EXPR,
     SYNTAX_KIND__INFIX_OP_EXPR,
     SYNTAX_KIND__INT_LIT_EXPR,
+    SYNTAX_KIND__INT_NODE,
     SYNTAX_KIND__LAST_STATEMENT,
     SYNTAX_KIND__MACRO_DECL,
     SYNTAX_KIND__NEXT_STATEMENT,
@@ -80,35 +81,14 @@ import {
     SYNTAX_KIND__RETURN_STATEMENT,
     SYNTAX_KIND__STATEMENT,
     SYNTAX_KIND__STR_LIT_EXPR,
-    SYNTAX_KIND__TOKEN_AMP_AMP,
-    SYNTAX_KIND__TOKEN_ASSIGN,
-    SYNTAX_KIND__TOKEN_BANG,
-    SYNTAX_KIND__TOKEN_BANG_EQ,
-    SYNTAX_KIND__TOKEN_EQ_EQ,
-    SYNTAX_KIND__TOKEN_FALSE_KEYWORD,
-    SYNTAX_KIND__TOKEN_FLOOR_DIV,
-    SYNTAX_KIND__TOKEN_GREATER,
-    SYNTAX_KIND__TOKEN_GREATER_EQ,
-    SYNTAX_KIND__TOKEN_IDENTIFIER,
-    SYNTAX_KIND__TOKEN_INT_LIT,
-    SYNTAX_KIND__TOKEN_LESS,
-    SYNTAX_KIND__TOKEN_LESS_EQ,
-    SYNTAX_KIND__TOKEN_MINUS,
-    SYNTAX_KIND__TOKEN_MOD,
-    SYNTAX_KIND__TOKEN_MULT,
-    SYNTAX_KIND__TOKEN_NONE_KEYWORD,
-    SYNTAX_KIND__TOKEN_PIPE_PIPE,
-    SYNTAX_KIND__TOKEN_PLUS,
-    SYNTAX_KIND__TOKEN_QUEST,
-    SYNTAX_KIND__TOKEN_STR_LIT,
-    SYNTAX_KIND__TOKEN_TILDE,
-    SYNTAX_KIND__TOKEN_TRUE_KEYWORD,
+    SYNTAX_KIND__STR_NODE,
     SYNTAX_KIND__UNQUOTE_EXPR,
     SYNTAX_KIND__VAR_DECL,
     SYNTAX_KIND__VAR_REF_EXPR,
     SYNTAX_KIND__WHILE_STATEMENT,
 } from "./reify";
 import {
+    BoolValue,
     IntValue,
     NoneValue,
     StrValue,
@@ -125,83 +105,14 @@ export function absorbNode(
     if (syntaxNodeValue instanceof NoneValue) {
         return null;
     }
-    else if (hasKind(syntaxNodeValue, SYNTAX_KIND__TOKEN_INT_LIT)) {
-        return new Token(
-            TokenKind.IntLit,
-            (syntaxNodeValue.payload as IntValue).payload,
-        );
+    else if (hasKind(syntaxNodeValue, SYNTAX_KIND__INT_NODE)) {
+        return new IntNode((syntaxNodeValue.payload as IntValue).payload);
     }
-    else if (hasKind(syntaxNodeValue, SYNTAX_KIND__TOKEN_STR_LIT)) {
-        return new Token(
-            TokenKind.StrLit,
-            (syntaxNodeValue.payload as StrValue).payload,
-        );
+    else if (hasKind(syntaxNodeValue, SYNTAX_KIND__STR_NODE)) {
+        return new StrNode((syntaxNodeValue.payload as StrValue).payload);
     }
-    else if (hasKind(syntaxNodeValue, SYNTAX_KIND__TOKEN_TRUE_KEYWORD)) {
-        return new Token(TokenKind.TrueKeyword);
-    }
-    else if (hasKind(syntaxNodeValue, SYNTAX_KIND__TOKEN_FALSE_KEYWORD)) {
-        return new Token(TokenKind.FalseKeyword);
-    }
-    else if (hasKind(syntaxNodeValue, SYNTAX_KIND__TOKEN_NONE_KEYWORD)) {
-        return new Token(TokenKind.NoneKeyword);
-    }
-    else if (hasKind(syntaxNodeValue, SYNTAX_KIND__TOKEN_PLUS)) {
-        return new Token(TokenKind.Plus);
-    }
-    else if (hasKind(syntaxNodeValue, SYNTAX_KIND__TOKEN_MINUS)) {
-        return new Token(TokenKind.Minus);
-    }
-    else if (hasKind(syntaxNodeValue, SYNTAX_KIND__TOKEN_MULT)) {
-        return new Token(TokenKind.Mult);
-    }
-    else if (hasKind(syntaxNodeValue, SYNTAX_KIND__TOKEN_FLOOR_DIV)) {
-        return new Token(TokenKind.FloorDiv);
-    }
-    else if (hasKind(syntaxNodeValue, SYNTAX_KIND__TOKEN_MOD)) {
-        return new Token(TokenKind.Mod);
-    }
-    else if (hasKind(syntaxNodeValue, SYNTAX_KIND__TOKEN_TILDE)) {
-        return new Token(TokenKind.Tilde);
-    }
-    else if (hasKind(syntaxNodeValue, SYNTAX_KIND__TOKEN_QUEST)) {
-        return new Token(TokenKind.Quest);
-    }
-    else if (hasKind(syntaxNodeValue, SYNTAX_KIND__TOKEN_BANG)) {
-        return new Token(TokenKind.Bang);
-    }
-    else if (hasKind(syntaxNodeValue, SYNTAX_KIND__TOKEN_AMP_AMP)) {
-        return new Token(TokenKind.AmpAmp);
-    }
-    else if (hasKind(syntaxNodeValue, SYNTAX_KIND__TOKEN_PIPE_PIPE)) {
-        return new Token(TokenKind.PipePipe);
-    }
-    else if (hasKind(syntaxNodeValue, SYNTAX_KIND__TOKEN_LESS)) {
-        return new Token(TokenKind.Less);
-    }
-    else if (hasKind(syntaxNodeValue, SYNTAX_KIND__TOKEN_LESS_EQ)) {
-        return new Token(TokenKind.LessEq);
-    }
-    else if (hasKind(syntaxNodeValue, SYNTAX_KIND__TOKEN_GREATER)) {
-        return new Token(TokenKind.Greater);
-    }
-    else if (hasKind(syntaxNodeValue, SYNTAX_KIND__TOKEN_GREATER_EQ)) {
-        return new Token(TokenKind.GreaterEq);
-    }
-    else if (hasKind(syntaxNodeValue, SYNTAX_KIND__TOKEN_EQ_EQ)) {
-        return new Token(TokenKind.EqEq);
-    }
-    else if (hasKind(syntaxNodeValue, SYNTAX_KIND__TOKEN_BANG_EQ)) {
-        return new Token(TokenKind.BangEq);
-    }
-    else if (hasKind(syntaxNodeValue, SYNTAX_KIND__TOKEN_ASSIGN)) {
-        return new Token(TokenKind.Assign);
-    }
-    else if (hasKind(syntaxNodeValue, SYNTAX_KIND__TOKEN_IDENTIFIER)) {
-        return new Token(
-            TokenKind.Identifier,
-            (syntaxNodeValue.payload as StrValue).payload,
-        );
+    else if (hasKind(syntaxNodeValue, SYNTAX_KIND__BOOL_NODE)) {
+        return new BoolNode((syntaxNodeValue.payload as BoolValue).payload);
     }
     else if (hasKind(syntaxNodeValue, SYNTAX_KIND__COMPUNIT)) {
         let statements
@@ -244,10 +155,10 @@ export function absorbNode(
         return new IfStatement(clauseList, elseBlock);
     }
     else if (hasKind(syntaxNodeValue, SYNTAX_KIND__FOR_STATEMENT)) {
-        let nameToken = absorbNode(syntaxNodeValue.children[0]) as Token;
+        let name = absorbNode(syntaxNodeValue.children[0]) as StrNode;
         let arrayExpr = absorbNode(syntaxNodeValue.children[1]) as Expr;
         let body = absorbNode(syntaxNodeValue.children[2]) as Block;
-        return new ForStatement(nameToken, arrayExpr, body);
+        return new ForStatement(name, arrayExpr, body);
     }
     else if (hasKind(syntaxNodeValue, SYNTAX_KIND__WHILE_STATEMENT)) {
         let condExpr = absorbNode(syntaxNodeValue.children[0]) as Expr;
@@ -268,15 +179,15 @@ export function absorbNode(
         throw new E000_InternalError("Conversion of abstract declaration");
     }
     else if (hasKind(syntaxNodeValue, SYNTAX_KIND__VAR_DECL)) {
-        let nameToken = absorbNode(syntaxNodeValue.children[0]) as Token;
+        let name = absorbNode(syntaxNodeValue.children[0]) as StrNode;
         let type = absorbNode(syntaxNodeValue.children[1]) as null;
         let initExpr = absorbNode(syntaxNodeValue.children[2]) as Expr | null;
-        return new VarDecl(nameToken, type, initExpr);
+        return new VarDecl(name, type, initExpr);
     }
     else if (hasKind(syntaxNodeValue, SYNTAX_KIND__PARAMETER)) {
-        let nameToken = absorbNode(syntaxNodeValue.children[0]) as Token;
+        let name = absorbNode(syntaxNodeValue.children[0]) as StrNode;
         let type = absorbNode(syntaxNodeValue.children[1]) as null;
-        return new Parameter(nameToken, type);
+        return new Parameter(name, type);
     }
     else if (hasKind(syntaxNodeValue, SYNTAX_KIND__PARAMETER_LIST)) {
         let parameters
@@ -284,34 +195,34 @@ export function absorbNode(
         return new ParameterList(parameters);
     }
     else if (hasKind(syntaxNodeValue, SYNTAX_KIND__FUNC_DECL)) {
-        let nameToken = absorbNode(syntaxNodeValue.children[0]) as Token;
+        let name = absorbNode(syntaxNodeValue.children[0]) as StrNode;
         let parameterList
             = absorbNode(syntaxNodeValue.children[1]) as ParameterList;
         let type = absorbNode(syntaxNodeValue.children[2]) as null;
         let body = absorbNode(syntaxNodeValue.children[3]) as Block;
-        return new FuncDecl(nameToken, parameterList, type, body);
+        return new FuncDecl(name, parameterList, type, body);
     }
     else if (hasKind(syntaxNodeValue, SYNTAX_KIND__MACRO_DECL)) {
-        let nameToken = absorbNode(syntaxNodeValue.children[0]) as Token;
+        let name = absorbNode(syntaxNodeValue.children[0]) as StrNode;
         let parameterList
             = absorbNode(syntaxNodeValue.children[1]) as ParameterList;
         let type = absorbNode(syntaxNodeValue.children[2]) as null;
         let body = absorbNode(syntaxNodeValue.children[3]) as Block;
-        return new MacroDecl(nameToken, parameterList, type, body);
+        return new MacroDecl(name, parameterList, type, body);
     }
     else if (hasKind(syntaxNodeValue, SYNTAX_KIND__EXPR)) {
         throw new E000_InternalError("Conversion of abstract expression");
     }
     else if (hasKind(syntaxNodeValue, SYNTAX_KIND__PREFIX_OP_EXPR)) {
-        let opToken = absorbNode(syntaxNodeValue.children[0]) as Token;
+        let opName = absorbNode(syntaxNodeValue.children[0]) as StrNode;
         let operand = absorbNode(syntaxNodeValue.children[1]) as Expr;
-        return new PrefixOpExpr(opToken, operand);
+        return new PrefixOpExpr(opName, operand);
     }
     else if (hasKind(syntaxNodeValue, SYNTAX_KIND__INFIX_OP_EXPR)) {
         let lhs = absorbNode(syntaxNodeValue.children[0]) as Expr;
-        let opToken = absorbNode(syntaxNodeValue.children[1]) as Token;
+        let opName = absorbNode(syntaxNodeValue.children[1]) as StrNode;
         let rhs = absorbNode(syntaxNodeValue.children[2]) as Expr;
-        return new InfixOpExpr(lhs, opToken, rhs);
+        return new InfixOpExpr(lhs, opName, rhs);
     }
     else if (hasKind(syntaxNodeValue, SYNTAX_KIND__INDEXING_EXPR)) {
         let arrayExpr = absorbNode(syntaxNodeValue.children[0]) as Expr;
@@ -337,16 +248,16 @@ export function absorbNode(
         );
     }
     else if (hasKind(syntaxNodeValue, SYNTAX_KIND__INT_LIT_EXPR)) {
-        let valueToken = absorbNode(syntaxNodeValue.children[0]) as Token;
-        return new IntLitExpr(valueToken);
+        let value = absorbNode(syntaxNodeValue.children[0]) as IntNode;
+        return new IntLitExpr(value);
     }
     else if (hasKind(syntaxNodeValue, SYNTAX_KIND__STR_LIT_EXPR)) {
-        let valueToken = absorbNode(syntaxNodeValue.children[0]) as Token;
-        return new StrLitExpr(valueToken);
+        let value = absorbNode(syntaxNodeValue.children[0]) as StrNode;
+        return new StrLitExpr(value);
     }
     else if (hasKind(syntaxNodeValue, SYNTAX_KIND__BOOL_LIT_EXPR)) {
-        let valueToken = absorbNode(syntaxNodeValue.children[0]) as Token;
-        return new BoolLitExpr(valueToken);
+        let value = absorbNode(syntaxNodeValue.children[0]) as BoolNode;
+        return new BoolLitExpr(value);
     }
     else if (hasKind(syntaxNodeValue, SYNTAX_KIND__NONE_LIT_EXPR)) {
         return new NoneLitExpr();
@@ -364,8 +275,8 @@ export function absorbNode(
         return new ArrayInitializerExpr(elements);
     }
     else if (hasKind(syntaxNodeValue, SYNTAX_KIND__VAR_REF_EXPR)) {
-        let nameToken = absorbNode(syntaxNodeValue.children[0]) as Token;
-        return new VarRefExpr(nameToken);
+        let name = absorbNode(syntaxNodeValue.children[0]) as StrNode;
+        return new VarRefExpr(name);
     }
     else if (hasKind(syntaxNodeValue, SYNTAX_KIND__QUOTE_EXPR)) {
         let statements

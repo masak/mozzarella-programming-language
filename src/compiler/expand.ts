@@ -6,6 +6,7 @@ import {
     Block,
     BlockStatement,
     BoolLitExpr,
+    BoolNode,
     CallExpr,
     CompUnit,
     DoExpr,
@@ -13,18 +14,16 @@ import {
     ForStatement,
     FuncDecl,
     IntLitExpr,
+    IntNode,
     MacroDecl,
     NoneLitExpr,
     QuoteExpr,
     Statement,
     StrLitExpr,
+    StrNode,
     SyntaxNode,
     VarRefExpr,
 } from "./syntax";
-import {
-    Token,
-    TokenKind,
-} from "./token";
 import {
     absorbNode,
 } from "../runtime/absorb";
@@ -64,7 +63,7 @@ function visitDown(
         envStack.push(staticEnv);
     }
     else if (syntaxNode instanceof ForStatement) {
-        let name = syntaxNode.nameToken.payload as string;
+        let name = syntaxNode.name.payload as string;
         staticEnv = extend(staticEnv);
         bindReadonly(staticEnv, name, new UninitValue());
         envStack.push(staticEnv);
@@ -73,7 +72,7 @@ function visitDown(
                 || syntaxNode instanceof MacroDecl) {
         staticEnv = extend(staticEnv);
         for (let param of syntaxNode.parameterList.parameters) {
-            let name = param.nameToken.payload as string;
+            let name = param.name.payload as string;
             bindReadonly(staticEnv, name, new UninitValue());
         }
         envStack.push(staticEnv);
@@ -194,7 +193,7 @@ export function macroExpandCompUnit(
                 let funcExpr = syntaxNode.funcExpr;
                 let argExprs = syntaxNode.argList.args.map((arg) => arg.expr);
                 if (funcExpr instanceof VarRefExpr) {
-                    let name = funcExpr.nameToken.payload as string;
+                    let name = funcExpr.name.payload as string;
                     let macroValue = tolerantLookup(staticEnv, name);
                     if (macroValue === null) {
                         // technically redundant, as the `instanceof` check
@@ -213,24 +212,16 @@ export function macroExpandCompUnit(
                             replaceWith(new NoneLitExpr());
                         }
                         else if (resultValue instanceof IntValue) {
-                            let token = new Token(
-                                TokenKind.IntLit,
-                                resultValue.payload,
-                            );
-                            replaceWith(new IntLitExpr(token));
+                            let intNode = new IntNode(resultValue.payload);
+                            replaceWith(new IntLitExpr(intNode));
                         }
                         else if (resultValue instanceof StrValue) {
-                            let token = new Token(
-                                TokenKind.StrLit,
-                                resultValue.payload,
-                            );
-                            replaceWith(new StrLitExpr(token));
+                            let strNode = new StrNode(resultValue.payload);
+                            replaceWith(new StrLitExpr(strNode));
                         }
                         else if (resultValue instanceof BoolValue) {
-                            let token = resultValue.payload
-                                ? new Token(TokenKind.TrueKeyword, true)
-                                : new Token(TokenKind.FalseKeyword, false);
-                            replaceWith(new BoolLitExpr(token));
+                            let boolNode = new BoolNode(resultValue.payload);
+                            replaceWith(new BoolLitExpr(boolNode));
                         }
                         else if (resultValue instanceof SyntaxNodeValue) {
                             let result = absorbNode(resultValue);

@@ -1,11 +1,8 @@
 import {
     Expr,
     InfixOpExpr,
+    StrNode,
 } from "../compiler/syntax";
-import {
-    Token,
-    TokenKind,
-} from "../compiler/token";
 import {
     E000_InternalError,
     E602_UnchainableOpsError,
@@ -130,20 +127,13 @@ function pairwise<T>(fn: (x: T, y: T) => boolean, xs: Array<T>, ys: Array<T>) {
     return true;
 }
 
-export const comparisonOps = new Set([
-    TokenKind.Less,
-    TokenKind.LessEq,
-    TokenKind.Greater,
-    TokenKind.GreaterEq,
-    TokenKind.EqEq,
-    TokenKind.BangEq,
-]);
+export const comparisonOps = new Set(["<", "<=", ">", ">=", "==", "!="]);
 
 // Traverses down the left leg of an expression tree, collecting all comparison
 // operators and their operands, in left-to-right (top-to-bottom) order.
-export function findAllChainedOps(root: Expr): [Array<Expr>, Array<Token>] {
+export function findAllChainedOps(root: Expr): [Array<Expr>, Array<string>] {
     if (!(root instanceof InfixOpExpr)
-        || !comparisonOps.has((root.children[1] as Token).kind)) {
+        || !comparisonOps.has((root.children[1] as StrNode).payload)) {
         throw new E000_InternalError(
             "Precondition failed: root must be comparison expr"
         );
@@ -152,7 +142,7 @@ export function findAllChainedOps(root: Expr): [Array<Expr>, Array<Token>] {
     while (true) {
         let lhs = stack[stack.length - 1].children[0];
         if (lhs instanceof InfixOpExpr
-            && comparisonOps.has((lhs.children[1] as Token).kind)) {
+            && comparisonOps.has((lhs.children[1] as StrNode).payload)) {
             stack.push(lhs);
         }
         else {
@@ -161,10 +151,10 @@ export function findAllChainedOps(root: Expr): [Array<Expr>, Array<Token>] {
     }
     let firstLhs: Expr = stack[stack.length - 1].children[0] as Expr;
     let exprs: Array<Expr> = [firstLhs];
-    let ops: Array<Token> = [];
+    let ops: Array<string> = [];
     while (stack.length > 0) {
         let expr = stack.pop()!;
-        let op = expr.children[1] as Token;
+        let op = (expr.children[1] as StrNode).payload;
         ops.push(op);
         let rhs = expr.children[2] as Expr;
         exprs.push(rhs);
@@ -177,67 +167,52 @@ export function findAllChainedOps(root: Expr): [Array<Expr>, Array<Token>] {
 // - The != operator doesn't chain with anything (even itself)
 // - The (< <= ==) operators go together, as do the (> >= ==) operators, but
 //   any other combination of comparison operators is disallowed
-export function checkForUnchainableOps(ops: Array<Token>) {
-    let hasNotEq = ops.some((op) => op.kind === TokenKind.BangEq);
+export function checkForUnchainableOps(ops: Array<string>): void {
+    let hasNotEq = ops.some((op) => op === "!=");
     if (hasNotEq && ops.length > 1) {
-        let notEqOpIndex = ops.findIndex((op) => op.kind === TokenKind.BangEq);
+        let notEqOpIndex = ops.findIndex((op) => op === "!=");
         let otherOp = notEqOpIndex < ops.length - 1
             ? ops[notEqOpIndex + 1]
             : ops[notEqOpIndex - 1];
-        throw new E602_UnchainableOpsError(
-            `Cannot chain != and ${otherOp.kind.kind}`
-        );
+        throw new E602_UnchainableOpsError(`Cannot chain != and ${otherOp}`);
     }
 
-    let hasLessTypeOps = ops.some(
-        (op) => op.kind === TokenKind.Less || op.kind === TokenKind.LessEq
-    );
-    let hasGreaterTypeOps = ops.some(
-        (op) => op.kind === TokenKind.Greater
-            || op.kind === TokenKind.GreaterEq
-    );
+    let hasLessTypeOps = ops.some((op) => op === "<" || op === "<=");
+    let hasGreaterTypeOps = ops.some((op) => op === ">" || op === ">=");
     if (hasLessTypeOps && hasGreaterTypeOps) {
-        let lessTypeOp = ops.find(
-            (op) => op.kind === TokenKind.Less || op.kind === TokenKind.LessEq
-        )!;
-        let greaterTypeOp = ops.find(
-            (op) => op.kind === TokenKind.Greater
-                || op.kind === TokenKind.GreaterEq
-        )!;
+        let lessTypeOp = ops.find((op) => op === "<" || op === "<=")!;
+        let greaterTypeOp = ops.find((op) => op === ">" || op === ">=")!;
         throw new E602_UnchainableOpsError(
-            `Cannot chain ${lessTypeOp.kind.kind} `
-                + `and ${greaterTypeOp.kind.kind}`
+            `Cannot chain ${lessTypeOp} and ${greaterTypeOp}`
         );
     }
 }
 
 export function evaluateComparison(
     left: Value,
-    op: Token,
+    opName: string,
     right: Value,
 ): boolean {
-    if (op.kind === TokenKind.Less) {
+    if (opName === "<") {
         return isLessThan(left, right);
     }
-    else if (op.kind === TokenKind.LessEq) {
+    else if (opName === "<=") {
         return isLessThan(left, right) || areEqual(left, right);
     }
-    else if (op.kind === TokenKind.Greater) {
+    else if (opName === ">") {
         return isLessThan(right, left);
     }
-    else if (op.kind === TokenKind.GreaterEq) {
+    else if (opName === ">=") {
         return isLessThan(right, left) || areEqual(left, right);
     }
-    else if (op.kind === TokenKind.EqEq) {
+    else if (opName === "==") {
         return areEqual(left, right);
     }
-    else if (op.kind === TokenKind.BangEq) {
+    else if (opName === "!=") {
         return !areEqual(left, right);
     }
     else {
-        throw new E000_InternalError(
-            `Unrecognized comparison token kind ${op.kind.kind}`
-        );
+        throw new E000_InternalError(`Unrecognized comparison op ${opName}`);
     }
 }
 

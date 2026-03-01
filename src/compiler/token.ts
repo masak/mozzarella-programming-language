@@ -1,6 +1,6 @@
 import {
-    SyntaxNode,
-} from "./syntax";
+    E000_InternalError,
+} from "./error";
 
 export class TokenKind {
     kind: string;
@@ -57,14 +57,69 @@ export class TokenKind {
     static Eof = new TokenKind("Eof");
 }
 
-export class Token extends SyntaxNode {
+export class Token {
     kind: TokenKind;
     payload?: bigint | string | boolean;
 
     constructor(kind: TokenKind, payload?: bigint | string | boolean) {
-        super([]);
         this.kind = kind;
         this.payload = payload;
     }
 }
 
+export function opTokenName(token: Token): string {
+    if (token.kind === TokenKind.Plus) {
+        return "+";
+    }
+    else if (token.kind === TokenKind.Minus) {
+        return "-";
+    }
+    else if (token.kind === TokenKind.Mult) {
+        return "*";
+    }
+    else if (token.kind === TokenKind.FloorDiv) {
+        return "//";
+    }
+    else if (token.kind === TokenKind.Mod) {
+        return "%";
+    }
+    else if (token.kind === TokenKind.Tilde) {
+        return "~";
+    }
+    else if (token.kind === TokenKind.Quest) {
+        return "?";
+    }
+    else if (token.kind === TokenKind.Bang) {
+        return "!";
+    }
+    else if (token.kind === TokenKind.AmpAmp) {
+        return "&&";
+    }
+    else if (token.kind === TokenKind.PipePipe) {
+        return "||";
+    }
+    else if (token.kind === TokenKind.Less) {
+        return "<";
+    }
+    else if (token.kind === TokenKind.LessEq) {
+        return "<=";
+    }
+    else if (token.kind === TokenKind.Greater) {
+        return ">";
+    }
+    else if (token.kind === TokenKind.GreaterEq) {
+        return ">=";
+    }
+    else if (token.kind === TokenKind.EqEq) {
+        return "==";
+    }
+    else if (token.kind === TokenKind.BangEq) {
+        return "!=";
+    }
+    else if (token.kind === TokenKind.Assign) {
+        return "=";
+    }
+    else {
+        throw new E000_InternalError(`Unknown op token ${token.kind.kind}`);
+    }
+}

@@ -27,7 +27,7 @@ function visitDown(
     contextStack: Array<Context>,
 ): void {
     if (syntaxNode instanceof VarRefExpr) {
-        let name = syntaxNode.nameToken.payload as string;
+        let name = syntaxNode.name.payload as string;
         for (let i = contextStack.length - 1; i >= 0; i--) {
             let context = contextStack[i];
             if (context.has(name)) {
@@ -42,7 +42,7 @@ function visitDown(
         contextStack.push(new Map());
     }
     else if (syntaxNode instanceof VarDecl) {
-        let name = syntaxNode.nameToken.payload as string;
+        let name = syntaxNode.name.payload as string;
         let context = contextStack[contextStack.length - 1];
         if (context.get(name) === VarState.declared) {
             throw new E301_RedeclarationError(
@@ -59,7 +59,7 @@ function visitDown(
         }
     }
     else if (syntaxNode instanceof FuncDecl) {
-        let name = syntaxNode.nameToken.payload as string;
+        let name = syntaxNode.name.payload as string;
         let context = contextStack[contextStack.length - 1];
         if (context.get(name) === VarState.declared) {
             throw new E301_RedeclarationError(
@@ -71,7 +71,7 @@ function visitDown(
         }
     }
     else if (syntaxNode instanceof MacroDecl) {
-        let name = syntaxNode.nameToken.payload as string;
+        let name = syntaxNode.name.payload as string;
         let context = contextStack[contextStack.length - 1];
         if (context.get(name) === VarState.declared) {
             throw new E301_RedeclarationError(

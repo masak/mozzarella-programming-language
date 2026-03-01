@@ -5,6 +5,7 @@ import {
     Block,
     BlockStatement,
     BoolLitExpr,
+    BoolNode,
     CallExpr,
     CompUnit,
     Decl,
@@ -20,6 +21,7 @@ import {
     IndexingExpr,
     InfixOpExpr,
     IntLitExpr,
+    IntNode,
     LastStatement,
     MacroDecl,
     NextStatement,
@@ -33,16 +35,13 @@ import {
     ReturnStatement,
     Statement,
     StrLitExpr,
+    StrNode,
     SyntaxNode,
     UnquoteExpr,
     VarDecl,
     VarRefExpr,
     WhileStatement,
 } from "../compiler/syntax";
-import {
-    Token,
-    TokenKind,
-} from "../compiler/token";
 import {
     E000_InternalError,
 } from "./error";
@@ -54,29 +53,9 @@ import {
     SyntaxNodeValue,
 } from "./value";
 
-export const SYNTAX_KIND__TOKEN_INT_LIT = new IntValue(BigInt(0x1001));
-export const SYNTAX_KIND__TOKEN_STR_LIT = new IntValue(BigInt(0x1002));
-export const SYNTAX_KIND__TOKEN_TRUE_KEYWORD = new IntValue(BigInt(0x1003));
-export const SYNTAX_KIND__TOKEN_FALSE_KEYWORD = new IntValue(BigInt(0x1004));
-export const SYNTAX_KIND__TOKEN_NONE_KEYWORD = new IntValue(BigInt(0x1005));
-export const SYNTAX_KIND__TOKEN_PLUS = new IntValue(BigInt(0x1006));
-export const SYNTAX_KIND__TOKEN_MINUS = new IntValue(BigInt(0x1007));
-export const SYNTAX_KIND__TOKEN_MULT = new IntValue(BigInt(0x1008));
-export const SYNTAX_KIND__TOKEN_FLOOR_DIV = new IntValue(BigInt(0x1009));
-export const SYNTAX_KIND__TOKEN_MOD = new IntValue(BigInt(0x100A));
-export const SYNTAX_KIND__TOKEN_TILDE = new IntValue(BigInt(0x100B));
-export const SYNTAX_KIND__TOKEN_QUEST = new IntValue(BigInt(0x100C));
-export const SYNTAX_KIND__TOKEN_BANG = new IntValue(BigInt(0x100D));
-export const SYNTAX_KIND__TOKEN_AMP_AMP = new IntValue(BigInt(0x100E));
-export const SYNTAX_KIND__TOKEN_PIPE_PIPE = new IntValue(BigInt(0x100F));
-export const SYNTAX_KIND__TOKEN_LESS = new IntValue(BigInt(0x1010));
-export const SYNTAX_KIND__TOKEN_LESS_EQ = new IntValue(BigInt(0x1011));
-export const SYNTAX_KIND__TOKEN_GREATER = new IntValue(BigInt(0x1012));
-export const SYNTAX_KIND__TOKEN_GREATER_EQ = new IntValue(BigInt(0x1013));
-export const SYNTAX_KIND__TOKEN_EQ_EQ = new IntValue(BigInt(0x1014));
-export const SYNTAX_KIND__TOKEN_BANG_EQ = new IntValue(BigInt(0x1015));
-export const SYNTAX_KIND__TOKEN_ASSIGN = new IntValue(BigInt(0x1016));
-export const SYNTAX_KIND__TOKEN_IDENTIFIER = new IntValue(BigInt(0x1017));
+export const SYNTAX_KIND__INT_NODE = new IntValue(BigInt(0x1001));
+export const SYNTAX_KIND__STR_NODE = new IntValue(BigInt(0x1002));
+export const SYNTAX_KIND__BOOL_NODE = new IntValue(BigInt(0x1003));
 export const SYNTAX_KIND__COMPUNIT = new IntValue(BigInt(0x2000));
 export const SYNTAX_KIND__BLOCK = new IntValue(BigInt(0x2001));
 export const SYNTAX_KIND__STATEMENT = new IntValue(BigInt(0x2002));
@@ -161,105 +140,17 @@ export function kindAndPayloadOfNode(
 ): [IntValue, IntValue | StrValue | BoolValue | NoneValue] {
     let kind: IntValue;
     let payload: IntValue | StrValue | BoolValue | NoneValue;
-    if (syntaxNode instanceof Token) {
-        let tokenKind = syntaxNode.kind;
-        if (tokenKind === TokenKind.IntLit) {
-            kind = SYNTAX_KIND__TOKEN_INT_LIT;
-            payload = new IntValue(syntaxNode.payload as bigint);
-        }
-        else if (tokenKind === TokenKind.StrLit) {
-            kind = SYNTAX_KIND__TOKEN_STR_LIT;
-            payload = new StrValue(syntaxNode.payload as string);
-        }
-        else if (tokenKind === TokenKind.TrueKeyword) {
-            kind = SYNTAX_KIND__TOKEN_TRUE_KEYWORD;
-            payload = new BoolValue(true);
-        }
-        else if (tokenKind === TokenKind.FalseKeyword) {
-            kind = SYNTAX_KIND__TOKEN_FALSE_KEYWORD;
-            payload = new BoolValue(false);
-        }
-        else if (tokenKind === TokenKind.NoneKeyword) {
-            kind = SYNTAX_KIND__TOKEN_NONE_KEYWORD;
-            payload = new NoneValue();
-        }
-        else if (tokenKind === TokenKind.Plus) {
-            kind = SYNTAX_KIND__TOKEN_PLUS;
-            payload = new NoneValue();
-        }
-        else if (tokenKind === TokenKind.Minus) {
-            kind = SYNTAX_KIND__TOKEN_MINUS;
-            payload = new NoneValue();
-        }
-        else if (tokenKind === TokenKind.Mult) {
-            kind = SYNTAX_KIND__TOKEN_MULT;
-            payload = new NoneValue();
-        }
-        else if (tokenKind === TokenKind.FloorDiv) {
-            kind = SYNTAX_KIND__TOKEN_FLOOR_DIV;
-            payload = new NoneValue();
-        }
-        else if (tokenKind === TokenKind.Mod) {
-            kind = SYNTAX_KIND__TOKEN_MOD;
-            payload = new NoneValue();
-        }
-        else if (tokenKind === TokenKind.Tilde) {
-            kind = SYNTAX_KIND__TOKEN_TILDE;
-            payload = new NoneValue();
-        }
-        else if (tokenKind === TokenKind.Quest) {
-            kind = SYNTAX_KIND__TOKEN_QUEST;
-            payload = new NoneValue();
-        }
-        else if (tokenKind === TokenKind.Bang) {
-            kind = SYNTAX_KIND__TOKEN_BANG;
-            payload = new NoneValue();
-        }
-        else if (tokenKind === TokenKind.AmpAmp) {
-            kind = SYNTAX_KIND__TOKEN_AMP_AMP;
-            payload = new NoneValue();
-        }
-        else if (tokenKind === TokenKind.PipePipe) {
-            kind = SYNTAX_KIND__TOKEN_PIPE_PIPE;
-            payload = new NoneValue();
-        }
-        else if (tokenKind === TokenKind.Less) {
-            kind = SYNTAX_KIND__TOKEN_LESS;
-            payload = new NoneValue();
-        }
-        else if (tokenKind === TokenKind.LessEq) {
-            kind = SYNTAX_KIND__TOKEN_LESS_EQ;
-            payload = new NoneValue();
-        }
-        else if (tokenKind === TokenKind.Greater) {
-            kind = SYNTAX_KIND__TOKEN_GREATER;
-            payload = new NoneValue();
-        }
-        else if (tokenKind === TokenKind.GreaterEq) {
-            kind = SYNTAX_KIND__TOKEN_GREATER_EQ;
-            payload = new NoneValue();
-        }
-        else if (tokenKind === TokenKind.EqEq) {
-            kind = SYNTAX_KIND__TOKEN_EQ_EQ;
-            payload = new NoneValue();
-        }
-        else if (tokenKind === TokenKind.BangEq) {
-            kind = SYNTAX_KIND__TOKEN_BANG_EQ;
-            payload = new NoneValue();
-        }
-        else if (tokenKind === TokenKind.Assign) {
-            kind = SYNTAX_KIND__TOKEN_ASSIGN;
-            payload = new NoneValue();
-        }
-        else if (tokenKind === TokenKind.Identifier) {
-            kind = SYNTAX_KIND__TOKEN_IDENTIFIER;
-            payload = new StrValue(syntaxNode.payload as string);
-        }
-        else {
-            throw new E000_InternalError(
-                `Unrecognized token kind ${tokenKind.kind}`
-            );
-        }
+    if (syntaxNode instanceof IntNode) {
+        kind = SYNTAX_KIND__INT_NODE;
+        payload = new IntValue(syntaxNode.payload as bigint);
+    }
+    else if (syntaxNode instanceof StrNode) {
+        kind = SYNTAX_KIND__STR_NODE;
+        payload = new StrValue(syntaxNode.payload as string);
+    }
+    else if (syntaxNode instanceof BoolNode) {
+        kind = SYNTAX_KIND__BOOL_NODE;
+        payload = new BoolValue(syntaxNode.payload as boolean);
     }
     else if (syntaxNode instanceof CompUnit) {
         kind = SYNTAX_KIND__COMPUNIT;

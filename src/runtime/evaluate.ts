@@ -1,8 +1,8 @@
 // The evaluator
 //
 // Can be described as a CEKJ machine. The CEK part is standard: code,
-// environment, kontinuation with a "k". What's with the J part? It contains
-// a table of _jump targets_, making `next`/`last`/`return` work.
+// environment, kontinuation with a "k". The J part contains a table of _jump
+// targets_, making `next`/`last`/`return` work.
 import {
     Argument,
     ArrayInitializerExpr,
@@ -39,10 +39,6 @@ import {
     VarRefExpr,
     WhileStatement,
 } from "../compiler/syntax";
-import {
-    Token,
-    TokenKind,
-} from "../compiler/token";
 import {
     boolify,
 } from "./boolify";
@@ -88,14 +84,13 @@ import {
     isStatementKind,
     SYNTAX_KIND__BLOCK,
     SYNTAX_KIND__BOOL_LIT_EXPR,
+    SYNTAX_KIND__BOOL_NODE,
     SYNTAX_KIND__DO_EXPR,
     SYNTAX_KIND__INT_LIT_EXPR,
+    SYNTAX_KIND__INT_NODE,
     SYNTAX_KIND__NONE_LIT_EXPR,
     SYNTAX_KIND__STR_LIT_EXPR,
-    SYNTAX_KIND__TOKEN_FALSE_KEYWORD,
-    SYNTAX_KIND__TOKEN_INT_LIT,
-    SYNTAX_KIND__TOKEN_STR_LIT,
-    SYNTAX_KIND__TOKEN_TRUE_KEYWORD,
+    SYNTAX_KIND__STR_NODE,
 } from "./reify";
 import {
     stringify,
@@ -177,30 +172,30 @@ class CompUnitKont {
 }
 
 class PrefixOpKont {
-    token: Token;
+    opName: string;
     tail: Kont;
 
-    constructor(token: Token, tail: Kont) {
-        this.token = token;
+    constructor(opName: string, tail: Kont) {
+        this.opName = opName;
         this.tail = tail;
     }
 }
 
 class InfixOp1Kont {
-    token: Token;
+    opName: string;
     rhs: Expr;
     env: Env;
     tail: Kont;
     jumpMap: JumpMap;
 
     constructor(
-        token: Token,
+        opName: string,
         rhs: Expr,
         env: Env,
         tail: Kont,
         jumpMap: JumpMap,
     ) {
-        this.token = token;
+        this.opName = opName;
         this.rhs = rhs;
         this.env = env;
         this.tail = tail;
@@ -210,26 +205,26 @@ class InfixOp1Kont {
 
 class InfixOp2Kont {
     left: Value;
-    token: Token;
+    opName: string;
     tail: Kont;
 
-    constructor(left: Value, token: Token, tail: Kont) {
+    constructor(left: Value, opName: string, tail: Kont) {
         this.left = left;
-        this.token = token;
+        this.opName = opName;
         this.tail = tail;
     }
 }
 
 class ComparisonOp1Kont {
     exprs: Array<Expr>;
-    ops: Array<Token>;
+    ops: Array<string>;
     env: Env;
     tail: Kont;
     jumpMap: JumpMap;
 
     constructor(
         exprs: Array<Expr>,
-        ops: Array<Token>,
+        ops: Array<string>,
         env: Env,
         tail: Kont,
         jumpMap: JumpMap,
@@ -245,7 +240,7 @@ class ComparisonOp1Kont {
 class ComparisonOp2Kont {
     prev: Value;
     exprs: Array<Expr>;
-    ops: Array<Token>;
+    ops: Array<string>;
     index: number;
     env: Env;
     tail: Kont;
@@ -254,7 +249,7 @@ class ComparisonOp2Kont {
     constructor(
         prev: Value,
         exprs: Array<Expr>,
-        ops: Array<Token>,
+        ops: Array<string>,
         index: number,
         env: Env,
         tail: Kont,
@@ -637,20 +632,20 @@ class BlockIgnoreKont {
 }
 
 class InfixOpIgnore1Kont {
-    token: Token;
+    opName: string;
     rhs: Expr;
     env: Env;
     tail: Kont;
     jumpMap: JumpMap;
 
     constructor(
-        token: Token,
+        opName: string,
         rhs: Expr,
         env: Env,
         tail: Kont,
         jumpMap: JumpMap,
     ) {
-        this.token = token;
+        this.opName = opName;
         this.rhs = rhs;
         this.env = env;
         this.tail = tail;
@@ -660,25 +655,25 @@ class InfixOpIgnore1Kont {
 
 class InfixOpIgnore2Kont {
     left: Value;
-    token: Token;
+    opName: string;
     tail: Kont;
 
-    constructor(left: Value, token: Token, tail: Kont) {
+    constructor(left: Value, opName: string, tail: Kont) {
         this.left = left;
-        this.token = token;
+        this.opName = opName;
         this.tail = tail;
     }
 }
 
 class ComparisonOpIgnore1Kont {
     exprs: Array<Expr>;
-    ops: Array<Token>;
+    ops: Array<string>;
     env: Env;
     tail: Kont;
 
     constructor(
         exprs: Array<Expr>,
-        ops: Array<Token>,
+        ops: Array<string>,
         env: Env,
         tail: Kont,
     ) {
@@ -946,7 +941,7 @@ export function initializeEnv(
     for (let statementOrDecl of compUnitOrBlock.statements) {
         if (statementOrDecl instanceof VarDecl) {
             let varDecl = statementOrDecl;
-            let name = varDecl.nameToken.payload as string;
+            let name = varDecl.name.payload as string;
             let staticEnv = staticEnvs.get(compUnitOrBlock);
             let value
                 = staticEnv?.bindings.get(name)?.value ?? new UninitValue();
@@ -954,9 +949,9 @@ export function initializeEnv(
         }
         else if (statementOrDecl instanceof FuncDecl) {
             let funcDecl = statementOrDecl;
-            let name = funcDecl.nameToken.payload as string;
+            let name = funcDecl.name.payload as string;
             let parameterList = funcDecl.parameterList.parameters.map(
-                (parameter) => parameter.nameToken.payload as string
+                (parameter) => parameter.name.payload as string
             );
             let funcValue = new FuncValue(
                 name,
@@ -968,9 +963,9 @@ export function initializeEnv(
         }
         else if (statementOrDecl instanceof MacroDecl) {
             let macroDecl = statementOrDecl;
-            let name = macroDecl.nameToken.payload as string;
+            let name = macroDecl.name.payload as string;
             let parameterList = macroDecl.parameterList.parameters.map(
-                (parameter) => parameter.nameToken.payload as string
+                (parameter) => parameter.name.payload as string
             );
             let macroValue = new MacroValue(
                 name,
@@ -1034,29 +1029,25 @@ function reducePState(
             );
         }
         else if (syntaxNode instanceof IntLitExpr) {
-            let payload = syntaxNode.valueToken.payload as bigint;
+            let payload = syntaxNode.value.payload as bigint;
             return new RetState(new IntValue(payload), kont);
         }
         else if (syntaxNode instanceof StrLitExpr) {
-            let payload = syntaxNode.valueToken.payload as string;
+            let payload = syntaxNode.value.payload as string;
             return new RetState(new StrValue(payload), kont);
         }
         else if (syntaxNode instanceof BoolLitExpr) {
-            let payload = syntaxNode.valueToken.payload as boolean;
+            let payload = syntaxNode.value.payload as boolean;
             return new RetState(new BoolValue(payload), kont);
         }
         else if (syntaxNode instanceof NoneLitExpr) {
             return new RetState(new NoneValue(), kont);
         }
         else if (syntaxNode instanceof PrefixOpExpr) {
-            let opToken = syntaxNode.opToken;
+            let opName = syntaxNode.opName.payload;
             let operand = syntaxNode.operand;
-            if (opToken.kind === TokenKind.Plus
-                || opToken.kind === TokenKind.Minus
-                || opToken.kind === TokenKind.Tilde
-                || opToken.kind === TokenKind.Quest
-                || opToken.kind === TokenKind.Bang) {
-                let prefixOpKont = new PrefixOpKont(opToken, kont);
+            if (["+", "-",  "~", "?", "!"].includes(opName)) {
+                let prefixOpKont = new PrefixOpKont(opName, kont);
                 return new PState(
                     [Mode.GetValue, operand, quoteLevel],
                     env,
@@ -1066,24 +1057,17 @@ function reducePState(
             }
             else {
                 throw new E000_InternalError(
-                    `Unknown prefix op type ${opToken.kind.kind}`
+                    `Unknown prefix op type ${opName}`
                 );
             }
         }
         else if (syntaxNode instanceof InfixOpExpr) {
             let lhs = syntaxNode.lhs;
-            let opToken = syntaxNode.opToken;
+            let opName = syntaxNode.opName.payload;
             let rhs = syntaxNode.rhs;
-            if (opToken.kind === TokenKind.Plus
-                || opToken.kind === TokenKind.Minus
-                || opToken.kind === TokenKind.Mult
-                || opToken.kind === TokenKind.FloorDiv
-                || opToken.kind === TokenKind.Mod
-                || opToken.kind === TokenKind.Tilde
-                || opToken.kind === TokenKind.AmpAmp
-                || opToken.kind === TokenKind.PipePipe) {
+            if (["+", "-", "*", "//", "%", "~", "&&", "||"].includes(opName)) {
                 let infixOpKont1
-                    = new InfixOp1Kont(opToken, rhs, env, kont, jumpMap);
+                    = new InfixOp1Kont(opName, rhs, env, kont, jumpMap);
                 return new PState(
                     [Mode.GetValue, lhs, quoteLevel],
                     env,
@@ -1091,7 +1075,7 @@ function reducePState(
                     jumpMap,
                 );
             }
-            else if (comparisonOps.has(opToken.kind)) {
+            else if (comparisonOps.has(opName)) {
                 let [exprs, ops] = findAllChainedOps(syntaxNode);
                 checkForUnchainableOps(ops);
                 let comparisonOp1Kont = new ComparisonOp1Kont(
@@ -1108,7 +1092,7 @@ function reducePState(
                     jumpMap,
                 );
             }
-            else if (opToken.kind === TokenKind.Assign) {
+            else if (opName === "=") {
                 let assign1Kont = new Assign1Kont(rhs, env, kont, jumpMap);
                 return new PState(
                     [Mode.GetLocation, lhs, quoteLevel],
@@ -1118,9 +1102,7 @@ function reducePState(
                 );
             }
             else {
-                throw new E000_InternalError(
-                    `Unknown infix op type ${opToken.kind.kind}`
-                );
+                throw new E000_InternalError(`Unknown infix op ${opName}`);
             }
         }
         else if (syntaxNode instanceof ParenExpr) {
@@ -1237,7 +1219,7 @@ function reducePState(
         else if (syntaxNode instanceof VarDecl) {
             let initExpr = syntaxNode.initExpr;
             if (initExpr !== null) {
-                let name = syntaxNode.nameToken.payload as string;
+                let name = syntaxNode.name.payload as string;
                 let varKont = new VarKont(name, env, kont);
                 return new PState(
                     [Mode.GetValue, initExpr, quoteLevel],
@@ -1251,13 +1233,13 @@ function reducePState(
             }
         }
         else if (syntaxNode instanceof VarRefExpr) {
-            let name = syntaxNode.nameToken.payload as string;
+            let name = syntaxNode.name.payload as string;
             let value = lookup(env, name);
             return new RetState(value, kont);
         }
         else if (syntaxNode instanceof ForStatement) {
             env = extend(env);
-            let name = syntaxNode.nameToken.payload as string;
+            let name = syntaxNode.name.payload as string;
             bindReadonly(env, name, new UninitValue());
             let arrayExpr = syntaxNode.arrayExpr;
             let body = syntaxNode.body;
@@ -1400,7 +1382,7 @@ function reducePState(
             );
         }
         else if (syntaxNode instanceof VarRefExpr) {
-            let name = syntaxNode.nameToken.payload as string;
+            let name = syntaxNode.name.payload as string;
             let [mutable, varEnv] = findEnvOfName(env, name);
             if (!mutable) {
                 throw new E608_ReadonlyError(`Binding '${name}' is readonly`);
@@ -1525,24 +1507,17 @@ function reducePState(
             );
         }
         else if (syntaxNode instanceof VarRefExpr) {
-            let name = syntaxNode.nameToken.payload as string;
+            let name = syntaxNode.name.payload as string;
             /* ignore */ lookup(env, name);
             return new RetState(new NoneValue(), kont);
         }
         else if (syntaxNode instanceof InfixOpExpr) {
             let lhs = syntaxNode.lhs;
-            let opToken = syntaxNode.opToken;
+            let opName = syntaxNode.opName.payload;
             let rhs = syntaxNode.rhs;
-            if (opToken.kind === TokenKind.Plus
-                || opToken.kind === TokenKind.Minus
-                || opToken.kind === TokenKind.Mult
-                || opToken.kind === TokenKind.FloorDiv
-                || opToken.kind === TokenKind.Mod
-                || opToken.kind === TokenKind.Tilde
-                || opToken.kind === TokenKind.AmpAmp
-                || opToken.kind === TokenKind.PipePipe) {
+            if (["+", "-", "*", "//", "%", "~", "&&", "||"].includes(opName)) {
                 let infixOpIgnore1Kont = new InfixOpIgnore1Kont(
-                    opToken,
+                    opName,
                     rhs,
                     env,
                     kont,
@@ -1555,7 +1530,7 @@ function reducePState(
                     jumpMap,
                 );
             }
-            else if (comparisonOps.has(opToken.kind)) {
+            else if (comparisonOps.has(opName)) {
                 let [exprs, ops] = findAllChainedOps(syntaxNode);
                 checkForUnchainableOps(ops);
                 let comparisonOpIgnore1Kont = new ComparisonOpIgnore1Kont(
@@ -1571,7 +1546,7 @@ function reducePState(
                     jumpMap,
                 );
             }
-            else if (opToken.kind === TokenKind.Assign) {
+            else if (opName === "=") {
                 let assignIgnore1Kont = new AssignIgnore1Kont(
                     rhs,
                     env,
@@ -1586,9 +1561,7 @@ function reducePState(
                 );
             }
             else {
-                throw new E000_InternalError(
-                    `Unknown infix op type ${opToken.kind.kind}`
-                );
+                throw new E000_InternalError(`Unknown infix op ${opName}`);
             }
         }
         else if (syntaxNode instanceof IntLitExpr) {
@@ -1675,7 +1648,7 @@ function reducePState(
         else if (syntaxNode instanceof VarDecl) {
             let initExpr = syntaxNode.initExpr;
             if (initExpr !== null) {
-                let name = syntaxNode.nameToken.payload as string;
+                let name = syntaxNode.name.payload as string;
                 let varKont = new VarKont(name, env, kont);
                 return new PState(
                     [Mode.GetValue, initExpr, quoteLevel],
@@ -1782,14 +1755,14 @@ function reduceRetState({ value, kont }: RetState): State {
     }
     else if (kont instanceof PrefixOpKont) {
         let operandValue = value;
-        let token = kont.token;
-        if (token.kind === TokenKind.Plus) {
+        let opName = kont.opName;
+        if (opName === "+") {
             if (!(operandValue instanceof IntValue)) {
                 throw new E603_TypeError("Expected Int as operand of +");
             }
             return new RetState(new IntValue(operandValue.payload), kont.tail);
         }
-        else if (token.kind === TokenKind.Minus) {
+        else if (opName === "-") {
             if (!(operandValue instanceof IntValue)) {
                 throw new E603_TypeError("Expected Int as operand of -");
             }
@@ -1798,42 +1771,36 @@ function reduceRetState({ value, kont }: RetState): State {
                 kont.tail,
             );
         }
-        else if (token.kind === TokenKind.Tilde) {
+        else if (opName === "~") {
             return new RetState(
                 stringify(operandValue),
                 kont.tail,
             );
         }
-        else if (token.kind === TokenKind.Quest) {
+        else if (opName === "?") {
             return new RetState(
                 new BoolValue(boolify(operandValue)),
                 kont.tail,
             );
         }
-        else if (token.kind === TokenKind.Bang) {
+        else if (opName === "!") {
             return new RetState(
                 new BoolValue(!boolify(operandValue)),
                 kont.tail,
             );
         }
         else {
-            throw new E000_InternalError(
-                `Unknown prefix op type ${kont.token.kind.kind}`
-            );
+            throw new E000_InternalError(`Unknown prefix op ${opName}`);
         }
     }
     else if (kont instanceof InfixOp1Kont) {
-        let token = kont.token;
-        if (token.kind === TokenKind.Plus) {
+        let opName = kont.opName;
+        if (opName === "+") {
             let left = value;
             if (!(left instanceof IntValue)) {
                 throw new E603_TypeError("Expected Int as lhs of +");
             }
-            let infixOp2Kont = new InfixOp2Kont(
-                left,
-                token,
-                kont.tail,
-            );
+            let infixOp2Kont = new InfixOp2Kont(left, opName, kont.tail);
             return new PState(
                 [Mode.GetValue, kont.rhs, /* quoteLevel */ 0],
                 kont.env,
@@ -1841,12 +1808,12 @@ function reduceRetState({ value, kont }: RetState): State {
                 kont.jumpMap,
             );
         }
-        else if (token.kind === TokenKind.Minus) {
+        else if (opName === "-") {
             let left = value;
             if (!(left instanceof IntValue)) {
                 throw new E603_TypeError("Expected Int as lhs of -");
             }
-            let infixOp2Kont = new InfixOp2Kont(left, token, kont.tail);
+            let infixOp2Kont = new InfixOp2Kont(left, opName, kont.tail);
             return new PState(
                 [Mode.GetValue, kont.rhs, /* quoteLevel */ 0],
                 kont.env,
@@ -1854,16 +1821,12 @@ function reduceRetState({ value, kont }: RetState): State {
                 kont.jumpMap,
             );
         }
-        else if (token.kind === TokenKind.Mult) {
+        else if (opName === "*") {
             let left = value;
             if (!(left instanceof IntValue)) {
                 throw new E603_TypeError("Expected Int as lhs of *");
             }
-            let infixOp2Kont = new InfixOp2Kont(
-                left,
-                token,
-                kont.tail,
-            );
+            let infixOp2Kont = new InfixOp2Kont(left, opName, kont.tail);
             return new PState(
                 [Mode.GetValue, kont.rhs, /* quoteLevel */ 0],
                 kont.env,
@@ -1871,12 +1834,12 @@ function reduceRetState({ value, kont }: RetState): State {
                 kont.jumpMap,
             );
         }
-        else if (token.kind === TokenKind.FloorDiv) {
+        else if (opName === "//") {
             let left = value;
             if (!(left instanceof IntValue)) {
                 throw new E603_TypeError("Expected Int as lhs of //");
             }
-            let infixOp2Kont = new InfixOp2Kont(left, token, kont.tail);
+            let infixOp2Kont = new InfixOp2Kont(left, opName, kont.tail);
             return new PState(
                 [Mode.GetValue, kont.rhs, /* quoteLevel */ 0],
                 kont.env,
@@ -1884,12 +1847,12 @@ function reduceRetState({ value, kont }: RetState): State {
                 kont.jumpMap,
             );
         }
-        else if (token.kind === TokenKind.Mod) {
+        else if (opName === "%") {
             let left = value;
             if (!(left instanceof IntValue)) {
                 throw new E603_TypeError("Expected Int as lhs of %");
             }
-            let infixOp2Kont = new InfixOp2Kont(left, token, kont.tail);
+            let infixOp2Kont = new InfixOp2Kont(left, opName, kont.tail);
             return new PState(
                 [Mode.GetValue, kont.rhs, /* quoteLevel */ 0],
                 kont.env,
@@ -1897,14 +1860,10 @@ function reduceRetState({ value, kont }: RetState): State {
                 kont.jumpMap,
             );
         }
-        else if (token.kind === TokenKind.Tilde) {
+        else if (opName === "~") {
             let left = value;
             let strLeft = stringify(left);
-            let infixOp2Kont = new InfixOp2Kont(
-                strLeft,
-                token,
-                kont.tail,
-            );
+            let infixOp2Kont = new InfixOp2Kont(strLeft, opName, kont.tail);
             return new PState(
                 [Mode.GetValue, kont.rhs, /* quoteLevel */ 0],
                 kont.env,
@@ -1912,7 +1871,7 @@ function reduceRetState({ value, kont }: RetState): State {
                 kont.jumpMap,
             );
         }
-        else if (token.kind === TokenKind.AmpAmp) {
+        else if (opName === "&&") {
             let left = value;
             if (boolify(left)) {
                 // tail call
@@ -1927,7 +1886,7 @@ function reduceRetState({ value, kont }: RetState): State {
                 return new RetState(left, kont.tail);
             }
         }
-        else if (token.kind === TokenKind.PipePipe) {
+        else if (opName === "||") {
             let left = value;
             if (boolify(left)) {
                 return new RetState(left, kont.tail);
@@ -1943,14 +1902,12 @@ function reduceRetState({ value, kont }: RetState): State {
             }
         }
         else {
-            throw new E000_InternalError(
-                `Unknown infix op type ${token.kind.kind}`
-            );
+            throw new E000_InternalError(`Unknown infix op ${opName}`);
         }
     }
     else if (kont instanceof InfixOp2Kont) {
-        let token = kont.token;
-        if (token.kind === TokenKind.Plus) {
+        let opName = kont.opName;
+        if (opName === "+") {
             let left = kont.left as IntValue;
             let right = value;
             if (!(right instanceof IntValue)) {
@@ -1961,7 +1918,7 @@ function reduceRetState({ value, kont }: RetState): State {
                 kont.tail,
             );
         }
-        else if (token.kind === TokenKind.Minus) {
+        else if (opName === "-") {
             let left = kont.left as IntValue;
             let right = value;
             if (!(right instanceof IntValue)) {
@@ -1972,7 +1929,7 @@ function reduceRetState({ value, kont }: RetState): State {
                 kont.tail,
             );
         }
-        else if (token.kind === TokenKind.Mult) {
+        else if (opName === "*") {
             let left = kont.left as IntValue;
             let right = value;
             if (!(right instanceof IntValue)) {
@@ -1983,7 +1940,7 @@ function reduceRetState({ value, kont }: RetState): State {
                 kont.tail,
             );
         }
-        else if (token.kind === TokenKind.FloorDiv) {
+        else if (opName === "//") {
             let left = kont.left as IntValue;
             let right = value;
             if (!(right instanceof IntValue)) {
@@ -2000,7 +1957,7 @@ function reduceRetState({ value, kont }: RetState): State {
                 kont.tail,
             );
         }
-        else if (token.kind === TokenKind.Mod) {
+        else if (opName === "%") {
             let left = kont.left as IntValue;
             let right = value;
             if (!(right instanceof IntValue)) {
@@ -2014,7 +1971,7 @@ function reduceRetState({ value, kont }: RetState): State {
                 kont.tail,
             );
         }
-        else if (token.kind === TokenKind.Tilde) {
+        else if (opName === "~") {
             let strLeft = kont.left as StrValue;
             let right = value;
             let strRight = stringify(right);
@@ -2023,20 +1980,18 @@ function reduceRetState({ value, kont }: RetState): State {
                 kont.tail,
             );
         }
-        else if (token.kind === TokenKind.AmpAmp) {
+        else if (opName === "&&") {
             throw new E000_InternalError(
                 "Precondition failed: no second continuation for &&"
             );
         }
-        else if (token.kind === TokenKind.PipePipe) {
+        else if (opName === "||") {
             throw new E000_InternalError(
                 "Precondition failed: no second continuation for ||"
             );
         }
         else {
-            throw new E000_InternalError(
-                `Unknown infix op type ${token.kind.kind}`
-            );
+            throw new E000_InternalError(`Unknown infix op ${opName}`);
         }
     }
     else if (kont instanceof ComparisonOp1Kont) {
@@ -2658,15 +2613,15 @@ function reduceRetState({ value, kont }: RetState): State {
         }
     }
     else if (kont instanceof InfixOpIgnore1Kont) {
-        let token = kont.token;
-        if (token.kind === TokenKind.Plus) {
+        let opName = kont.opName;
+        if (opName === "+") {
             let left = value;
             if (!(left instanceof IntValue)) {
                 throw new E603_TypeError("Expected Int as lhs of +");
             }
             let infixOp2Kont = new InfixOpIgnore2Kont(
                 left,
-                token,
+                opName,
                 kont.tail,
             );
             return new PState(
@@ -2676,12 +2631,12 @@ function reduceRetState({ value, kont }: RetState): State {
                 kont.jumpMap,
             );
         }
-        else if (token.kind === TokenKind.Minus) {
+        else if (opName === "-") {
             let left = value;
             if (!(left instanceof IntValue)) {
                 throw new E603_TypeError("Expected Int as lhs of -");
             }
-            let infixOp2Kont = new InfixOpIgnore2Kont(left, token, kont.tail);
+            let infixOp2Kont = new InfixOpIgnore2Kont(left, opName, kont.tail);
             return new PState(
                 [Mode.GetValue, kont.rhs, /* quoteLevel */ 0],
                 kont.env,
@@ -2689,16 +2644,12 @@ function reduceRetState({ value, kont }: RetState): State {
                 kont.jumpMap,
             );
         }
-        else if (token.kind === TokenKind.Mult) {
+        else if (opName === "*") {
             let left = value;
             if (!(left instanceof IntValue)) {
                 throw new E603_TypeError("Expected Int as lhs of *");
             }
-            let infixOp2Kont = new InfixOpIgnore2Kont(
-                left,
-                token,
-                kont.tail,
-            );
+            let infixOp2Kont = new InfixOpIgnore2Kont(left, opName, kont.tail);
             return new PState(
                 [Mode.GetValue, kont.rhs, /* quoteLevel */ 0],
                 kont.env,
@@ -2706,12 +2657,12 @@ function reduceRetState({ value, kont }: RetState): State {
                 kont.jumpMap,
             );
         }
-        else if (token.kind === TokenKind.FloorDiv) {
+        else if (opName === "//") {
             let left = value;
             if (!(left instanceof IntValue)) {
                 throw new E603_TypeError("Expected Int as lhs of //");
             }
-            let infixOp2Kont = new InfixOpIgnore2Kont(left, token, kont.tail);
+            let infixOp2Kont = new InfixOpIgnore2Kont(left, opName, kont.tail);
             return new PState(
                 [Mode.GetValue, kont.rhs, /* quoteLevel */ 0],
                 kont.env,
@@ -2719,12 +2670,12 @@ function reduceRetState({ value, kont }: RetState): State {
                 kont.jumpMap,
             );
         }
-        else if (token.kind === TokenKind.Mod) {
+        else if (opName === "%") {
             let left = value;
             if (!(left instanceof IntValue)) {
                 throw new E603_TypeError("Expected Int as lhs of %");
             }
-            let infixOp2Kont = new InfixOpIgnore2Kont(left, token, kont.tail);
+            let infixOp2Kont = new InfixOpIgnore2Kont(left, opName, kont.tail);
             return new PState(
                 [Mode.GetValue, kont.rhs, /* quoteLevel */ 0],
                 kont.env,
@@ -2732,12 +2683,12 @@ function reduceRetState({ value, kont }: RetState): State {
                 kont.jumpMap,
             );
         }
-        else if (token.kind === TokenKind.Tilde) {
+        else if (opName === "~") {
             let left = value;
             let strLeft = stringify(left);
             let infixOp2Kont = new InfixOpIgnore2Kont(
                 strLeft,
-                token,
+                opName,
                 kont.tail,
             );
             return new PState(
@@ -2747,7 +2698,7 @@ function reduceRetState({ value, kont }: RetState): State {
                 kont.jumpMap,
             );
         }
-        else if (token.kind === TokenKind.AmpAmp) {
+        else if (opName === "&&") {
             let left = value;
             if (boolify(left)) {
                 // tail call
@@ -2762,7 +2713,7 @@ function reduceRetState({ value, kont }: RetState): State {
                 return new RetState(left, kont.tail);
             }
         }
-        else if (token.kind === TokenKind.PipePipe) {
+        else if (opName === "||") {
             let left = value;
             if (boolify(left)) {
                 return new RetState(left, kont.tail);
@@ -2778,14 +2729,12 @@ function reduceRetState({ value, kont }: RetState): State {
             }
         }
         else {
-            throw new E000_InternalError(
-                `Unknown infix op type ${token.kind.kind}`
-            );
+            throw new E000_InternalError(`Unknown infix op ${opName}`);
         }
     }
     else if (kont instanceof InfixOpIgnore2Kont) {
-        let token = kont.token;
-        if (token.kind === TokenKind.Plus) {
+        let opName = kont.opName;
+        if (opName === "+") {
             let right = value;
             if (!(right instanceof IntValue)) {
                 throw new E603_TypeError("Expected Int as rhs of +");
@@ -2795,7 +2744,7 @@ function reduceRetState({ value, kont }: RetState): State {
                 kont.tail,
             );
         }
-        else if (token.kind === TokenKind.Minus) {
+        else if (opName === "-") {
             let right = value;
             if (!(right instanceof IntValue)) {
                 throw new E603_TypeError("Expected Int as rhs of -");
@@ -2805,7 +2754,7 @@ function reduceRetState({ value, kont }: RetState): State {
                 kont.tail,
             );
         }
-        else if (token.kind === TokenKind.Mult) {
+        else if (opName === "*") {
             let right = value;
             if (!(right instanceof IntValue)) {
                 throw new E603_TypeError("Expected Int as rhs of *");
@@ -2815,7 +2764,7 @@ function reduceRetState({ value, kont }: RetState): State {
                 kont.tail,
             );
         }
-        else if (token.kind === TokenKind.FloorDiv) {
+        else if (opName === "//") {
             let right = value;
             if (!(right instanceof IntValue)) {
                 throw new E603_TypeError("Expected Int as rhs of //");
@@ -2828,7 +2777,7 @@ function reduceRetState({ value, kont }: RetState): State {
                 kont.tail,
             );
         }
-        else if (token.kind === TokenKind.Mod) {
+        else if (opName === "%") {
             let right = value;
             if (!(right instanceof IntValue)) {
                 throw new E603_TypeError("Expected Int as rhs of %");
@@ -2841,26 +2790,24 @@ function reduceRetState({ value, kont }: RetState): State {
                 kont.tail,
             );
         }
-        else if (token.kind === TokenKind.Tilde) {
+        else if (opName === "~") {
             return new RetState(
                 new NoneValue(),
                 kont.tail,
             );
         }
-        else if (token.kind === TokenKind.AmpAmp) {
+        else if (opName === "&&") {
             throw new E000_InternalError(
                 "Precondition failed: no second continuation for &&"
             );
         }
-        else if (token.kind === TokenKind.PipePipe) {
+        else if (opName === "||") {
             throw new E000_InternalError(
                 "Precondition failed: no second continuation for ||"
             );
         }
         else {
-            throw new E000_InternalError(
-                `Unknown infix op type ${token.kind.kind}`
-            );
+            throw new E000_InternalError(`Unknown infix op ${opName}`);
         }
     }
     else if (kont instanceof Quote1Kont) {
@@ -2951,7 +2898,7 @@ function reduceRetState({ value, kont }: RetState): State {
                 new SyntaxNodeValue(
                     SYNTAX_KIND__INT_LIT_EXPR,
                     [new SyntaxNodeValue(
-                        SYNTAX_KIND__TOKEN_INT_LIT,
+                        SYNTAX_KIND__INT_NODE,
                         [],
                         value,
                     )],
@@ -2965,7 +2912,7 @@ function reduceRetState({ value, kont }: RetState): State {
                 new SyntaxNodeValue(
                     SYNTAX_KIND__STR_LIT_EXPR,
                     [new SyntaxNodeValue(
-                        SYNTAX_KIND__TOKEN_STR_LIT,
+                        SYNTAX_KIND__STR_NODE,
                         [],
                         value,
                     )],
@@ -2980,7 +2927,7 @@ function reduceRetState({ value, kont }: RetState): State {
                     new SyntaxNodeValue(
                         SYNTAX_KIND__BOOL_LIT_EXPR,
                         [new SyntaxNodeValue(
-                            SYNTAX_KIND__TOKEN_TRUE_KEYWORD,
+                            SYNTAX_KIND__BOOL_NODE,
                             [],
                             value,
                         )],
@@ -2994,7 +2941,7 @@ function reduceRetState({ value, kont }: RetState): State {
                     new SyntaxNodeValue(
                         SYNTAX_KIND__BOOL_LIT_EXPR,
                         [new SyntaxNodeValue(
-                            SYNTAX_KIND__TOKEN_FALSE_KEYWORD,
+                            SYNTAX_KIND__BOOL_NODE,
                             [],
                             value,
                         )],

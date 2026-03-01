@@ -8,6 +8,7 @@ import {
     SYNTAX_KIND__BLOCK,
     SYNTAX_KIND__BLOCK_STATEMENT,
     SYNTAX_KIND__BOOL_LIT_EXPR,
+    SYNTAX_KIND__BOOL_NODE,
     SYNTAX_KIND__CALL_EXPR,
     SYNTAX_KIND__COMPUNIT,
     SYNTAX_KIND__DO_EXPR,
@@ -21,6 +22,7 @@ import {
     SYNTAX_KIND__INDEXING_EXPR,
     SYNTAX_KIND__INFIX_OP_EXPR,
     SYNTAX_KIND__INT_LIT_EXPR,
+    SYNTAX_KIND__INT_NODE,
     SYNTAX_KIND__LAST_STATEMENT,
     SYNTAX_KIND__MACRO_DECL,
     SYNTAX_KIND__NEXT_STATEMENT,
@@ -33,29 +35,7 @@ import {
     SYNTAX_KIND__QUOTE_EXPR,
     SYNTAX_KIND__RETURN_STATEMENT,
     SYNTAX_KIND__STR_LIT_EXPR,
-    SYNTAX_KIND__TOKEN_AMP_AMP,
-    SYNTAX_KIND__TOKEN_ASSIGN,
-    SYNTAX_KIND__TOKEN_BANG,
-    SYNTAX_KIND__TOKEN_BANG_EQ,
-    SYNTAX_KIND__TOKEN_EQ_EQ,
-    SYNTAX_KIND__TOKEN_FALSE_KEYWORD,
-    SYNTAX_KIND__TOKEN_FLOOR_DIV,
-    SYNTAX_KIND__TOKEN_GREATER,
-    SYNTAX_KIND__TOKEN_GREATER_EQ,
-    SYNTAX_KIND__TOKEN_IDENTIFIER,
-    SYNTAX_KIND__TOKEN_INT_LIT,
-    SYNTAX_KIND__TOKEN_LESS,
-    SYNTAX_KIND__TOKEN_LESS_EQ,
-    SYNTAX_KIND__TOKEN_MINUS,
-    SYNTAX_KIND__TOKEN_MOD,
-    SYNTAX_KIND__TOKEN_MULT,
-    SYNTAX_KIND__TOKEN_NONE_KEYWORD,
-    SYNTAX_KIND__TOKEN_PIPE_PIPE,
-    SYNTAX_KIND__TOKEN_PLUS,
-    SYNTAX_KIND__TOKEN_QUEST,
-    SYNTAX_KIND__TOKEN_STR_LIT,
-    SYNTAX_KIND__TOKEN_TILDE,
-    SYNTAX_KIND__TOKEN_TRUE_KEYWORD,
+    SYNTAX_KIND__STR_NODE,
     SYNTAX_KIND__VAR_DECL,
     SYNTAX_KIND__VAR_REF_EXPR,
     SYNTAX_KIND__WHILE_STATEMENT,
@@ -138,74 +118,14 @@ export function displayValue(value: Value, seen: Set<Value>): string {
     }
     else if (value instanceof SyntaxNodeValue) {
         let kind;
-        if (hasKind(value, SYNTAX_KIND__TOKEN_INT_LIT)) {
-            kind = "token IntLit";
+        if (hasKind(value, SYNTAX_KIND__INT_NODE)) {
+            kind = "IntNode";
         }
-        else if (hasKind(value, SYNTAX_KIND__TOKEN_STR_LIT)) {
-            kind = "token StrLit";
+        else if (hasKind(value, SYNTAX_KIND__STR_NODE)) {
+            kind = "StrNode";
         }
-        else if (hasKind(value, SYNTAX_KIND__TOKEN_TRUE_KEYWORD)) {
-            kind = "token TrueKeyword";
-        }
-        else if (hasKind(value, SYNTAX_KIND__TOKEN_FALSE_KEYWORD)) {
-            kind = "token FalseKeyword";
-        }
-        else if (hasKind(value, SYNTAX_KIND__TOKEN_NONE_KEYWORD)) {
-            kind = "token NoneKeyword";
-        }
-        else if (hasKind(value, SYNTAX_KIND__TOKEN_PLUS)) {
-            kind = "token Plus";
-        }
-        else if (hasKind(value, SYNTAX_KIND__TOKEN_MINUS)) {
-            kind = "token Minus";
-        }
-        else if (hasKind(value, SYNTAX_KIND__TOKEN_MULT)) {
-            kind = "token Mult";
-        }
-        else if (hasKind(value, SYNTAX_KIND__TOKEN_FLOOR_DIV)) {
-            kind = "token FloorDiv";
-        }
-        else if (hasKind(value, SYNTAX_KIND__TOKEN_MOD)) {
-            kind = "token Mod";
-        }
-        else if (hasKind(value, SYNTAX_KIND__TOKEN_TILDE)) {
-            kind = "token Tilde";
-        }
-        else if (hasKind(value, SYNTAX_KIND__TOKEN_QUEST)) {
-            kind = "token Quest";
-        }
-        else if (hasKind(value, SYNTAX_KIND__TOKEN_BANG)) {
-            kind = "token Bang";
-        }
-        else if (hasKind(value, SYNTAX_KIND__TOKEN_AMP_AMP)) {
-            kind = "token AmpAmp";
-        }
-        else if (hasKind(value, SYNTAX_KIND__TOKEN_PIPE_PIPE)) {
-            kind = "token PipePipe";
-        }
-        else if (hasKind(value, SYNTAX_KIND__TOKEN_LESS)) {
-            kind = "token Less";
-        }
-        else if (hasKind(value, SYNTAX_KIND__TOKEN_LESS_EQ)) {
-            kind = "token LessEq";
-        }
-        else if (hasKind(value, SYNTAX_KIND__TOKEN_GREATER)) {
-            kind = "token Greater";
-        }
-        else if (hasKind(value, SYNTAX_KIND__TOKEN_GREATER_EQ)) {
-            kind = "token GreaterEq";
-        }
-        else if (hasKind(value, SYNTAX_KIND__TOKEN_EQ_EQ)) {
-            kind = "token EqEq";
-        }
-        else if (hasKind(value, SYNTAX_KIND__TOKEN_BANG_EQ)) {
-            kind = "token BangEq";
-        }
-        else if (hasKind(value, SYNTAX_KIND__TOKEN_ASSIGN)) {
-            kind = "token Assign";
-        }
-        else if (hasKind(value, SYNTAX_KIND__TOKEN_IDENTIFIER)) {
-            kind = "token Identifier";
+        else if (hasKind(value, SYNTAX_KIND__BOOL_NODE)) {
+            kind = "BoolNode";
         }
         else if (hasKind(value, SYNTAX_KIND__COMPUNIT)) {
             kind = "CompUnit";
