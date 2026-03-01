@@ -68,6 +68,29 @@ test("call expression", (t) => {
         t.is(run(program), '"inner"');
     }
 
+    {
+        let program = `
+            my closures = [none, none, none];
+
+            for index in [0, 1, 2] {
+                func f() {
+                    return 10 + index;
+                }
+
+                closures[index] = f;
+            }
+
+            my result = [none, none, none];
+
+            for index in [0, 1, 2] {
+                result[index] = closures[index]();
+            }
+
+            result;
+        `;
+        t.is(run(program), "[10, 11, 12]");
+    }
+
     t.throws(
         () => run("func f() {}; f(5)"),
         { instanceOf: E611_TooManyArgumentsError },
