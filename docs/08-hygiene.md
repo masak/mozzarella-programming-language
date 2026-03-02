@@ -73,14 +73,17 @@ before code is properly "integrated":
   incorporated into the mainline program. (Those code objects will in general
   contain a mixture of string identifiers and `Identifier`-identifiers. We only
   upgrade the former, and leave the latter alone.)
-* In the future, it might be possible to create syntax nodes as objects. These
-  could certainly support both the string form of identifier, and the
-  `Identifier` form. They are passed around as-is without modification; if they
-  are returned from a macro as the result of macro expansion (quite possibly as
-  a smaller part of a bigger code object), the same rules as above apply.
+* In Mozzarella's future, it might be possible to create syntax nodes as
+  objects. These could certainly support both the string form of identifier,
+  and the `Identifier` form. They are passed around as-is without modification;
+  if they are returned from a macro as the result of macro expansion (quite
+  possibly as a smaller part of a bigger code object), the same rules as above
+  apply.
 
 As a result of all this, at the conclusion of the macro expansion pass, all the
 code in the mainline program will have integrated identifiers, of the
 `Identifier` type.
 
+That takes care of the first problem. As for the second, the conservative thing
+is to disallow all lookups except lexical ones.
 
