@@ -141,14 +141,14 @@ things like precedence and associativity.
 
 The ability to extend terms, statements, declarations, on the parser level.
 
-## Extensible semantics by desugaring 🍯🔌
+## AST semantics by desugaring 🍯🔌
 
 Similar to macros. `unless <cond> { <block> }` desugars to `if !<cond> {
 <block> }`. Need a way to declare this in modules which modify their caller
 module, so that extended parsers generating new AST types also have a
 desugaring for those AST types.
 
-## Extensible semantics by evaluation rule 📜🔌
+## AST semantics by evaluation rule 📜🔌
 
 Supplying a new "case" for new AST types. The `unless` example gets implemented
 as a _function_ with access to "internal" runtime things, like the current
@@ -253,9 +253,16 @@ error.
 
 Maybe copy Ava or something. Basically just need to be able to do assertions.
 
+## Evaluator plugins
+
+Allow the definition of plugins with an API consisting of methods such as
+`onStatementStart`, `onStatementEnd`, `onBranch`, and `onFunctionCall`. Pass
+arguments to these methods that allow the state of the running evaluator to be
+introspected in various ways.
+
 ## Code coverage 🧺📏
 
-Extend the evaluator so that it collects statistics for every called function,
+Make an evaluator plugin that collects statistics for every called function,
 executed statement, and taken branch. Writes it all to a file, preferably an
 HTML file.
 
