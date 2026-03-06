@@ -399,3 +399,20 @@ Python has this (via FFI, one presumes). We still need some design for the
 wrapper types and operators; which means this idea needs to wait until after
 we have class declarations and user-defined operators.
 
+## Incorporating runtime information in programs
+
+The talk https://www.destroyallsoftware.com/talks/a-whole-new-world is
+inspiring, even though the software ends up being a fiction.
+
+I'm thinking those layers can still be implemented, though:
+
+* Diff
+* Error trace
+* Object relationships
+* Coverage
+* Profiling info
+
+I don't feel like implementing a whole new editor (let alone a terminal), but
+maybe something like a small dev UI as a self-contained web page could
+incorporate this info.
+
