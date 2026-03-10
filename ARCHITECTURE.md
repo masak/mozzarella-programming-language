@@ -30,6 +30,9 @@
     * It depends on `reify.ts`, which can turn the implementation's syntax
       trees into Mozzarella values, and `absorb.ts`, which transforms
       Mozzarella values into the implementation's syntax trees
+    * It also depends, inevitably, on the runtime. In fact, the runtime has a
+      dedicated entry function for macro calls. The order is reify, run the
+      macro, abstract.
 
 ```
                              reify
