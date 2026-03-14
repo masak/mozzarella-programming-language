@@ -1,7 +1,9 @@
 import {
-    Expr,
-    InfixOpExpr,
-    StrNode,
+    infixOpExprLhs,
+    infixOpExprOpName,
+    infixOpExprRhs,
+    isInfixOpExpr,
+    SyntaxNode,
 } from "../compiler/syntax";
 import {
     E000_InternalError,
@@ -131,32 +133,34 @@ export const comparisonOps = new Set(["<", "<=", ">", ">=", "==", "!="]);
 
 // Traverses down the left leg of an expression tree, collecting all comparison
 // operators and their operands, in left-to-right (top-to-bottom) order.
-export function findAllChainedOps(root: Expr): [Array<Expr>, Array<string>] {
-    if (!(root instanceof InfixOpExpr)
-        || !comparisonOps.has((root.children[1] as StrNode).payload)) {
+export function findAllChainedOps(
+    root: SyntaxNode,
+): [Array<SyntaxNode>, Array<string>] {
+    if (!isInfixOpExpr(root)
+        || !comparisonOps.has(infixOpExprOpName(root).payload as string)) {
         throw new E000_InternalError(
             "Precondition failed: root must be comparison expr"
         );
     }
-    let stack: Array<InfixOpExpr> = [root];
+    let stack: Array<SyntaxNode> = [root];
     while (true) {
-        let lhs = stack[stack.length - 1].children[0];
-        if (lhs instanceof InfixOpExpr
-            && comparisonOps.has((lhs.children[1] as StrNode).payload)) {
+        let lhs = infixOpExprLhs(stack[stack.length - 1]);
+        if (isInfixOpExpr(lhs)
+            && comparisonOps.has(infixOpExprOpName(lhs).payload as string)) {
             stack.push(lhs);
         }
         else {
             break;
         }
     }
-    let firstLhs: Expr = stack[stack.length - 1].children[0] as Expr;
-    let exprs: Array<Expr> = [firstLhs];
+    let firstLhs: SyntaxNode = infixOpExprLhs(stack[stack.length - 1]);
+    let exprs: Array<SyntaxNode> = [firstLhs];
     let ops: Array<string> = [];
     while (stack.length > 0) {
         let expr = stack.pop()!;
-        let op = (expr.children[1] as StrNode).payload;
+        let op = infixOpExprOpName(expr).payload as string;
         ops.push(op);
-        let rhs = expr.children[2] as Expr;
+        let rhs = infixOpExprRhs(expr);
         exprs.push(rhs);
     }
     return [exprs, ops];

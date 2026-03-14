@@ -6,46 +6,44 @@ import {
     lex,
 } from "./lex";
 import {
-    Argument,
-    ArgumentList,
-    ArrayInitializerExpr,
-    Block,
-    BlockStatement,
-    BoolLitExpr,
-    BoolNode,
-    CallExpr,
-    CompUnit,
-    Decl,
-    DoExpr,
-    EmptyStatement,
-    Expr,
-    ExprStatement,
-    ForStatement,
-    FuncDecl,
-    IfClause,
-    IfClauseList,
-    IfStatement,
-    IndexingExpr,
-    InfixOpExpr,
-    IntLitExpr,
-    IntNode,
-    LastStatement,
-    MacroDecl,
-    NextStatement,
-    NoneLitExpr,
-    Parameter,
-    ParameterList,
-    ParenExpr,
-    PrefixOpExpr,
-    QuoteExpr,
-    ReturnStatement,
-    Statement,
-    StrLitExpr,
-    StrNode,
-    UnquoteExpr,
-    VarDecl,
-    VarRefExpr,
-    WhileStatement,
+    makeArgument,
+    makeArgumentList,
+    makeArrayInitializerExpr,
+    makeBlock,
+    makeBlockStatement,
+    makeBoolLitExpr,
+    makeBoolNode,
+    makeCallExpr,
+    makeCompUnit,
+    makeDoExpr,
+    makeEmptyStatement,
+    makeExprStatement,
+    makeForStatement,
+    makeFuncDecl,
+    makeIfClause,
+    makeIfClauseList,
+    makeIfStatement,
+    makeIndexingExpr,
+    makeInfixOpExpr,
+    makeIntLitExpr,
+    makeIntNode,
+    makeLastStatement,
+    makeMacroDecl,
+    makeNextStatement,
+    makeNoneLitExpr,
+    makeParameter,
+    makeParameterList,
+    makeParenExpr,
+    makePrefixOpExpr,
+    makeQuoteExpr,
+    makeReturnStatement,
+    makeStrLitExpr,
+    makeStrNode,
+    makeUnquoteExpr,
+    makeVarDecl,
+    makeVarRefExpr,
+    makeWhileStatement,
+    SyntaxNode,
 } from "./syntax";
 import {
     opTokenName,
@@ -270,8 +268,8 @@ export class Parser {
 
     // parse methods:
 
-    parseCompUnit(): CompUnit {
-        let statements: Array<Statement | Decl> = [];
+    parseCompUnit(): SyntaxNode {
+        let statements: Array<SyntaxNode> = [];
         while (this.seeingStartOfStatementOrDecl()) {
             if (this.seeingStartOfStatement()) {
                 let [statement, sawSemi] = this.parseStatement();
@@ -289,11 +287,11 @@ export class Parser {
             }
         }
         this.expect(TokenKind.Eof);
-        return new CompUnit(statements);
+        return makeCompUnit(statements);
     }
 
-    parseStatementList(): Array<Statement | Decl> {
-        let statements: Array<Statement | Decl> = [];
+    parseStatementList(): Array<SyntaxNode> {
+        let statements: Array<SyntaxNode> = [];
         while (this.seeingStartOfStatementOrDecl()) {
             if (this.seeingStartOfStatement()) {
                 let [statement, sawSemi] = this.parseStatement();
@@ -313,29 +311,31 @@ export class Parser {
         return statements;
     }
 
-    parseStatement(): [Statement, boolean] {
+    parseStatement(): [SyntaxNode, boolean] {
         if (this.accept(TokenKind.Semi)) {
-            return [new EmptyStatement(), true];
+            return [makeEmptyStatement(), true];
         }
         else if (this.seeingStartOfExpr()) {
             let expr = this.parseExpr();
             let sawSemi = Boolean(this.accept(TokenKind.Semi));
-            return [new ExprStatement(expr), sawSemi];
+            return [makeExprStatement(expr), sawSemi];
         }
         else if (this.seeing(TokenKind.CurlyL)) {
             let block = this.parseBlock();
-            return [new BlockStatement(block), true];
+            return [makeBlockStatement(block), true];
         }
         else if (this.accept(TokenKind.IfKeyword)) {
             let condExpr = this.parseExpr();
             let thenBlock = this.parseBlock();
-            let clauses: Array<IfClause> = [new IfClause(condExpr, thenBlock)];
-            let elseBlock: Block | null = null;
+            let clauses: Array<SyntaxNode> = [
+                makeIfClause(condExpr, thenBlock),
+            ];
+            let elseBlock: SyntaxNode | null = null;
             while (this.accept(TokenKind.ElseKeyword)) {
                 if (this.accept(TokenKind.IfKeyword)) {
                     let condExpr = this.parseExpr();
                     let thenBlock = this.parseBlock();
-                    clauses.push(new IfClause(condExpr, thenBlock));
+                    clauses.push(makeIfClause(condExpr, thenBlock));
                 }
                 else if (this.seeing(TokenKind.CurlyL)) {
                     elseBlock = this.parseBlock();
@@ -344,47 +344,47 @@ export class Parser {
                     this.parseFail("'if' or block after 'else'");
                 }
             }
-            let clauseList = new IfClauseList(clauses);
-            let ifStatement = new IfStatement(clauseList, elseBlock);
+            let clauseList = makeIfClauseList(clauses);
+            let ifStatement = makeIfStatement(clauseList, elseBlock);
             return [ifStatement, true];
         }
         else if (this.accept(TokenKind.ForKeyword)) {
             let nameToken = this.accept(TokenKind.Identifier)!;
-            let name = new StrNode(nameToken.payload as string);
+            let name = makeStrNode(nameToken.payload as string);
             this.advanceOver(TokenKind.InKeyword);
             let arrayExpr = this.parseExpr();
             let block = this.parseBlock();
-            return [new ForStatement(name, arrayExpr, block), true];
+            return [makeForStatement(name, arrayExpr, block), true];
         }
         else if (this.accept(TokenKind.WhileKeyword)) {
             let condExpr = this.parseExpr();
             let block = this.parseBlock();
-            return [new WhileStatement(condExpr, block), true];
+            return [makeWhileStatement(condExpr, block), true];
         }
         else if (this.accept(TokenKind.LastKeyword)) {
             let sawSemi = Boolean(this.accept(TokenKind.Semi));
-            return [new LastStatement(), sawSemi];
+            return [makeLastStatement(), sawSemi];
         }
         else if (this.accept(TokenKind.NextKeyword)) {
             let sawSemi = Boolean(this.accept(TokenKind.Semi));
-            return [new NextStatement(), sawSemi];
+            return [makeNextStatement(), sawSemi];
         }
         else if (this.accept(TokenKind.ReturnKeyword)) {
-            let expr: Expr | null = null;
+            let expr: SyntaxNode | null = null;
             if (this.seeingStartOfExpr()) {
                 expr = this.parseExpr();
             }
             let sawSemi = Boolean(this.accept(TokenKind.Semi));
-            return [new ReturnStatement(expr), sawSemi];
+            return [makeReturnStatement(expr), sawSemi];
         }
         else {
             this.parseFail("statement");
         }
     }
 
-    parseBlock(): Block {
+    parseBlock(): SyntaxNode {
         this.advanceOver(TokenKind.CurlyL);
-        let statements: Array<Statement | Decl> = [];
+        let statements: Array<SyntaxNode> = [];
         while (this.seeingStartOfStatementOrDecl()) {
             if (this.seeingStartOfStatement()) {
                 let [statement, sawSemi] = this.parseStatement();
@@ -402,52 +402,52 @@ export class Parser {
             }
         }
         this.advanceOver(TokenKind.CurlyR);
-        return new Block(statements);
+        return makeBlock(statements);
     }
 
-    parseDecl(): [Decl, boolean] {
+    parseDecl(): [SyntaxNode, boolean] {
         if (this.accept(TokenKind.MyKeyword)) {
             this.expect(TokenKind.Identifier);
             let nameToken = this.accept(TokenKind.Identifier)!;
-            let name = new StrNode(nameToken.payload as string);
+            let name = makeStrNode(nameToken.payload as string);
             if (this.accept(TokenKind.Assign)) {
                 let initExpr = this.parseExpr();
                 let sawSemi = Boolean(this.accept(TokenKind.Semi));
-                return [new VarDecl(name, null, initExpr), sawSemi];
+                return [makeVarDecl(name, null, initExpr), sawSemi];
             }
             else {
                 let sawSemi = Boolean(this.accept(TokenKind.Semi));
-                return [new VarDecl(name, null, null), sawSemi];
+                return [makeVarDecl(name, null, null), sawSemi];
             }
         }
         else if (this.accept(TokenKind.FuncKeyword)) {
             this.expect(TokenKind.Identifier);
             let nameToken = this.accept(TokenKind.Identifier)!;
-            let name = new StrNode(nameToken.payload as string);
+            let name = makeStrNode(nameToken.payload as string);
             this.advanceOver(TokenKind.ParenL);
             let paramList = this.parseParameterList();
             this.advanceOver(TokenKind.ParenR);
             let body = this.parseBlock();
-            return [new FuncDecl(name, paramList, null, body), true];
+            return [makeFuncDecl(name, paramList, null, body), true];
         }
         else if (this.accept(TokenKind.MacroKeyword)) {
             this.expect(TokenKind.Identifier);
             let nameToken = this.accept(TokenKind.Identifier)!;
-            let name = new StrNode(nameToken.payload as string);
+            let name = makeStrNode(nameToken.payload as string);
             this.advanceOver(TokenKind.ParenL);
             let paramList = this.parseParameterList();
             this.advanceOver(TokenKind.ParenR);
             let body = this.parseBlock();
-            return [new MacroDecl(name, paramList, null, body), true];
+            return [makeMacroDecl(name, paramList, null, body), true];
         }
         else {
             this.parseFail("declaration");
         }
     }
 
-    parseExpr(): Expr {
+    parseExpr(): SyntaxNode {
         let expectation: "term" | "operator" = "term";
-        let termStack: Array<Expr> = [];
+        let termStack: Array<SyntaxNode> = [];
         let opStack: Array<Op> = [];
 
         function topOfStackIsTighterThan(incomingToken: Token): boolean {
@@ -478,14 +478,14 @@ export class Parser {
             let op = opStack.pop()!;
             if (op instanceof PrefixOp) {
                 let operand = termStack.pop()!;
-                let opName = new StrNode(opTokenName(op.token));
-                termStack.push(new PrefixOpExpr(opName, operand));
+                let opName = makeStrNode(opTokenName(op.token));
+                termStack.push(makePrefixOpExpr(opName, operand));
             }
             else if (op instanceof InfixOp) {
                 let rhs = termStack.pop()!;
                 let lhs = termStack.pop()!;
-                let opName = new StrNode(opTokenName(op.token));
-                termStack.push(new InfixOpExpr(lhs, opName, rhs));
+                let opName = makeStrNode(opTokenName(op.token));
+                termStack.push(makeInfixOpExpr(lhs, opName, rhs));
             }
             else {
                 throw new E000_InternalError(
@@ -498,27 +498,27 @@ export class Parser {
             let token: Token;
             if (expectation === "term") {
                 if (token = this.accept(TokenKind.IntLit)!) {
-                    let intNode = new IntNode(token.payload as bigint);
-                    termStack.push(new IntLitExpr(intNode));
+                    let intNode = makeIntNode(token.payload as bigint);
+                    termStack.push(makeIntLitExpr(intNode));
                     expectation = "operator";
                 }
                 else if (token = this.accept(TokenKind.StrLit)!) {
-                    let strNode = new StrNode(token.payload as string);
-                    termStack.push(new StrLitExpr(strNode));
+                    let strNode = makeStrNode(token.payload as string);
+                    termStack.push(makeStrLitExpr(strNode));
                     expectation = "operator";
                 }
                 else if (token = this.accept(TokenKind.FalseKeyword)!) {
-                    let falseNode = new BoolNode(false);
-                    termStack.push(new BoolLitExpr(falseNode));
+                    let falseNode = makeBoolNode(false);
+                    termStack.push(makeBoolLitExpr(falseNode));
                     expectation = "operator";
                 }
                 else if (token = this.accept(TokenKind.TrueKeyword)!) {
-                    let trueNode = new BoolNode(true);
-                    termStack.push(new BoolLitExpr(trueNode));
+                    let trueNode = makeBoolNode(true);
+                    termStack.push(makeBoolLitExpr(trueNode));
                     expectation = "operator";
                 }
                 else if (token = this.accept(TokenKind.NoneKeyword)!) {
-                    termStack.push(new NoneLitExpr());
+                    termStack.push(makeNoneLitExpr());
                     expectation = "operator";
                 }
                 else if (token = this.acceptAny(prefixOps)!) {
@@ -528,7 +528,7 @@ export class Parser {
                 else if (token = this.accept(TokenKind.ParenL)!) {
                     let inner = this.parseExpr();
                     this.advanceOver(TokenKind.ParenR);
-                    termStack.push(new ParenExpr(inner));
+                    termStack.push(makeParenExpr(inner));
                     expectation = "operator";
                 }
                 else if (token = this.accept(TokenKind.ParenR)!) {
@@ -541,11 +541,11 @@ export class Parser {
                        && !this.seeing(TokenKind.ParenR)) {
                         this.parseFail("end of expression");
                     }
-                    termStack.push(new DoExpr(statement));
+                    termStack.push(makeDoExpr(statement));
                     expectation = "operator";
                 }
                 else if (token = this.accept(TokenKind.SquareL)!) {
-                    let elements: Array<Expr> = [];
+                    let elements: Array<SyntaxNode> = [];
                     while (!this.seeing(TokenKind.SquareR)) {
                         let expr = this.parseExpr();
                         elements.push(expr);
@@ -554,7 +554,7 @@ export class Parser {
                         }
                     }
                     this.advanceOver(TokenKind.SquareR);
-                    termStack.push(new ArrayInitializerExpr(elements));
+                    termStack.push(makeArrayInitializerExpr(elements));
                     expectation = "operator";
                 }
                 else if (token = this.accept(TokenKind.Identifier)!) {
@@ -562,11 +562,11 @@ export class Parser {
                             && this.accept(TokenKind.Backquote)) {
                         let statementList = this.parseStatementList();
                         this.advanceOver(TokenKind.Backquote);
-                        termStack.push(new QuoteExpr(statementList));
+                        termStack.push(makeQuoteExpr(statementList));
                     }
                     else {
-                        let name = new StrNode(token.payload as string);
-                        termStack.push(new VarRefExpr(name));
+                        let name = makeStrNode(token.payload as string);
+                        termStack.push(makeVarRefExpr(name));
                     }
                     expectation = "operator";
                 }
@@ -574,7 +574,7 @@ export class Parser {
                     this.advanceOver(TokenKind.ParenL);
                     let innerExpr = this.parseExpr();
                     this.advanceOver(TokenKind.ParenR);
-                    termStack.push(new UnquoteExpr(innerExpr));
+                    termStack.push(makeUnquoteExpr(innerExpr));
                     expectation = "operator";
                 }
                 else {
@@ -593,14 +593,14 @@ export class Parser {
                     let indexExpr = this.parseExpr();
                     this.advanceOver(TokenKind.SquareR);
                     let array = termStack.pop()!;
-                    termStack.push(new IndexingExpr(array, indexExpr));
+                    termStack.push(makeIndexingExpr(array, indexExpr));
                     expectation = "operator";
                 }
                 else if (token = this.accept(TokenKind.ParenL)!) {
                     let argList = this.parseArgumentList();
                     this.advanceOver(TokenKind.ParenR);
                     let func = termStack.pop()!;
-                    termStack.push(new CallExpr(func, argList));
+                    termStack.push(makeCallExpr(func, argList));
                     expectation = "operator";
                 }
                 else if (termStartTokens.has(token)) {
@@ -630,32 +630,32 @@ export class Parser {
         return termStack[0];
     }
 
-    parseParameterList(): ParameterList {
-        let params: Array<Parameter> = [];
+    parseParameterList(): SyntaxNode {
+        let params: Array<SyntaxNode> = [];
         while (!this.seeing(TokenKind.ParenR)) {
             this.expect(TokenKind.Identifier);
             let nameToken = this.accept(TokenKind.Identifier)!;
-            let name = new StrNode(nameToken.payload as string);
-            let param = new Parameter(name, null);
+            let name = makeStrNode(nameToken.payload as string);
+            let param = makeParameter(name, null);
             params.push(param);
             if (!this.accept(TokenKind.Comma)) {
                 break;
             }
         }
-        return new ParameterList(params);
+        return makeParameterList(params);
     }
 
-    parseArgumentList(): ArgumentList {
-        let args: Array<Argument> = [];
+    parseArgumentList(): SyntaxNode {
+        let args: Array<SyntaxNode> = [];
         while (!this.seeing(TokenKind.ParenR)) {
             let expr = this.parseExpr();
-            let arg = new Argument(expr);
+            let arg = makeArgument(expr);
             args.push(arg);
             if (!this.accept(TokenKind.Comma)) {
                 break;
             }
         }
-        return new ArgumentList(args);
+        return makeArgumentList(args);
     }
 }
 

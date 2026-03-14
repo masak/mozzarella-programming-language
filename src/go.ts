@@ -5,8 +5,7 @@ import {
     Parser,
 } from "./compiler/parse";
 import {
-    Block,
-    CompUnit,
+    SyntaxNode,
 } from "./compiler/syntax";
 import {
     validateCompUnit,
@@ -51,7 +50,7 @@ export function run(source: string): string {
     let parser = new Parser(source);
     let compUnit = parser.parseCompUnit();
     validateCompUnit(compUnit);
-    let staticEnvs = new Map<CompUnit | Block, Env>();
+    let staticEnvs = new Map<SyntaxNode, Env>();
     compUnit = macroExpandCompUnit(compUnit, staticEnvs);
     let value = runCompUnit(compUnit, staticEnvs);
     return displayValue(value, new Set());
@@ -61,7 +60,7 @@ export function runWithFuel(source: string, fuel: number): string {
     let parser = new Parser(source);
     let compUnit = parser.parseCompUnit();
     validateCompUnit(compUnit);
-    let staticEnvs = new Map<CompUnit | Block, Env>();
+    let staticEnvs = new Map<SyntaxNode, Env>();
     compUnit = macroExpandCompUnit(compUnit, staticEnvs);
     let value = runCompUnitWithFuel(compUnit, fuel, staticEnvs);
     return displayValue(value, new Set());

@@ -4,15 +4,18 @@ import {
     E303_UnquoteOutsideQuoteError,
 } from "./error";
 import {
-    Block,
-    CompUnit,
-    FuncDecl,
-    MacroDecl,
-    QuoteExpr,
+    funcDeclName,
+    isBlock,
+    isFuncDecl,
+    isMacroDecl,
+    isQuoteExpr,
+    isUnquoteExpr,
+    isVarDecl,
+    isVarRefExpr,
+    macroDeclName,
     SyntaxNode,
-    UnquoteExpr,
-    VarDecl,
-    VarRefExpr,
+    varDeclName,
+    varRefExprName,
 } from "./syntax";
 
 class VarState {
@@ -26,8 +29,8 @@ function visitDown(
     syntaxNode: SyntaxNode,
     contextStack: Array<Context>,
 ): void {
-    if (syntaxNode instanceof VarRefExpr) {
-        let name = syntaxNode.name.payload as string;
+    if (isVarRefExpr(syntaxNode)) {
+        let name = varRefExprName(syntaxNode).payload as string;
         for (let i = contextStack.length - 1; i >= 0; i--) {
             let context = contextStack[i];
             if (context.has(name)) {
@@ -38,11 +41,11 @@ function visitDown(
             }
         }
     }
-    else if (syntaxNode instanceof Block) {
+    else if (isBlock(syntaxNode)) {
         contextStack.push(new Map());
     }
-    else if (syntaxNode instanceof VarDecl) {
-        let name = syntaxNode.name.payload as string;
+    else if (isVarDecl(syntaxNode)) {
+        let name = varDeclName(syntaxNode).payload as string;
         let context = contextStack[contextStack.length - 1];
         if (context.get(name) === VarState.declared) {
             throw new E301_RedeclarationError(
@@ -58,8 +61,8 @@ function visitDown(
             context.set(name, VarState.declared);
         }
     }
-    else if (syntaxNode instanceof FuncDecl) {
-        let name = syntaxNode.name.payload as string;
+    else if (isFuncDecl(syntaxNode)) {
+        let name = funcDeclName(syntaxNode).payload as string;
         let context = contextStack[contextStack.length - 1];
         if (context.get(name) === VarState.declared) {
             throw new E301_RedeclarationError(
@@ -70,8 +73,8 @@ function visitDown(
             context.set(name, VarState.declared);
         }
     }
-    else if (syntaxNode instanceof MacroDecl) {
-        let name = syntaxNode.name.payload as string;
+    else if (isMacroDecl(syntaxNode)) {
+        let name = macroDeclName(syntaxNode).payload as string;
         let context = contextStack[contextStack.length - 1];
         if (context.get(name) === VarState.declared) {
             throw new E301_RedeclarationError(
@@ -88,7 +91,7 @@ function visitUp(
     syntaxNode: SyntaxNode,
     contextStack: Array<Context>,
 ): void {
-    if (syntaxNode instanceof Block) {
+    if (isBlock(syntaxNode)) {
         contextStack.pop();
     }
 }
@@ -104,10 +107,10 @@ function traverse(
 
     for (let child of syntaxNode.children) {
         if (child instanceof SyntaxNode) {
-            if (child instanceof QuoteExpr) {
+            if (isQuoteExpr(child)) {
                 traverse(child, contextStack, quoteLevel + 1);
             }
-            else if (child instanceof UnquoteExpr) {
+            else if (isUnquoteExpr(child)) {
                 if (quoteLevel <= 0) {
                     throw new E303_UnquoteOutsideQuoteError();
                 }
@@ -124,7 +127,7 @@ function traverse(
     }
 }
 
-export function validateCompUnit(compUnit: CompUnit): void {
+export function validateCompUnit(compUnit: SyntaxNode): void {
     traverse(compUnit, /* contextStack */ [new Map()], /* quoteLevel */ 0);
 }
 

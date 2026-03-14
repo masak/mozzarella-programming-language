@@ -4,40 +4,81 @@
 // environment, kontinuation with a "k". The J part contains a table of _jump
 // targets_, making `next`/`last`/`return` work.
 import {
-    Argument,
-    ArrayInitializerExpr,
-    Block,
-    BlockStatement,
-    BoolLitExpr,
-    CallExpr,
-    CompUnit,
-    Decl,
-    DoExpr,
-    EmptyStatement,
-    Expr,
-    ExprStatement,
-    ForStatement,
-    FuncDecl,
-    IfClause,
-    IfStatement,
-    IndexingExpr,
-    InfixOpExpr,
-    IntLitExpr,
-    LastStatement,
-    MacroDecl,
-    NextStatement,
-    NoneLitExpr,
-    ParenExpr,
-    PrefixOpExpr,
-    QuoteExpr,
-    ReturnStatement,
-    Statement,
-    StrLitExpr,
+    argumentExpr,
+    argumentListArguments,
+    arrayInitializerExprElements,
+    blockStatementBlock,
+    blockStatements,
+    boolLitExprValue,
+    callExprArgumentList,
+    callExprFuncExpr,
+    compUnitStatements,
+    doExprStatement,
+    exprStatementExpr,
+    forStatementArrayExpr,
+    forStatementBody,
+    forStatementName,
+    funcDeclBody,
+    funcDeclName,
+    funcDeclParameterList,
+    ifClauseBlock,
+    ifClauseCondExpr,
+    ifClauseListClauses,
+    ifStatementClauseList,
+    ifStatementElseBlock,
+    indexingExprArrayExpr,
+    indexingExprIndexExpr,
+    infixOpExprLhs,
+    infixOpExprOpName,
+    infixOpExprRhs,
+    intLitExprValue,
+    isArrayInitializerExpr,
+    isBlock,
+    isBlockStatement,
+    isBoolLitExpr,
+    isCallExpr,
+    isCompUnit,
+    isDoExpr,
+    isEmptyStatement,
+    isExprStatement,
+    isForStatement,
+    isFuncDecl,
+    isIfStatement,
+    isIndexingExpr,
+    isInfixOpExpr,
+    isIntLitExpr,
+    isLastStatement,
+    isMacroDecl,
+    isNextStatement,
+    isNoneLitExpr,
+    isParenExpr,
+    isPrefixOpExpr,
+    isQuoteExpr,
+    isReturnStatement,
+    isStatement,
+    isStrLitExpr,
+    isUnquoteExpr,
+    isVarDecl,
+    isVarRefExpr,
+    isWhileStatement,
+    macroDeclBody,
+    macroDeclName,
+    macroDeclParameterList,
+    parameterListParameters,
+    parameterName,
+    parenExprInnerExpr,
+    prefixOpExprOperand,
+    prefixOpExprOpName,
+    quoteExprStatements,
+    returnStatementExpr,
+    strLitExprValue,
     SyntaxNode,
-    UnquoteExpr,
-    VarDecl,
-    VarRefExpr,
-    WhileStatement,
+    unquoteExprInnerExpr,
+    varDeclInitExpr,
+    varDeclName,
+    varRefExprName,
+    whileStatementBody,
+    whileStatementCondExpr,
 } from "../compiler/syntax";
 import {
     boolify,
@@ -82,15 +123,6 @@ import {
     kindAndPayloadOfNode,
     isExprKind,
     isStatementKind,
-    SYNTAX_KIND__BLOCK,
-    SYNTAX_KIND__BOOL_LIT_EXPR,
-    SYNTAX_KIND__BOOL_NODE,
-    SYNTAX_KIND__DO_EXPR,
-    SYNTAX_KIND__INT_LIT_EXPR,
-    SYNTAX_KIND__INT_NODE,
-    SYNTAX_KIND__NONE_LIT_EXPR,
-    SYNTAX_KIND__STR_LIT_EXPR,
-    SYNTAX_KIND__STR_NODE,
 } from "./reify";
 import {
     stringify,
@@ -103,6 +135,15 @@ import {
     MacroValue,
     NoneValue,
     StrValue,
+    SYNTAX_KIND__BLOCK,
+    SYNTAX_KIND__BOOL_LIT_EXPR,
+    SYNTAX_KIND__BOOL_NODE,
+    SYNTAX_KIND__DO_EXPR,
+    SYNTAX_KIND__INT_LIT_EXPR,
+    SYNTAX_KIND__INT_NODE,
+    SYNTAX_KIND__NONE_LIT_EXPR,
+    SYNTAX_KIND__STR_LIT_EXPR,
+    SYNTAX_KIND__STR_NODE,
     SyntaxNodeValue,
     UninitValue,
     Value,
@@ -150,14 +191,14 @@ type Kont =
 ;
 
 class CompUnitKont {
-    statements: Array<Statement | Decl>;
+    statements: Array<SyntaxNode>;
     nextIndex: number;
     env: Env;
     tail: Kont;
     jumpMap: JumpMap;
 
     constructor(
-        statements: Array<Statement | Decl>,
+        statements: Array<SyntaxNode>,
         nextIndex: number,
         env: Env,
         tail: Kont,
@@ -183,14 +224,14 @@ class PrefixOpKont {
 
 class InfixOp1Kont {
     opName: string;
-    rhs: Expr;
+    rhs: SyntaxNode;
     env: Env;
     tail: Kont;
     jumpMap: JumpMap;
 
     constructor(
         opName: string,
-        rhs: Expr,
+        rhs: SyntaxNode,
         env: Env,
         tail: Kont,
         jumpMap: JumpMap,
@@ -216,14 +257,14 @@ class InfixOp2Kont {
 }
 
 class ComparisonOp1Kont {
-    exprs: Array<Expr>;
+    exprs: Array<SyntaxNode>;
     ops: Array<string>;
     env: Env;
     tail: Kont;
     jumpMap: JumpMap;
 
     constructor(
-        exprs: Array<Expr>,
+        exprs: Array<SyntaxNode>,
         ops: Array<string>,
         env: Env,
         tail: Kont,
@@ -239,7 +280,7 @@ class ComparisonOp1Kont {
 
 class ComparisonOp2Kont {
     prev: Value;
-    exprs: Array<Expr>;
+    exprs: Array<SyntaxNode>;
     ops: Array<string>;
     index: number;
     env: Env;
@@ -248,7 +289,7 @@ class ComparisonOp2Kont {
 
     constructor(
         prev: Value,
-        exprs: Array<Expr>,
+        exprs: Array<SyntaxNode>,
         ops: Array<string>,
         index: number,
         env: Env,
@@ -266,14 +307,14 @@ class ComparisonOp2Kont {
 }
 
 class BlockKont {
-    statements: Array<Statement | Decl>;
+    statements: Array<SyntaxNode>;
     nextIndex: number;
     env: Env;
     tail: Kont;
     jumpMap: JumpMap;
 
     constructor(
-        statements: Array<Statement | Decl>,
+        statements: Array<SyntaxNode>,
         nextIndex: number,
         env: Env,
         tail: Kont,
@@ -288,16 +329,16 @@ class BlockKont {
 }
 
 class IfKont {
-    clauses: Array<IfClause>;
-    elseBlock: Block | null;
+    clauses: Array<SyntaxNode>;
+    elseBlock: SyntaxNode | null;
     index: number;
     env: Env;
     tail: Kont;
     jumpMap: JumpMap;
 
     constructor(
-        clauses: Array<IfClause>,
-        elseBlock: Block | null,
+        clauses: Array<SyntaxNode>,
+        elseBlock: SyntaxNode | null,
         index: number,
         env: Env,
         tail: Kont,
@@ -314,7 +355,7 @@ class IfKont {
 
 class ArrayInitializerKont {
     elemValues: Array<Value>;
-    elemExprs: Array<Expr>;
+    elemExprs: Array<SyntaxNode>;
     index: number;
     env: Env;
     tail: Kont;
@@ -322,7 +363,7 @@ class ArrayInitializerKont {
 
     constructor(
         elemValues: Array<Value>,
-        elemExprs: Array<Expr>,
+        elemExprs: Array<SyntaxNode>,
         index: number,
         env: Env,
         tail: Kont,
@@ -338,12 +379,17 @@ class ArrayInitializerKont {
 }
 
 class Indexing1Kont {
-    indexExpr: Expr;
+    indexExpr: SyntaxNode;
     env: Env;
     tail: Kont;
     jumpMap: JumpMap;
 
-    constructor(indexExpr: Expr, env: Env, tail: Kont, jumpMap: JumpMap) {
+    constructor(
+        indexExpr: SyntaxNode,
+        env: Env,
+        tail: Kont,
+        jumpMap: JumpMap,
+    ) {
         this.indexExpr = indexExpr;
         this.env = env;
         this.tail = tail;
@@ -375,14 +421,14 @@ class VarKont {
 
 class For1Kont {
     name: string;
-    body: Block;
+    body: SyntaxNode;
     env: Env;
     tail: Kont;
     jumpMap: JumpMap;
 
     constructor(
         name: string,
-        body: Block,
+        body: SyntaxNode,
         env: Env,
         tail: Kont,
         jumpMap: JumpMap,
@@ -398,7 +444,7 @@ class For1Kont {
 class For2Kont {
     arrayValue: ArrayValue;
     name: string;
-    body: Block;
+    body: SyntaxNode;
     nextIndex: number;
     env: Env;
     tail: Kont;
@@ -407,7 +453,7 @@ class For2Kont {
     constructor(
         arrayValue: ArrayValue,
         name: string,
-        body: Block,
+        body: SyntaxNode,
         nextIndex: number,
         env: Env,
         tail: Kont,
@@ -424,12 +470,12 @@ class For2Kont {
 }
 
 class Assign1Kont {
-    rhs: Expr;
+    rhs: SyntaxNode;
     env: Env;
     tail: Kont;
     jumpMap: JumpMap;
 
-    constructor(rhs: Expr, env: Env, tail: Kont, jumpMap: JumpMap) {
+    constructor(rhs: SyntaxNode, env: Env, tail: Kont, jumpMap: JumpMap) {
         this.rhs = rhs;
         this.env = env;
         this.tail = tail;
@@ -448,12 +494,17 @@ class Assign2Kont {
 }
 
 class IndexingLoc1Kont {
-    indexExpr: Expr;
+    indexExpr: SyntaxNode;
     env: Env;
     tail: Kont;
     jumpMap: JumpMap;
 
-    constructor(indexExpr: Expr, env: Env, tail: Kont, jumpMap: JumpMap) {
+   constructor(
+       indexExpr: SyntaxNode,
+       env: Env,
+       tail: Kont,
+       jumpMap: JumpMap,
+   ) {
         this.indexExpr = indexExpr;
         this.env = env;
         this.tail = tail;
@@ -472,14 +523,14 @@ class IndexingLoc2Kont {
 }
 
 class BlockLocKont {
-    statements: Array<Statement | Decl>;
+    statements: Array<SyntaxNode>;
     nextIndex: number;
     env: Env;
     tail: Kont;
     jumpMap: JumpMap;
 
     constructor(
-        statements: Array<Statement | Decl>,
+        statements: Array<SyntaxNode>,
         nextIndex: number,
         env: Env,
         tail: Kont,
@@ -494,16 +545,16 @@ class BlockLocKont {
 }
 
 class IfLocKont {
-    clauses: Array<IfClause>;
-    elseBlock: Block | null;
+    clauses: Array<SyntaxNode>;
+    elseBlock: SyntaxNode | null;
     index: number;
     env: Env;
     tail: Kont;
     jumpMap: JumpMap;
 
     constructor(
-        clauses: Array<IfClause>,
-        elseBlock: Block | null,
+        clauses: Array<SyntaxNode>,
+        elseBlock: SyntaxNode | null,
         index: number,
         env: Env,
         tail: Kont,
@@ -519,15 +570,15 @@ class IfLocKont {
 }
 
 class While1Kont {
-    condExpr: Expr;
-    body: Block;
+    condExpr: SyntaxNode;
+    body: SyntaxNode;
     env: Env;
     tail: Kont;
     jumpMap: JumpMap;
 
     constructor(
-        condExpr: Expr,
-        body: Block,
+        condExpr: SyntaxNode,
+        body: SyntaxNode,
         env: Env,
         tail: Kont,
         jumpMap: JumpMap,
@@ -541,15 +592,15 @@ class While1Kont {
 }
 
 class While2Kont {
-    condExpr: Expr;
-    body: Block;
+    condExpr: SyntaxNode;
+    body: SyntaxNode;
     env: Env;
     tail: Kont;
     jumpMap: JumpMap;
 
     constructor(
-        condExpr: Expr,
-        body: Block,
+        condExpr: SyntaxNode,
+        body: SyntaxNode,
         env: Env,
         tail: Kont,
         jumpMap: JumpMap,
@@ -563,13 +614,13 @@ class While2Kont {
 }
 
 class Call1Kont {
-    args: Array<Argument>;
+    args: Array<SyntaxNode>;
     env: Env;
     tail: Kont;
     jumpMap: JumpMap;
 
     constructor(
-        args: Array<Argument>,
+        args: Array<SyntaxNode>,
         env: Env,
         tail: Kont,
         jumpMap: JumpMap,
@@ -584,7 +635,7 @@ class Call1Kont {
 class Call2Kont {
     funcValue: FuncValue;
     argValues: Array<Value>;
-    args: Array<Argument>;
+    args: Array<SyntaxNode>;
     index: number;
     env: Env;
     tail: Kont;
@@ -593,7 +644,7 @@ class Call2Kont {
     constructor(
         funcValue: FuncValue,
         argValues: Array<Value>,
-        args: Array<Argument>,
+        args: Array<SyntaxNode>,
         index: number,
         env: Env,
         tail: Kont,
@@ -610,14 +661,14 @@ class Call2Kont {
 }
 
 class BlockIgnoreKont {
-    statements: Array<Statement | Decl>;
+    statements: Array<SyntaxNode>;
     nextIndex: number;
     env: Env;
     tail: Kont;
     jumpMap: JumpMap;
 
     constructor(
-        statements: Array<Statement | Decl>,
+        statements: Array<SyntaxNode>,
         nextIndex: number,
         env: Env,
         tail: Kont,
@@ -633,14 +684,14 @@ class BlockIgnoreKont {
 
 class InfixOpIgnore1Kont {
     opName: string;
-    rhs: Expr;
+    rhs: SyntaxNode;
     env: Env;
     tail: Kont;
     jumpMap: JumpMap;
 
     constructor(
         opName: string,
-        rhs: Expr,
+        rhs: SyntaxNode,
         env: Env,
         tail: Kont,
         jumpMap: JumpMap,
@@ -666,13 +717,13 @@ class InfixOpIgnore2Kont {
 }
 
 class ComparisonOpIgnore1Kont {
-    exprs: Array<Expr>;
+    exprs: Array<SyntaxNode>;
     ops: Array<string>;
     env: Env;
     tail: Kont;
 
     constructor(
-        exprs: Array<Expr>,
+        exprs: Array<SyntaxNode>,
         ops: Array<string>,
         env: Env,
         tail: Kont,
@@ -685,12 +736,12 @@ class ComparisonOpIgnore1Kont {
 }
 
 class AssignIgnore1Kont {
-    rhs: Expr;
+    rhs: SyntaxNode;
     env: Env;
     tail: Kont;
     jumpMap: JumpMap;
 
-    constructor(rhs: Expr, env: Env, tail: Kont, jumpMap: JumpMap) {
+    constructor(rhs: SyntaxNode, env: Env, tail: Kont, jumpMap: JumpMap) {
         this.rhs = rhs;
         this.env = env;
         this.tail = tail;
@@ -729,12 +780,17 @@ class ReturnKont {
 }
 
 class CallIgnore1Kont {
-    args: Array<Expr>;
+    args: Array<SyntaxNode>;
     env: Env;
     tail: Kont;
     jumpMap: JumpMap;
 
-    constructor(args: Array<Expr>, env: Env, tail: Kont, jumpMap: JumpMap) {
+    constructor(
+        args: Array<SyntaxNode>,
+        env: Env,
+        tail: Kont,
+        jumpMap: JumpMap,
+    ) {
         this.args = args;
         this.env = env;
         this.tail = tail;
@@ -745,7 +801,7 @@ class CallIgnore1Kont {
 class CallIgnore2Kont {
     funcValue: FuncValue;
     argValues: Array<Value>;
-    args: Array<Expr>;
+    args: Array<SyntaxNode>;
     index: number;
     env: Env;
     tail: Kont;
@@ -754,7 +810,7 @@ class CallIgnore2Kont {
     constructor(
         funcValue: FuncValue,
         argValues: Array<Value>,
-        args: Array<Expr>,
+        args: Array<SyntaxNode>,
         index: number,
         env: Env,
         tail: Kont,
@@ -772,7 +828,7 @@ class CallIgnore2Kont {
 
 class Quote1Kont {
     index: number;
-    statements: Array<Statement | Decl>;
+    statements: Array<SyntaxNode>;
     statementValues: Array<SyntaxNodeValue>;
     env: Env;
     tail: Kont;
@@ -780,7 +836,7 @@ class Quote1Kont {
 
     constructor(
         index: number,
-        statements: Array<Statement | Decl>,
+        statements: Array<SyntaxNode>,
         statementValues: Array<SyntaxNodeValue>,
         env: Env,
         tail: Kont,
@@ -837,14 +893,14 @@ class UnquoteKont {
 
 class QuoteIgnore1Kont {
     index: number;
-    statements: Array<Statement | Decl>;
+    statements: Array<SyntaxNode>;
     env: Env;
     tail: Kont;
     jumpMap: JumpMap;
 
     constructor(
         index: number,
-        statements: Array<Statement | Decl>,
+        statements: Array<SyntaxNode>,
         env: Env,
         tail: Kont,
         jumpMap: JumpMap,
@@ -921,8 +977,8 @@ class RetState {
 }
 
 function load(
-    compUnit: CompUnit,
-    staticEnvs: Map<CompUnit | Block, Env>,
+    compUnit: SyntaxNode,
+    staticEnvs: Map<SyntaxNode, Env>,
 ): State {
     let env = initializeEnv(emptyEnv(), compUnit, staticEnvs);
     return new PState(
@@ -935,43 +991,44 @@ function load(
 
 export function initializeEnv(
     env: Env,
-    compUnitOrBlock: CompUnit | Block,
-    staticEnvs: Map<CompUnit | Block, Env>,
+    compUnitOrBlock: SyntaxNode,
+    staticEnvs: Map<SyntaxNode, Env>,
 ): Env {
-    for (let statementOrDecl of compUnitOrBlock.statements) {
-        if (statementOrDecl instanceof VarDecl) {
+    let statements = blockStatements(compUnitOrBlock);
+    for (let statementOrDecl of statements) {
+        if (isVarDecl(statementOrDecl)) {
             let varDecl = statementOrDecl;
-            let name = varDecl.name.payload as string;
+            let name = varDeclName(varDecl).payload as string;
             let staticEnv = staticEnvs.get(compUnitOrBlock);
             let value
                 = staticEnv?.bindings.get(name)?.value ?? new UninitValue();
             bindMutable(env, name, value);
         }
-        else if (statementOrDecl instanceof FuncDecl) {
+        else if (isFuncDecl(statementOrDecl)) {
             let funcDecl = statementOrDecl;
-            let name = funcDecl.name.payload as string;
-            let parameterList = funcDecl.parameterList.parameters.map(
-                (parameter) => parameter.name.payload as string
-            );
+            let name = funcDeclName(funcDecl).payload as string;
+            let parameterList = parameterListParameters(
+                funcDeclParameterList(funcDecl)
+            ).map((parameter) => parameterName(parameter).payload as string);
             let funcValue = new FuncValue(
                 name,
                 env,
                 parameterList,
-                funcDecl.body,
+                funcDeclBody(funcDecl),
             );
             bindReadonly(env, name, funcValue);
         }
-        else if (statementOrDecl instanceof MacroDecl) {
+        else if (isMacroDecl(statementOrDecl)) {
             let macroDecl = statementOrDecl;
-            let name = macroDecl.name.payload as string;
-            let parameterList = macroDecl.parameterList.parameters.map(
-                (parameter) => parameter.name.payload as string
-            );
+            let name = macroDeclName(macroDecl).payload as string;
+            let parameterList = parameterListParameters(
+                macroDeclParameterList(macroDecl)
+            ).map((parameter) => parameterName(parameter).payload as string);
             let macroValue = new MacroValue(
                 name,
                 env,
                 parameterList,
-                macroDecl.body,
+                macroDeclBody(macroDecl),
             );
             bindReadonly(env, name, macroValue);
         }
@@ -996,11 +1053,15 @@ function zip<T, U>(ts: Array<T>, us: Array<U>): Array<[T, U]> {
 
 function reducePState(
     { code: [mode, syntaxNode, quoteLevel], env, kont, jumpMap }: PState,
-    staticEnvs: Map<CompUnit | Block, Env>,
+    staticEnvs: Map<SyntaxNode, Env>,
 ): State {
+    if (syntaxNode === null) {
+        throw new E000_InternalError("null syntax node");
+    }
+
     if (mode === Mode.GetValue) {
-        if (syntaxNode instanceof CompUnit) {
-            let statements = syntaxNode.statements;
+        if (isCompUnit(syntaxNode)) {
+            let statements = compUnitStatements(syntaxNode);
             if (statements.length === 0) {
                 return new RetState(new NoneValue(), kont);
             }
@@ -1020,32 +1081,32 @@ function reducePState(
                 );
             }
         }
-        else if (syntaxNode instanceof ExprStatement) {
+        else if (isExprStatement(syntaxNode)) {
             return new PState(
-                [Mode.GetValue, syntaxNode.expr, quoteLevel],
+                [Mode.GetValue, exprStatementExpr(syntaxNode), quoteLevel],
                 env,
                 kont,
                 jumpMap,
             );
         }
-        else if (syntaxNode instanceof IntLitExpr) {
-            let payload = syntaxNode.value.payload as bigint;
+        else if (isIntLitExpr(syntaxNode)) {
+            let payload = intLitExprValue(syntaxNode).payload as bigint;
             return new RetState(new IntValue(payload), kont);
         }
-        else if (syntaxNode instanceof StrLitExpr) {
-            let payload = syntaxNode.value.payload as string;
+        else if (isStrLitExpr(syntaxNode)) {
+            let payload = strLitExprValue(syntaxNode).payload as string;
             return new RetState(new StrValue(payload), kont);
         }
-        else if (syntaxNode instanceof BoolLitExpr) {
-            let payload = syntaxNode.value.payload as boolean;
+        else if (isBoolLitExpr(syntaxNode)) {
+            let payload = boolLitExprValue(syntaxNode).payload as boolean;
             return new RetState(new BoolValue(payload), kont);
         }
-        else if (syntaxNode instanceof NoneLitExpr) {
+        else if (isNoneLitExpr(syntaxNode)) {
             return new RetState(new NoneValue(), kont);
         }
-        else if (syntaxNode instanceof PrefixOpExpr) {
-            let opName = syntaxNode.opName.payload;
-            let operand = syntaxNode.operand;
+        else if (isPrefixOpExpr(syntaxNode)) {
+            let opName = prefixOpExprOpName(syntaxNode).payload as string;
+            let operand = prefixOpExprOperand(syntaxNode);
             if (["+", "-",  "~", "?", "!"].includes(opName)) {
                 let prefixOpKont = new PrefixOpKont(opName, kont);
                 return new PState(
@@ -1061,10 +1122,10 @@ function reducePState(
                 );
             }
         }
-        else if (syntaxNode instanceof InfixOpExpr) {
-            let lhs = syntaxNode.lhs;
-            let opName = syntaxNode.opName.payload;
-            let rhs = syntaxNode.rhs;
+        else if (isInfixOpExpr(syntaxNode)) {
+            let lhs = infixOpExprLhs(syntaxNode);
+            let opName = infixOpExprOpName(syntaxNode).payload as string;
+            let rhs = infixOpExprRhs(syntaxNode);
             if (["+", "-", "*", "//", "%", "~", "&&", "||"].includes(opName)) {
                 let infixOpKont1
                     = new InfixOp1Kont(opName, rhs, env, kont, jumpMap);
@@ -1105,8 +1166,8 @@ function reducePState(
                 throw new E000_InternalError(`Unknown infix op ${opName}`);
             }
         }
-        else if (syntaxNode instanceof ParenExpr) {
-            let innerExpr = syntaxNode.innerExpr;
+        else if (isParenExpr(syntaxNode)) {
+            let innerExpr = parenExprInnerExpr(syntaxNode);
             return new PState(
                 [Mode.GetValue, innerExpr, quoteLevel],
                 env,
@@ -1114,20 +1175,20 @@ function reducePState(
                 jumpMap,
             );
         }
-        else if (syntaxNode instanceof EmptyStatement) {
+        else if (isEmptyStatement(syntaxNode)) {
             return new RetState(new NoneValue(), kont);
         }
-        else if (syntaxNode instanceof BlockStatement) {
+        else if (isBlockStatement(syntaxNode)) {
             return new PState(
-                [Mode.GetValue, syntaxNode.block, quoteLevel],
+                [Mode.GetValue, blockStatementBlock(syntaxNode), quoteLevel],
                 env,
                 kont,
                 jumpMap,
             );
         }
-        else if (syntaxNode instanceof Block) {
+        else if (isBlock(syntaxNode)) {
             env = initializeEnv(extend(env), syntaxNode, staticEnvs);
-            let statements = syntaxNode.statements;
+            let statements = blockStatements(syntaxNode);
             if (statements.length === 0) {
                 return new RetState(new NoneValue(), kont);
             }
@@ -1147,8 +1208,8 @@ function reducePState(
                 );
             }
         }
-        else if (syntaxNode instanceof DoExpr) {
-            let statement = syntaxNode.statement;
+        else if (isDoExpr(syntaxNode)) {
+            let statement = doExprStatement(syntaxNode);
             return new PState(
                 [Mode.GetValue, statement, quoteLevel],
                 env,
@@ -1156,10 +1217,12 @@ function reducePState(
                 jumpMap,
             );
         }
-        else if (syntaxNode instanceof IfStatement) {
-            let clauses = syntaxNode.clauseList.clauses;
-            let elseBlock = syntaxNode.elseBlock;
-            let condExpr = clauses[0].condExpr;
+        else if (isIfStatement(syntaxNode)) {
+            let clauses = ifClauseListClauses(
+                ifStatementClauseList(syntaxNode)
+            );
+            let elseBlock = ifStatementElseBlock(syntaxNode);
+            let condExpr = ifClauseCondExpr(clauses[0]);
             let ifKont = new IfKont(
                 clauses,
                 elseBlock,
@@ -1175,14 +1238,14 @@ function reducePState(
                 jumpMap,
             );
         }
-        else if (syntaxNode instanceof ArrayInitializerExpr) {
-            if (syntaxNode.elements.length === 0) {
+        else if (isArrayInitializerExpr(syntaxNode)) {
+            if (arrayInitializerExprElements(syntaxNode).length === 0) {
                 return new RetState(new ArrayValue([]), kont);
             }
             else {
                 let arrayInitializerKont = new ArrayInitializerKont(
-                    new Array(syntaxNode.elements.length),
-                    syntaxNode.elements,
+                    new Array(arrayInitializerExprElements(syntaxNode).length),
+                    arrayInitializerExprElements(syntaxNode),
                     0,
                     env,
                     kont,
@@ -1191,7 +1254,7 @@ function reducePState(
                 return new PState(
                     [
                         Mode.GetValue,
-                        syntaxNode.children[0] as Expr,
+                        arrayInitializerExprElements(syntaxNode)[0],
                         quoteLevel,
                     ],
                     env,
@@ -1200,9 +1263,9 @@ function reducePState(
                 );
             }
         }
-        else if (syntaxNode instanceof IndexingExpr) {
-            let arrayExpr = syntaxNode.arrayExpr;
-            let indexExpr = syntaxNode.indexExpr;
+        else if (isIndexingExpr(syntaxNode)) {
+            let arrayExpr = indexingExprArrayExpr(syntaxNode);
+            let indexExpr = indexingExprIndexExpr(syntaxNode);
             let indexing1Kont = new Indexing1Kont(
                 indexExpr,
                 env,
@@ -1216,10 +1279,10 @@ function reducePState(
                 jumpMap,
             );
         }
-        else if (syntaxNode instanceof VarDecl) {
-            let initExpr = syntaxNode.initExpr;
+        else if (isVarDecl(syntaxNode)) {
+            let initExpr = varDeclInitExpr(syntaxNode);
             if (initExpr !== null) {
-                let name = syntaxNode.name.payload as string;
+                let name = varDeclName(syntaxNode).payload as string;
                 let varKont = new VarKont(name, env, kont);
                 return new PState(
                     [Mode.GetValue, initExpr, quoteLevel],
@@ -1232,17 +1295,17 @@ function reducePState(
                 return new RetState(new NoneValue(), kont);
             }
         }
-        else if (syntaxNode instanceof VarRefExpr) {
-            let name = syntaxNode.name.payload as string;
+        else if (isVarRefExpr(syntaxNode)) {
+            let name = varRefExprName(syntaxNode).payload as string;
             let value = lookup(env, name);
             return new RetState(value, kont);
         }
-        else if (syntaxNode instanceof ForStatement) {
+        else if (isForStatement(syntaxNode)) {
             env = extend(env);
-            let name = syntaxNode.name.payload as string;
+            let name = forStatementName(syntaxNode).payload as string;
             bindReadonly(env, name, new UninitValue());
-            let arrayExpr = syntaxNode.arrayExpr;
-            let body = syntaxNode.body;
+            let arrayExpr = forStatementArrayExpr(syntaxNode);
+            let body = forStatementBody(syntaxNode);
             let for1Kont = new For1Kont(name, body, env, kont, jumpMap);
             return new PState(
                 [Mode.GetValue, arrayExpr, quoteLevel],
@@ -1251,9 +1314,9 @@ function reducePState(
                 jumpMap,
             );
         }
-        else if (syntaxNode instanceof WhileStatement) {
-            let condExpr = syntaxNode.condExpr;
-            let body = syntaxNode.body;
+        else if (isWhileStatement(syntaxNode)) {
+            let condExpr = whileStatementCondExpr(syntaxNode);
+            let body = whileStatementBody(syntaxNode);
             let while1Kont = new While1Kont(
                 condExpr,
                 body,
@@ -1268,7 +1331,7 @@ function reducePState(
                 jumpMap,
             );
         }
-        else if (syntaxNode instanceof LastStatement) {
+        else if (isLastStatement(syntaxNode)) {
             let lastTarget = jumpMap.lastTarget;
             if (lastTarget === null) {
                 throw new E609_LastOutsideLoopError(
@@ -1279,7 +1342,7 @@ function reducePState(
                 return new RetState(new NoneValue(), lastTarget);
             }
         }
-        else if (syntaxNode instanceof NextStatement) {
+        else if (isNextStatement(syntaxNode)) {
             let nextTarget = jumpMap.nextTarget;
             if (nextTarget === null) {
                 throw new E610_NextOutsideLoopError("'next' outside of loop");
@@ -1288,12 +1351,12 @@ function reducePState(
                 return new RetState(new NoneValue(), nextTarget);
             }
         }
-        else if (syntaxNode instanceof FuncDecl) {
+        else if (isFuncDecl(syntaxNode)) {
             return new RetState(new NoneValue(), kont);
         }
-        else if (syntaxNode instanceof CallExpr) {
-            let funcExpr = syntaxNode.funcExpr;
-            let args = syntaxNode.argList.args;
+        else if (isCallExpr(syntaxNode)) {
+            let funcExpr = callExprFuncExpr(syntaxNode);
+            let args = argumentListArguments(callExprArgumentList(syntaxNode));
             let call1Kont = new Call1Kont(args, env, kont, jumpMap);
             return new PState(
                 [Mode.GetValue, funcExpr, quoteLevel],
@@ -1302,8 +1365,9 @@ function reducePState(
                 jumpMap,
             );
         }
-        else if (syntaxNode instanceof ReturnStatement) {
-            if (syntaxNode.expr === null) {
+        else if (isReturnStatement(syntaxNode)) {
+            let expr = returnStatementExpr(syntaxNode);
+            if (expr === null) {
                 let returnTarget = jumpMap.returnTarget;
                 if (returnTarget === null) {
                     throw new E613_ReturnOutsideRoutineError();
@@ -1315,27 +1379,27 @@ function reducePState(
             else {
                 let returnKont = new ReturnKont(kont, jumpMap);
                 return new PState(
-                    [Mode.GetValue, syntaxNode.expr, quoteLevel],
+                    [Mode.GetValue, expr, quoteLevel],
                     env,
                     returnKont,
                     jumpMap,
                 );
             }
         }
-        else if (syntaxNode instanceof MacroDecl) {
+        else if (isMacroDecl(syntaxNode)) {
             return new RetState(new NoneValue(), kont);
         }
-        else if (syntaxNode instanceof QuoteExpr) {
-            if (syntaxNode.statements.length === 0) {
+        else if (isQuoteExpr(syntaxNode)) {
+            let statements = quoteExprStatements(syntaxNode);
+            if (statements.length === 0) {
                 let value = new SyntaxNodeValue(
-                    SYNTAX_KIND__BLOCK,
+                    new IntValue(SYNTAX_KIND__BLOCK),
                     [],
                     new NoneValue(),
                 );
                 return new RetState(value, kont);
             }
             else {
-                let statements = syntaxNode.statements;
                 let statementValues: Array<SyntaxNodeValue> = [];
                 let quote1Kont = new Quote1Kont(
                     0,
@@ -1353,21 +1417,21 @@ function reducePState(
                 );
             }
         }
-        else if (syntaxNode instanceof UnquoteExpr) {
+        else if (isUnquoteExpr(syntaxNode)) {
             throw new E000_InternalError(
                 "Precondition failed: evaluating UnquoteExpr"
             );
         }
         else {
             throw new E000_InternalError(
-                `Unrecognized syntax node ${syntaxNode.constructor.name}`
+                `Unrecognized syntax node ${syntaxNode.kind.name}`
             );
         }
     }
     else if (mode === Mode.GetLocation) {
-        if (syntaxNode instanceof IndexingExpr) {
-            let arrayExpr = syntaxNode.arrayExpr;
-            let indexExpr = syntaxNode.indexExpr;
+        if (isIndexingExpr(syntaxNode)) {
+            let arrayExpr = indexingExprArrayExpr(syntaxNode);
+            let indexExpr = indexingExprIndexExpr(syntaxNode);
             let indexingLoc1Kont = new IndexingLoc1Kont(
                 indexExpr,
                 env,
@@ -1381,16 +1445,16 @@ function reducePState(
                 jumpMap,
             );
         }
-        else if (syntaxNode instanceof VarRefExpr) {
-            let name = syntaxNode.name.payload as string;
+        else if (isVarRefExpr(syntaxNode)) {
+            let name = varRefExprName(syntaxNode).payload as string;
             let [mutable, varEnv] = findEnvOfName(env, name);
             if (!mutable) {
                 throw new E608_ReadonlyError(`Binding '${name}' is readonly`);
             }
             return new RetState(new VarLocation(varEnv, name), kont);
         }
-        else if (syntaxNode instanceof ParenExpr) {
-            let innerExpr = syntaxNode.innerExpr;
+        else if (isParenExpr(syntaxNode)) {
+            let innerExpr = parenExprInnerExpr(syntaxNode);
             return new PState(
                 [Mode.GetLocation, innerExpr, quoteLevel],
                 env,
@@ -1398,8 +1462,8 @@ function reducePState(
                 jumpMap,
             );
         }
-        else if (syntaxNode instanceof DoExpr) {
-            let statement = syntaxNode.statement;
+        else if (isDoExpr(syntaxNode)) {
+            let statement = doExprStatement(syntaxNode);
             return new PState(
                 [Mode.GetLocation, statement, quoteLevel],
                 env,
@@ -1407,17 +1471,21 @@ function reducePState(
                 jumpMap,
             );
         }
-        else if (syntaxNode instanceof BlockStatement) {
+        else if (isBlockStatement(syntaxNode)) {
             return new PState(
-                [Mode.GetLocation, syntaxNode.block, quoteLevel],
+                [
+                    Mode.GetLocation,
+                    blockStatementBlock(syntaxNode),
+                    quoteLevel,
+                ],
                 env,
                 kont,
                 jumpMap,
             );
         }
-        else if (syntaxNode instanceof Block) {
+        else if (isBlock(syntaxNode)) {
             env = initializeEnv(extend(env), syntaxNode, staticEnvs);
-            let statements = syntaxNode.statements;
+            let statements = blockStatements(syntaxNode);
             if (statements.length === 0) {
                 throw new E607_CannotAssignError(
                     "Can't evaluate an empty block for a location"
@@ -1442,18 +1510,20 @@ function reducePState(
                 );
             }
         }
-        else if (syntaxNode instanceof ExprStatement) {
+        else if (isExprStatement(syntaxNode)) {
             return new PState(
-                [Mode.GetLocation, syntaxNode.expr, quoteLevel],
+                [Mode.GetLocation, exprStatementExpr(syntaxNode), quoteLevel],
                 env,
                 kont,
                 jumpMap,
             );
         }
-        else if (syntaxNode instanceof IfStatement) {
-            let clauses = syntaxNode.clauseList.clauses;
-            let elseBlock = syntaxNode.elseBlock;
-            let condExpr = clauses[0].condExpr;
+        else if (isIfStatement(syntaxNode)) {
+            let clauses = ifClauseListClauses(
+                ifStatementClauseList(syntaxNode)
+            );
+            let elseBlock = ifStatementElseBlock(syntaxNode);
+            let condExpr = ifClauseCondExpr(clauses[0]);
             let ifLocKont = new IfLocKont(
                 clauses,
                 elseBlock,
@@ -1476,9 +1546,9 @@ function reducePState(
         }
     }
     else if (mode === Mode.Ignore) {
-        if (syntaxNode instanceof Block) {
+        if (isBlock(syntaxNode)) {
             env = initializeEnv(extend(env), syntaxNode, staticEnvs);
-            let statements = syntaxNode.statements;
+            let statements = blockStatements(syntaxNode);
             if (statements.length === 0) {
                 return new RetState(new NoneValue(), kont);
             }
@@ -1498,23 +1568,23 @@ function reducePState(
                 );
             }
         }
-        else if (syntaxNode instanceof ExprStatement) {
+        else if (isExprStatement(syntaxNode)) {
             return new PState(
-                [Mode.Ignore, syntaxNode.expr, quoteLevel],
+                [Mode.Ignore, exprStatementExpr(syntaxNode), quoteLevel],
                 env,
                 kont,
                 jumpMap,
             );
         }
-        else if (syntaxNode instanceof VarRefExpr) {
-            let name = syntaxNode.name.payload as string;
+        else if (isVarRefExpr(syntaxNode)) {
+            let name = varRefExprName(syntaxNode).payload as string;
             /* ignore */ lookup(env, name);
             return new RetState(new NoneValue(), kont);
         }
-        else if (syntaxNode instanceof InfixOpExpr) {
-            let lhs = syntaxNode.lhs;
-            let opName = syntaxNode.opName.payload;
-            let rhs = syntaxNode.rhs;
+        else if (isInfixOpExpr(syntaxNode)) {
+            let lhs = infixOpExprLhs(syntaxNode);
+            let opName = infixOpExprOpName(syntaxNode).payload as string;
+            let rhs = infixOpExprRhs(syntaxNode);
             if (["+", "-", "*", "//", "%", "~", "&&", "||"].includes(opName)) {
                 let infixOpIgnore1Kont = new InfixOpIgnore1Kont(
                     opName,
@@ -1564,11 +1634,12 @@ function reducePState(
                 throw new E000_InternalError(`Unknown infix op ${opName}`);
             }
         }
-        else if (syntaxNode instanceof IntLitExpr) {
+        else if (isIntLitExpr(syntaxNode)) {
             return new RetState(new NoneValue(), kont);
         }
-        else if (syntaxNode instanceof ReturnStatement) {
-            if (syntaxNode.expr === null) {
+        else if (isReturnStatement(syntaxNode)) {
+            let expr = returnStatementExpr(syntaxNode);
+            if (expr === null) {
                 let returnTarget = jumpMap.returnTarget;
                 if (returnTarget === null) {
                     throw new E613_ReturnOutsideRoutineError();
@@ -1580,16 +1651,18 @@ function reducePState(
             else {
                 let returnIgnoreKont = new ReturnIgnoreKont(kont, jumpMap);
                 return new PState(
-                    [Mode.GetValue, syntaxNode.expr, quoteLevel],
+                    [Mode.GetValue, expr, quoteLevel],
                     env,
                     returnIgnoreKont,
                     jumpMap,
                 );
             }
         }
-        else if (syntaxNode instanceof CallExpr) {
-            let funcExpr = syntaxNode.funcExpr;
-            let args = syntaxNode.argList.args;
+        else if (isCallExpr(syntaxNode)) {
+            let funcExpr = callExprFuncExpr(syntaxNode);
+            let args = argumentListArguments(
+                callExprArgumentList(syntaxNode)
+            );
             let callIgnore1Kont = new CallIgnore1Kont(
                 args,
                 env,
@@ -1603,7 +1676,7 @@ function reducePState(
                 jumpMap,
             );
         }
-        else if (syntaxNode instanceof LastStatement) {
+        else if (isLastStatement(syntaxNode)) {
             let lastTarget = jumpMap.lastTarget;
             if (lastTarget === null) {
                 throw new E609_LastOutsideLoopError(
@@ -1614,7 +1687,7 @@ function reducePState(
                 return new RetState(new NoneValue(), lastTarget);
             }
         }
-        else if (syntaxNode instanceof NextStatement) {
+        else if (isNextStatement(syntaxNode)) {
             let nextTarget = jumpMap.nextTarget;
             if (nextTarget === null) {
                 throw new E610_NextOutsideLoopError("'next' outside of loop");
@@ -1623,13 +1696,13 @@ function reducePState(
                 return new RetState(new NoneValue(), nextTarget);
             }
         }
-        else if (syntaxNode instanceof QuoteExpr) {
-            if (syntaxNode.statements.length === 0) {
+        else if (isQuoteExpr(syntaxNode)) {
+            let statements = quoteExprStatements(syntaxNode);
+            if (statements.length === 0) {
                 /* ignore */
                 return new RetState(new NoneValue(), kont);
             }
             else {
-                let statements = syntaxNode.statements;
                 let quoteIgnore1Kont = new QuoteIgnore1Kont(
                     0,
                     statements,
@@ -1645,10 +1718,10 @@ function reducePState(
                 );
             }
         }
-        else if (syntaxNode instanceof VarDecl) {
-            let initExpr = syntaxNode.initExpr;
+        else if (isVarDecl(syntaxNode)) {
+            let initExpr = varDeclInitExpr(syntaxNode);
             if (initExpr !== null) {
-                let name = syntaxNode.name.payload as string;
+                let name = varDeclName(syntaxNode).payload as string;
                 let varKont = new VarKont(name, env, kont);
                 return new PState(
                     [Mode.GetValue, initExpr, quoteLevel],
@@ -1668,28 +1741,32 @@ function reducePState(
         }
     }
     else if (mode === Mode.Interpolate) {
-        if (syntaxNode instanceof UnquoteExpr && quoteLevel < 1) {
+        if (isUnquoteExpr(syntaxNode) && quoteLevel < 1) {
             throw new E000_InternalError(
                 "Precondition failed: Quote level too low"
             );
         }
-        else if (syntaxNode instanceof UnquoteExpr && quoteLevel === 1) {
+        else if (isUnquoteExpr(syntaxNode) && quoteLevel === 1) {
             let unquoteKont = new UnquoteKont(
                 env,
                 kont,
                 jumpMap,
             );
             return new PState(
-                [Mode.GetValue, syntaxNode.innerExpr, /* quoteLevel */ 0],
+                [
+                    Mode.GetValue,
+                    unquoteExprInnerExpr(syntaxNode),
+                    /* quoteLevel */ 0,
+                ],
                 env,
                 unquoteKont,
                 jumpMap,
             );
         }
         else {  // either UnquoteExpr at quoteLevel > 1, or any other node
-            let childQuoteLevel = syntaxNode instanceof QuoteExpr
+            let childQuoteLevel = isQuoteExpr(syntaxNode)
                 ? quoteLevel + 1
-                : syntaxNode instanceof UnquoteExpr
+                : isUnquoteExpr(syntaxNode)
                     ? quoteLevel - 1
                     : quoteLevel;
             if (syntaxNode.children.length > 0) {
@@ -2070,7 +2147,7 @@ function reduceRetState({ value, kont }: RetState): State {
     else if (kont instanceof IfKont) {
         if (boolify(value)) {
             let clause = kont.clauses[kont.index];
-            let block = clause.block;
+            let block = ifClauseBlock(clause);
             return new PState(
                 [Mode.GetValue, block, /* quoteLevel */ 0],
                 kont.env,
@@ -2080,7 +2157,7 @@ function reduceRetState({ value, kont }: RetState): State {
         }
         else {
             if (kont.index + 1 < kont.clauses.length) {
-                let condExpr = kont.clauses[kont.index + 1].condExpr;
+                let condExpr = ifClauseCondExpr(kont.clauses[kont.index + 1]);
                 let ifKont = new IfKont(
                     kont.clauses,
                     kont.elseBlock,
@@ -2096,7 +2173,7 @@ function reduceRetState({ value, kont }: RetState): State {
                     kont.jumpMap,
                 );
             }
-            else if (kont.elseBlock instanceof Block) {
+            else if (kont.elseBlock !== null && isBlock(kont.elseBlock)) {
                 return new PState(
                     [Mode.GetValue, kont.elseBlock, /* quoteLevel */ 0],
                     kont.env,
@@ -2300,7 +2377,7 @@ function reduceRetState({ value, kont }: RetState): State {
     else if (kont instanceof IfLocKont) {
         if (boolify(value)) {
             let clause = kont.clauses[kont.index];
-            let block = clause.children[1] as Block;
+            let block = ifClauseBlock(clause);
             return new PState(
                 [Mode.GetLocation, block, /* quoteLevel */  0],
                 kont.env,
@@ -2310,7 +2387,7 @@ function reduceRetState({ value, kont }: RetState): State {
         }
         else {
             if (kont.index + 1 < kont.clauses.length) {
-                let condExpr = kont.clauses[kont.index + 1].condExpr;
+                let condExpr = ifClauseCondExpr(kont.clauses[kont.index + 1]);
                 let ifKont = new IfLocKont(
                     kont.clauses,
                     kont.elseBlock,
@@ -2326,7 +2403,7 @@ function reduceRetState({ value, kont }: RetState): State {
                     kont.jumpMap,
                 );
             }
-            else if (kont.elseBlock instanceof Block) {
+            else if (kont.elseBlock !== null && isBlock(kont.elseBlock)) {
                 return new PState(
                     [Mode.GetLocation, kont.elseBlock, /* quoteLevel */ 0],
                     kont.env,
@@ -2416,7 +2493,11 @@ function reduceRetState({ value, kont }: RetState): State {
                 kont.jumpMap,
             );
             return new PState(
-                [Mode.GetValue, kont.args[0].expr, /* quoteLevel */ 0],
+                [
+                    Mode.GetValue,
+                    argumentExpr(kont.args[0]),
+                    /* quoteLevel */ 0,
+                ],
                 kont.env,
                 call2Kont,
                 kont.jumpMap,
@@ -2438,7 +2519,7 @@ function reduceRetState({ value, kont }: RetState): State {
             return new PState(
                 [
                     Mode.GetValue,
-                    kont.args[kont.index + 1].expr,
+                    argumentExpr(kont.args[kont.index + 1]),
                     /* quoteLevel */ 0,
                 ],
                 kont.env,
@@ -2836,16 +2917,16 @@ function reduceRetState({ value, kont }: RetState): State {
         else {
             let value: SyntaxNodeValue;
             if (kont.statements.length === 1) {
-                if (kont.statements[0] instanceof ExprStatement) {
+                if (isExprStatement(kont.statements[0])) {
                     value = kont.statementValues[0].children[0] as
                         SyntaxNodeValue;
                 }
-                else if (kont.statements[0] instanceof Statement) {
+                else if (isStatement(kont.statements[0])) {
                     value = kont.statementValues[0] as SyntaxNodeValue;
                 }
                 else {
                     value = new SyntaxNodeValue(
-                        SYNTAX_KIND__BLOCK,
+                        new IntValue(SYNTAX_KIND__BLOCK),
                         kont.statementValues,
                         new NoneValue(),
                     );
@@ -2853,7 +2934,7 @@ function reduceRetState({ value, kont }: RetState): State {
             }
             else {
                 value = new SyntaxNodeValue(
-                    SYNTAX_KIND__BLOCK,
+                    new IntValue(SYNTAX_KIND__BLOCK),
                     kont.statementValues,
                     new NoneValue(),
                 );
@@ -2896,9 +2977,9 @@ function reduceRetState({ value, kont }: RetState): State {
         if (value instanceof IntValue) {
             return new RetState(
                 new SyntaxNodeValue(
-                    SYNTAX_KIND__INT_LIT_EXPR,
+                    new IntValue(SYNTAX_KIND__INT_LIT_EXPR),
                     [new SyntaxNodeValue(
-                        SYNTAX_KIND__INT_NODE,
+                        new IntValue(SYNTAX_KIND__INT_NODE),
                         [],
                         value,
                     )],
@@ -2910,9 +2991,9 @@ function reduceRetState({ value, kont }: RetState): State {
         else if (value instanceof StrValue) {
             return new RetState(
                 new SyntaxNodeValue(
-                    SYNTAX_KIND__STR_LIT_EXPR,
+                    new IntValue(SYNTAX_KIND__STR_LIT_EXPR),
                     [new SyntaxNodeValue(
-                        SYNTAX_KIND__STR_NODE,
+                        new IntValue(SYNTAX_KIND__STR_NODE),
                         [],
                         value,
                     )],
@@ -2925,9 +3006,9 @@ function reduceRetState({ value, kont }: RetState): State {
             if (value.payload) {
                 return new RetState(
                     new SyntaxNodeValue(
-                        SYNTAX_KIND__BOOL_LIT_EXPR,
+                        new IntValue(SYNTAX_KIND__BOOL_LIT_EXPR),
                         [new SyntaxNodeValue(
-                            SYNTAX_KIND__BOOL_NODE,
+                            new IntValue(SYNTAX_KIND__BOOL_NODE),
                             [],
                             value,
                         )],
@@ -2939,9 +3020,9 @@ function reduceRetState({ value, kont }: RetState): State {
             else {
                 return new RetState(
                     new SyntaxNodeValue(
-                        SYNTAX_KIND__BOOL_LIT_EXPR,
+                        new IntValue(SYNTAX_KIND__BOOL_LIT_EXPR),
                         [new SyntaxNodeValue(
-                            SYNTAX_KIND__BOOL_NODE,
+                            new IntValue(SYNTAX_KIND__BOOL_NODE),
                             [],
                             value,
                         )],
@@ -2953,7 +3034,11 @@ function reduceRetState({ value, kont }: RetState): State {
         }
         else if (value instanceof NoneValue) {
             return new RetState(
-                new SyntaxNodeValue(SYNTAX_KIND__NONE_LIT_EXPR, [], value),
+                new SyntaxNodeValue(
+                    new IntValue(SYNTAX_KIND__NONE_LIT_EXPR),
+                    [],
+                    value,
+                ),
                 kont.tail,
             );
         }
@@ -2963,7 +3048,7 @@ function reduceRetState({ value, kont }: RetState): State {
             }
             else if (isStatementKind(value)) {
                 let doExpr = new SyntaxNodeValue(
-                    SYNTAX_KIND__DO_EXPR,
+                    new IntValue(SYNTAX_KIND__DO_EXPR),
                     [value],
                     new NoneValue(),
                 );
@@ -3019,8 +3104,8 @@ function unload(kont: RetState): Value {
 }
 
 export function runCompUnit(
-    compUnit: CompUnit,
-    staticEnvs: Map<CompUnit | Block, Env>,
+    compUnit: SyntaxNode,
+    staticEnvs: Map<SyntaxNode, Env>,
 ): Value {
     let state = load(compUnit, staticEnvs);
 
@@ -3036,9 +3121,9 @@ export function runCompUnit(
 }
 
 export function runCompUnitWithFuel(
-    compUnit: CompUnit,
+    compUnit: SyntaxNode,
     fuel: number,
-    staticEnvs: Map<CompUnit | Block, Env>,
+    staticEnvs: Map<SyntaxNode, Env>,
 ): Value {
     let state = load(compUnit, staticEnvs);
 
@@ -3062,7 +3147,7 @@ export function callMacro(
     macroValue: MacroValue,
     argValues: Array<Value>,
     staticEnv: Env,
-    staticEnvs: Map<CompUnit | Block, Env>,
+    staticEnvs: Map<SyntaxNode, Env>,
 ): Value {
     if (argValues.length > macroValue.parameters.length) {
         throw new E611_TooManyArgumentsError();

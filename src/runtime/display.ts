@@ -2,6 +2,13 @@ import {
     E000_InternalError,
 } from "./error";
 import {
+    ArrayValue,
+    BoolValue,
+    FuncValue,
+    IntValue,
+    MacroValue,
+    NoneValue,
+    StrValue,
     SYNTAX_KIND__ARGUMENT,
     SYNTAX_KIND__ARGUMENT_LIST,
     SYNTAX_KIND__ARRAY_INITIALIZER_EXPR,
@@ -31,7 +38,6 @@ import {
     SYNTAX_KIND__PARAMETER_LIST,
     SYNTAX_KIND__PAREN_EXPR,
     SYNTAX_KIND__PREFIX_OP_EXPR,
-    SYNTAX_KIND__PRIMARY_EXPR,
     SYNTAX_KIND__QUOTE_EXPR,
     SYNTAX_KIND__RETURN_STATEMENT,
     SYNTAX_KIND__STR_LIT_EXPR,
@@ -39,15 +45,6 @@ import {
     SYNTAX_KIND__VAR_DECL,
     SYNTAX_KIND__VAR_REF_EXPR,
     SYNTAX_KIND__WHILE_STATEMENT,
-} from "./reify";
-import {
-    ArrayValue,
-    BoolValue,
-    FuncValue,
-    IntValue,
-    MacroValue,
-    NoneValue,
-    StrValue,
     SyntaxNodeValue,
     UninitValue,
     Value,
@@ -78,8 +75,8 @@ function escapeString(input: string): string {
     return result.join("");
 }
 
-function hasKind(syntaxNodeValue: SyntaxNodeValue, intValue: IntValue) {
-    return syntaxNodeValue.kind.payload === intValue.payload;
+function hasKind(syntaxNodeValue: SyntaxNodeValue, kind: bigint) {
+    return syntaxNodeValue.kind.payload === kind;
 }
 
 export function displayValue(value: Value, seen: Set<Value>): string {
@@ -198,9 +195,6 @@ export function displayValue(value: Value, seen: Set<Value>): string {
         }
         else if (hasKind(value, SYNTAX_KIND__CALL_EXPR)) {
             kind = "CallExpr";
-        }
-        else if (hasKind(value, SYNTAX_KIND__PRIMARY_EXPR)) {
-            kind = "PrimaryExpr";
         }
         else if (hasKind(value, SYNTAX_KIND__INT_LIT_EXPR)) {
             kind = "IntLitExpr";

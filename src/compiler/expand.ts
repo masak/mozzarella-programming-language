@@ -3,26 +3,36 @@ import {
     E401_IncompatibleSyntaxError,
 } from "./error";
 import {
-    Block,
-    BlockStatement,
-    BoolLitExpr,
-    BoolNode,
-    CallExpr,
-    CompUnit,
-    DoExpr,
-    Expr,
-    ForStatement,
-    FuncDecl,
-    IntLitExpr,
-    IntNode,
-    MacroDecl,
-    NoneLitExpr,
-    QuoteExpr,
-    Statement,
-    StrLitExpr,
-    StrNode,
+    argumentExpr,
+    argumentListArguments,
+    callExprArgumentList,
+    callExprFuncExpr,
+    forStatementName,
+    funcDeclParameterList,
+    isBlock,
+    isCallExpr,
+    isCompUnit,
+    isExpr,
+    isForStatement,
+    isFuncDecl,
+    isMacroDecl,
+    isQuoteExpr,
+    isStatement,
+    isVarRefExpr,
+    macroDeclParameterList,
+    makeBlockStatement,
+    makeBoolLitExpr,
+    makeBoolNode,
+    makeDoExpr,
+    makeIntLitExpr,
+    makeIntNode,
+    makeNoneLitExpr,
+    makeStrLitExpr,
+    makeStrNode,
+    parameterListParameters,
+    parameterName,
     SyntaxNode,
-    VarRefExpr,
+    varRefExprName,
 } from "./syntax";
 import {
     absorbNode,
@@ -54,25 +64,38 @@ import {
 function visitDown(
     syntaxNode: SyntaxNode,
     envStack: Array<Env>,
-    staticEnvs: Map<CompUnit | Block, Env>,
+    staticEnvs: Map<SyntaxNode, Env>,
 ): void {
     let staticEnv = envStack[envStack.length - 1];
-    if (syntaxNode instanceof CompUnit || syntaxNode instanceof Block) {
+    if (isCompUnit(syntaxNode) || isBlock(syntaxNode)) {
         staticEnv = initializeEnv(extend(staticEnv), syntaxNode, staticEnvs);
         staticEnvs.set(syntaxNode, staticEnv);
         envStack.push(staticEnv);
     }
-    else if (syntaxNode instanceof ForStatement) {
-        let name = syntaxNode.name.payload as string;
+    else if (isForStatement(syntaxNode)) {
+        let name = forStatementName(syntaxNode).payload as string;
         staticEnv = extend(staticEnv);
         bindReadonly(staticEnv, name, new UninitValue());
         envStack.push(staticEnv);
     }
-    else if (syntaxNode instanceof FuncDecl
-                || syntaxNode instanceof MacroDecl) {
+    else if (isFuncDecl(syntaxNode)) {
         staticEnv = extend(staticEnv);
-        for (let param of syntaxNode.parameterList.parameters) {
-            let name = param.name.payload as string;
+        let parameters = parameterListParameters(
+            funcDeclParameterList(syntaxNode)
+        );
+        for (let param of parameters) {
+            let name = parameterName(param).payload as string;
+            bindReadonly(staticEnv, name, new UninitValue());
+        }
+        envStack.push(staticEnv);
+    }
+    else if (isMacroDecl(syntaxNode)) {
+        staticEnv = extend(staticEnv);
+        let parameters = parameterListParameters(
+            macroDeclParameterList(syntaxNode)
+        );
+        for (let param of parameters) {
+            let name = parameterName(param).payload as string;
             bindReadonly(staticEnv, name, new UninitValue());
         }
         envStack.push(staticEnv);
@@ -80,10 +103,9 @@ function visitDown(
 }
 
 function visitUp(syntaxNode: SyntaxNode, envStack: Array<Env>): void {
-    if (syntaxNode instanceof CompUnit || syntaxNode instanceof Block
-            || syntaxNode instanceof ForStatement
-            || syntaxNode instanceof FuncDecl
-            || syntaxNode instanceof MacroDecl) {
+    if (isCompUnit(syntaxNode) || isBlock(syntaxNode)
+            || isForStatement(syntaxNode) || isFuncDecl(syntaxNode)
+            || isMacroDecl(syntaxNode)) {
         envStack.pop();
     }
 }
@@ -114,9 +136,9 @@ function traverseNode(
     syntaxNode: SyntaxNode,
     visit: VisitFn,
     envStack: Array<Env>,
-    staticEnvs: Map<CompUnit | Block, Env>,
+    staticEnvs: Map<SyntaxNode, Env>,
 ): SyntaxNode {
-    if (syntaxNode instanceof QuoteExpr) {
+    if (isQuoteExpr(syntaxNode)) {
         return syntaxNode;
     }
 
@@ -154,11 +176,8 @@ function traverseNode(
         return syntaxNode;
     }
     else {  // something changed
-        let newSyntaxNode = Object.assign(
-            Object.create(Object.getPrototypeOf(syntaxNode)),
-            { children: newChildren },
-        );
-        if (syntaxNode instanceof CompUnit || syntaxNode instanceof Block) {
+        let newSyntaxNode = new SyntaxNode(syntaxNode.kind, newChildren, null);
+        if (isCompUnit(syntaxNode) || isBlock(syntaxNode)) {
             let env: Env;
             if (env = staticEnvs.get(syntaxNode)!) {
                 staticEnvs.set(newSyntaxNode, env);
@@ -169,18 +188,18 @@ function traverseNode(
 }
 
 function traverseWithReplacement(
-    compUnit: CompUnit,
-    staticEnvs: Map<CompUnit | Block, Env>,
+    compUnit: SyntaxNode,
+    staticEnvs: Map<SyntaxNode, Env>,
     visit: VisitFn,
-): CompUnit {
+): SyntaxNode {
     let staticEnv = emptyEnv();
-    return traverseNode(compUnit, visit, [staticEnv], staticEnvs) as CompUnit;
+    return traverseNode(compUnit, visit, [staticEnv], staticEnvs);
 }
 
 export function macroExpandCompUnit(
-    compUnit: CompUnit,
-    staticEnvs: Map<CompUnit | Block, Env>,
-): CompUnit {
+    compUnit: SyntaxNode,
+    staticEnvs: Map<SyntaxNode, Env>,
+): SyntaxNode {
     return traverseWithReplacement(
         compUnit,
         staticEnvs,
@@ -189,11 +208,13 @@ export function macroExpandCompUnit(
             staticEnv: Env,
             replaceWith: ReplaceFn,
         ) {
-            if (syntaxNode instanceof CallExpr) {
-                let funcExpr = syntaxNode.funcExpr;
-                let argExprs = syntaxNode.argList.args.map((arg) => arg.expr);
-                if (funcExpr instanceof VarRefExpr) {
-                    let name = funcExpr.name.payload as string;
+            if (isCallExpr(syntaxNode)) {
+                let funcExpr = callExprFuncExpr(syntaxNode);
+                let argExprs = argumentListArguments(
+                    callExprArgumentList(syntaxNode)
+                ).map(argumentExpr);
+                if (isVarRefExpr(funcExpr)) {
+                    let name = varRefExprName(funcExpr).payload as string;
                     let macroValue = tolerantLookup(staticEnv, name);
                     if (macroValue === null) {
                         // technically redundant, as the `instanceof` check
@@ -209,38 +230,38 @@ export function macroExpandCompUnit(
                             staticEnvs,
                         );
                         if (resultValue instanceof NoneValue) {
-                            replaceWith(new NoneLitExpr());
+                            replaceWith(makeNoneLitExpr());
                         }
                         else if (resultValue instanceof IntValue) {
-                            let intNode = new IntNode(resultValue.payload);
-                            replaceWith(new IntLitExpr(intNode));
+                            let intNode = makeIntNode(resultValue.payload);
+                            replaceWith(makeIntLitExpr(intNode));
                         }
                         else if (resultValue instanceof StrValue) {
-                            let strNode = new StrNode(resultValue.payload);
-                            replaceWith(new StrLitExpr(strNode));
+                            let strNode = makeStrNode(resultValue.payload);
+                            replaceWith(makeStrLitExpr(strNode));
                         }
                         else if (resultValue instanceof BoolValue) {
-                            let boolNode = new BoolNode(resultValue.payload);
-                            replaceWith(new BoolLitExpr(boolNode));
+                            let boolNode = makeBoolNode(resultValue.payload);
+                            replaceWith(makeBoolLitExpr(boolNode));
                         }
                         else if (resultValue instanceof SyntaxNodeValue) {
                             let result = absorbNode(resultValue);
                             if (result === null) {
                                 // this case is impossible, but the signature
                                 // of `absorbNode` forces us to handle it
-                                replaceWith(new NoneLitExpr());
+                                replaceWith(makeNoneLitExpr());
                             }
-                            else if (result instanceof Expr) {
+                            else if (isExpr(result)) {
                                 replaceWith(result);
                             }
-                            else if (result instanceof Statement) {
-                                let doExpr = new DoExpr(result);
+                            else if (isStatement(result)) {
+                                let doExpr = makeDoExpr(result);
                                 replaceWith(doExpr);
                             }
-                            else if (result instanceof Block) {
+                            else if (isBlock(result)) {
                                 let blockStatement
-                                    = new BlockStatement(result);
-                                let doExpr = new DoExpr(blockStatement);
+                                    = makeBlockStatement(result);
+                                let doExpr = makeDoExpr(blockStatement);
                                 replaceWith(doExpr);
                             }
                             else {
