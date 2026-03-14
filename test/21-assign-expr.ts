@@ -21,6 +21,7 @@ test("assignment expression", (t) => {
     t.is(run("my x = 1; (do if false { x } else { x }) = 2; x"), "2");
     t.is(run("my L = [1, 2]; L[1] = do { L = [4, 5]; none }; L"), "[4, 5]");
     t.is(run("my a = [7, 8]; my b = a; a[0] = -1; b"), "[-1, 8]");
+    t.is(run("my x; (x = 1) = 2; x"), "2");
 
     t.throws(() => run("x = 21"), { instanceOf: E606_UndeclaredError });
     t.throws(

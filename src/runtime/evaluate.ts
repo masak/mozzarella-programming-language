@@ -170,6 +170,8 @@ type Kont =
     | IndexingLoc2Kont
     | BlockLocKont
     | IfLocKont
+    | Assign1LocKont
+    | Assign2LocKont
     | While1Kont
     | While2Kont
     | Call1Kont
@@ -567,6 +569,30 @@ class IfLocKont {
         this.env = env;
         this.tail = tail;
         this.jumpMap = jumpMap;
+    }
+}
+
+class Assign1LocKont {
+    rhs: SyntaxNode;
+    env: Env;
+    tail: Kont;
+    jumpMap: JumpMap;
+
+    constructor(rhs: SyntaxNode, env: Env, tail: Kont, jumpMap: JumpMap) {
+        this.rhs = rhs;
+        this.env = env;
+        this.tail = tail;
+        this.jumpMap = jumpMap;
+    }
+}
+
+class Assign2LocKont {
+    location: Location;
+    tail: Kont;
+
+    constructor(location: Location, tail: Kont) {
+        this.location = location;
+        this.tail = tail;
     }
 }
 
@@ -1468,6 +1494,26 @@ function reducePState(
                 jumpMap,
             );
         }
+        else if (isInfixOpExpr(syntaxNode)) {
+            let lhs = infixOpExprLhs(syntaxNode);
+            let opName = infixOpExprOpName(syntaxNode).payload as string;
+            let rhs = infixOpExprRhs(syntaxNode);
+            if (opName === "=") {
+                let assign1LocKont
+                    = new Assign1LocKont(rhs, env, kont, jumpMap);
+                return new PState(
+                    [Mode.GetLocation, lhs, quoteLevel],
+                    env,
+                    assign1LocKont,
+                    jumpMap,
+                );
+            }
+            else {
+                throw new E607_CannotAssignError(
+                    `Cannot assign to infix op '${opName}' expression`
+                );
+            }
+        }
         else if (isBlockStatement(syntaxNode)) {
             return new PState(
                 [
@@ -1538,7 +1584,7 @@ function reducePState(
         }
         else {
             throw new E607_CannotAssignError(
-                "Cannot assign to " + syntaxNode.constructor.name
+                "Cannot assign to " + syntaxNode.kind.name
             );
         }
     }
@@ -1733,7 +1779,7 @@ function reducePState(
         }
         else {
             throw new E000_InternalError(
-                "Unsupported ignore syntax node " + syntaxNode.constructor.name
+                "Unsupported ignore syntax node " + syntaxNode.kind.name
             );
         }
     }
@@ -2407,6 +2453,21 @@ function reduceRetState({ value, kont }: RetState): State {
                 throw new E607_CannotAssignError();
             }
         }
+    }
+    else if (kont instanceof Assign1LocKont) {
+        let location = value;
+        let rhs = kont.rhs;
+        let assign2LocKont = new Assign2LocKont(location, kont.tail);
+        return new PState(
+            [Mode.GetValue, rhs, /* quoteLevel */ 0],
+            kont.env,
+            assign2LocKont,
+            kont.jumpMap,
+        );
+    }
+    else if (kont instanceof Assign2LocKont) {
+        assign(kont.location, value);
+        return new RetState(kont.location, kont.tail);
     }
     else if (kont instanceof While1Kont) {
         if (boolify(value)) {
