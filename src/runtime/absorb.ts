@@ -11,7 +11,6 @@ import {
 import {
     BoolValue,
     IntValue,
-    NoneValue,
     StrValue,
     SYNTAX_KIND__BOOL_NODE,
     SYNTAX_KIND__INT_NODE,
@@ -20,6 +19,7 @@ import {
 } from "./value";
 
 const kindMap: Map<bigint, SyntaxKind> = new Map([
+    [BigInt(0x0000), SyntaxKind.EMPTY_PLACEHOLDER],
     [BigInt(0x2000), SyntaxKind.COMPUNIT],
     [BigInt(0x2001), SyntaxKind.BLOCK],
     [BigInt(0x2003), SyntaxKind.EXPR_STATEMENT],
@@ -60,13 +60,8 @@ function hasKind(syntaxNodeValue: SyntaxNodeValue, kind: bigint) {
     return syntaxNodeValue.kind.payload === kind;
 }
 
-export function absorbNode(
-    syntaxNodeValue: SyntaxNodeValue | NoneValue,
-): SyntaxNode | null {
-    if (syntaxNodeValue instanceof NoneValue) {
-        return null;
-    }
-    else if (hasKind(syntaxNodeValue, SYNTAX_KIND__INT_NODE)) {
+export function absorbNode(syntaxNodeValue: SyntaxNodeValue): SyntaxNode {
+    if (hasKind(syntaxNodeValue, SYNTAX_KIND__INT_NODE)) {
         return makeIntNode((syntaxNodeValue.payload as IntValue).payload);
     }
     else if (hasKind(syntaxNodeValue, SYNTAX_KIND__STR_NODE)) {
@@ -83,7 +78,7 @@ export function absorbNode(
                     syntaxNodeValue.kind.payload + "'"
             );
         }
-        let children =  syntaxNodeValue.children.map(absorbNode);
+        let children = syntaxNodeValue.children.map(absorbNode);
         return new SyntaxNode(kind, children, null);
     }
 }

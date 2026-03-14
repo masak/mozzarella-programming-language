@@ -83,12 +83,12 @@ export class MacroValue {
 
 export class SyntaxNodeValue {
     kind: IntValue;
-    children: Array<SyntaxNodeValue | NoneValue>;
+    children: Array<SyntaxNodeValue>;
     payload: IntValue | StrValue | BoolValue | NoneValue;
 
     constructor(
         kind: IntValue,
-        children: Array<SyntaxNodeValue | NoneValue>,
+        children: Array<SyntaxNodeValue>,
         payload: IntValue | StrValue | BoolValue | NoneValue,
     ) {
         this.kind = kind;
@@ -97,6 +97,7 @@ export class SyntaxNodeValue {
     }
 }
 
+export const SYNTAX_KIND__EMPTY_PLACEHOLDER = BigInt(0x0000);
 export const SYNTAX_KIND__INT_NODE = BigInt(0x1001);
 export const SYNTAX_KIND__STR_NODE = BigInt(0x1002);
 export const SYNTAX_KIND__BOOL_NODE = BigInt(0x1003);

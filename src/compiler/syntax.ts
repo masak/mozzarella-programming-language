@@ -5,6 +5,7 @@ export class SyntaxKind {
         this.name = name;
     }
 
+    static EMPTY_PLACEHOLDER = new SyntaxKind("EmptyPlaceholder");
     static STR_NODE = new SyntaxKind("StrNode");
     static INT_NODE = new SyntaxKind("IntNode");
     static BOOL_NODE = new SyntaxKind("BoolNode");
@@ -46,18 +47,26 @@ export class SyntaxKind {
 
 export class SyntaxNode {
     kind: SyntaxKind;
-    children: Array<SyntaxNode | null>;
+    children: Array<SyntaxNode>;
     payload: bigint | string | boolean | null;
 
     constructor(
         kind: SyntaxKind,
-        children: Array<SyntaxNode | null>,
+        children: Array<SyntaxNode>,
         payload: bigint | string | boolean | null,
     ) {
         this.kind = kind;
         this.children = children;
         this.payload = payload;
     }
+}
+
+export function makeEmptyPlaceholder(): SyntaxNode {
+    return new SyntaxNode(SyntaxKind.EMPTY_PLACEHOLDER, [], null);
+}
+
+export function isEmptyPlaceholder(syntaxNode: SyntaxNode): boolean {
+    return syntaxNode.kind === SyntaxKind.EMPTY_PLACEHOLDER;
 }
 
 export function makeStrNode(payload: string): SyntaxNode {
@@ -135,7 +144,7 @@ export function isExprStatement(syntaxNode: SyntaxNode): boolean {
 }
 
 export function exprStatementExpr(syntaxNode: SyntaxNode): SyntaxNode {
-    return syntaxNode.children[0] as SyntaxNode;
+    return syntaxNode.children[0];
 }
 
 export function makeEmptyStatement(): SyntaxNode {
@@ -155,7 +164,7 @@ export function isBlockStatement(syntaxNode: SyntaxNode): boolean {
 }
 
 export function blockStatementBlock(syntaxNode: SyntaxNode): SyntaxNode {
-    return syntaxNode.children[0] as SyntaxNode;
+    return syntaxNode.children[0];
 }
 
 export function makeIfClause(
@@ -170,11 +179,11 @@ export function isIfClause(syntaxNode: SyntaxNode): boolean {
 }
 
 export function ifClauseCondExpr(syntaxNode: SyntaxNode): SyntaxNode {
-    return syntaxNode.children[0] as SyntaxNode;
+    return syntaxNode.children[0];
 }
 
 export function ifClauseBlock(syntaxNode: SyntaxNode): SyntaxNode {
-    return syntaxNode.children[1] as SyntaxNode;
+    return syntaxNode.children[1];
 }
 
 export function makeIfClauseList(clauses: Array<SyntaxNode>): SyntaxNode {
@@ -193,7 +202,7 @@ export function ifClauseListClauses(
 
 export function makeIfStatement(
     clauseList: SyntaxNode,
-    elseBlock: SyntaxNode | null,
+    elseBlock: SyntaxNode,
 ): SyntaxNode {
     return new SyntaxNode(
         SyntaxKind.IF_STATEMENT,
@@ -207,12 +216,12 @@ export function isIfStatement(syntaxNode: SyntaxNode): boolean {
 }
 
 export function ifStatementClauseList(syntaxNode: SyntaxNode): SyntaxNode {
-    return syntaxNode.children[0] as SyntaxNode;
+    return syntaxNode.children[0];
 }
 
 export function ifStatementElseBlock(
     syntaxNode: SyntaxNode,
-): SyntaxNode | null {
+): SyntaxNode {
     return syntaxNode.children[1];
 }
 
@@ -233,15 +242,15 @@ export function isForStatement(syntaxNode: SyntaxNode): boolean {
 }
 
 export function forStatementName(syntaxNode: SyntaxNode): SyntaxNode {
-    return syntaxNode.children[0] as SyntaxNode;
+    return syntaxNode.children[0];
 }
 
 export function forStatementArrayExpr(syntaxNode: SyntaxNode): SyntaxNode {
-    return syntaxNode.children[1] as SyntaxNode;
+    return syntaxNode.children[1];
 }
 
 export function forStatementBody(syntaxNode: SyntaxNode): SyntaxNode {
-    return syntaxNode.children[2] as SyntaxNode;
+    return syntaxNode.children[2];
 }
 
 export function makeWhileStatement(
@@ -260,11 +269,11 @@ export function isWhileStatement(syntaxNode: SyntaxNode): boolean {
 }
 
 export function whileStatementCondExpr(syntaxNode: SyntaxNode): SyntaxNode {
-    return syntaxNode.children[0] as SyntaxNode;
+    return syntaxNode.children[0];
 }
 
 export function whileStatementBody(syntaxNode: SyntaxNode): SyntaxNode {
-    return syntaxNode.children[1] as SyntaxNode;
+    return syntaxNode.children[1];
 }
 
 export function makeLastStatement(): SyntaxNode {
@@ -283,7 +292,7 @@ export function isNextStatement(syntaxNode: SyntaxNode): boolean {
     return syntaxNode.kind === SyntaxKind.NEXT_STATEMENT;
 }
 
-export function makeReturnStatement(expr: SyntaxNode | null): SyntaxNode {
+export function makeReturnStatement(expr: SyntaxNode): SyntaxNode {
     return new SyntaxNode(SyntaxKind.RETURN_STATEMENT, [expr], null);
 }
 
@@ -291,16 +300,14 @@ export function isReturnStatement(syntaxNode: SyntaxNode): boolean {
     return syntaxNode.kind === SyntaxKind.RETURN_STATEMENT;
 }
 
-export function returnStatementExpr(
-    syntaxNode: SyntaxNode,
-): SyntaxNode | null {
+export function returnStatementExpr(syntaxNode: SyntaxNode): SyntaxNode {
     return syntaxNode.children[0];
 }
 
 export function makeVarDecl(
     name: SyntaxNode,
-    type: null,
-    initExpr: SyntaxNode | null,
+    type: SyntaxNode,
+    initExpr: SyntaxNode,
 ): SyntaxNode {
     return new SyntaxNode(SyntaxKind.VAR_DECL, [name, type, initExpr], null);
 }
@@ -310,18 +317,18 @@ export function isVarDecl(syntaxNode: SyntaxNode): boolean {
 }
 
 export function varDeclName(syntaxNode: SyntaxNode): SyntaxNode {
-    return syntaxNode.children[0] as SyntaxNode;
+    return syntaxNode.children[0];
 }
 
-export function varDeclType(syntaxNode: SyntaxNode): SyntaxNode | null {
+export function varDeclType(syntaxNode: SyntaxNode): SyntaxNode {
     return syntaxNode.children[1];
 }
 
-export function varDeclInitExpr(syntaxNode: SyntaxNode): SyntaxNode | null {
+export function varDeclInitExpr(syntaxNode: SyntaxNode): SyntaxNode {
     return syntaxNode.children[2];
 }
 
-export function makeParameter(name: SyntaxNode, type: null): SyntaxNode {
+export function makeParameter(name: SyntaxNode, type: SyntaxNode): SyntaxNode {
     return new SyntaxNode(SyntaxKind.PARAMETER, [name, type], null);
 }
 
@@ -330,10 +337,10 @@ export function isParameter(syntaxNode: SyntaxNode): boolean {
 }
 
 export function parameterName(syntaxNode: SyntaxNode): SyntaxNode {
-    return syntaxNode.children[0] as SyntaxNode;
+    return syntaxNode.children[0];
 }
 
-export function parameterType(syntaxNode: SyntaxNode): SyntaxNode | null {
+export function parameterType(syntaxNode: SyntaxNode): SyntaxNode {
     return syntaxNode.children[1];
 }
 
@@ -354,7 +361,7 @@ export function parameterListParameters(
 export function makeFuncDecl(
     name: SyntaxNode,
     parameterList: SyntaxNode,
-    type: null,
+    type: SyntaxNode,
     body: SyntaxNode,
 ): SyntaxNode {
     return new SyntaxNode(
@@ -369,25 +376,25 @@ export function isFuncDecl(syntaxNode: SyntaxNode): boolean {
 }
 
 export function funcDeclName(syntaxNode: SyntaxNode): SyntaxNode {
-    return syntaxNode.children[0] as SyntaxNode;
+    return syntaxNode.children[0];
 }
 
 export function funcDeclParameterList(syntaxNode: SyntaxNode): SyntaxNode {
-    return syntaxNode.children[1] as SyntaxNode;
+    return syntaxNode.children[1];
 }
 
-export function funcDeclType(syntaxNode: SyntaxNode): SyntaxNode | null {
+export function funcDeclType(syntaxNode: SyntaxNode): SyntaxNode {
     return syntaxNode.children[2];
 }
 
 export function funcDeclBody(syntaxNode: SyntaxNode): SyntaxNode {
-    return syntaxNode.children[3] as SyntaxNode;
+    return syntaxNode.children[3];
 }
 
 export function makeMacroDecl(
     name: SyntaxNode,
     parameterList: SyntaxNode,
-    type: null,
+    type: SyntaxNode,
     body: SyntaxNode,
 ): SyntaxNode {
     return new SyntaxNode(
@@ -402,19 +409,19 @@ export function isMacroDecl(syntaxNode: SyntaxNode): boolean {
 }
 
 export function macroDeclName(syntaxNode: SyntaxNode): SyntaxNode {
-    return syntaxNode.children[0] as SyntaxNode;
+    return syntaxNode.children[0];
 }
 
 export function macroDeclParameterList(syntaxNode: SyntaxNode): SyntaxNode {
-    return syntaxNode.children[1] as SyntaxNode;
+    return syntaxNode.children[1];
 }
 
-export function macroDeclType(syntaxNode: SyntaxNode): SyntaxNode | null {
+export function macroDeclType(syntaxNode: SyntaxNode): SyntaxNode {
     return syntaxNode.children[2];
 }
 
 export function macroDeclBody(syntaxNode: SyntaxNode): SyntaxNode {
-    return syntaxNode.children[3] as SyntaxNode;
+    return syntaxNode.children[3];
 }
 
 export function isExpr(syntaxNode: SyntaxNode): boolean {
@@ -437,11 +444,11 @@ export function isPrefixOpExpr(syntaxNode: SyntaxNode): boolean {
 }
 
 export function prefixOpExprOpName(syntaxNode: SyntaxNode): SyntaxNode {
-    return syntaxNode.children[0] as SyntaxNode;
+    return syntaxNode.children[0];
 }
 
 export function prefixOpExprOperand(syntaxNode: SyntaxNode): SyntaxNode {
-    return syntaxNode.children[1] as SyntaxNode;
+    return syntaxNode.children[1];
 }
 
 export function makeInfixOpExpr(
@@ -457,15 +464,15 @@ export function isInfixOpExpr(syntaxNode: SyntaxNode): boolean {
 }
 
 export function infixOpExprLhs(syntaxNode: SyntaxNode): SyntaxNode {
-    return syntaxNode.children[0] as SyntaxNode;
+    return syntaxNode.children[0];
 }
 
 export function infixOpExprOpName(syntaxNode: SyntaxNode): SyntaxNode {
-    return syntaxNode.children[1] as SyntaxNode;
+    return syntaxNode.children[1];
 }
 
 export function infixOpExprRhs(syntaxNode: SyntaxNode): SyntaxNode {
-    return syntaxNode.children[2] as SyntaxNode;
+    return syntaxNode.children[2];
 }
 
 export function makeIndexingExpr(
@@ -484,11 +491,11 @@ export function isIndexingExpr(syntaxNode: SyntaxNode): boolean {
 }
 
 export function indexingExprArrayExpr(syntaxNode: SyntaxNode): SyntaxNode {
-    return syntaxNode.children[0] as SyntaxNode;
+    return syntaxNode.children[0];
 }
 
 export function indexingExprIndexExpr(syntaxNode: SyntaxNode): SyntaxNode {
-    return syntaxNode.children[1] as SyntaxNode;
+    return syntaxNode.children[1];
 }
 
 export function makeArgument(expr: SyntaxNode): SyntaxNode {
@@ -500,7 +507,7 @@ export function isArgument(syntaxNode: SyntaxNode): boolean {
 }
 
 export function argumentExpr(syntaxNode: SyntaxNode): SyntaxNode {
-    return syntaxNode.children[0] as SyntaxNode;
+    return syntaxNode.children[0];
 }
 
 export function makeArgumentList(args: Array<SyntaxNode>): SyntaxNode {
@@ -533,11 +540,11 @@ export function isCallExpr(syntaxNode: SyntaxNode): boolean {
 }
 
 export function callExprFuncExpr(syntaxNode: SyntaxNode): SyntaxNode {
-    return syntaxNode.children[0] as SyntaxNode;
+    return syntaxNode.children[0];
 }
 
 export function callExprArgumentList(syntaxNode: SyntaxNode): SyntaxNode {
-    return syntaxNode.children[1] as SyntaxNode;
+    return syntaxNode.children[1];
 }
 
 export function makeIntLitExpr(value: SyntaxNode): SyntaxNode {
@@ -549,7 +556,7 @@ export function isIntLitExpr(syntaxNode: SyntaxNode): boolean {
 }
 
 export function intLitExprValue(syntaxNode: SyntaxNode): SyntaxNode {
-    return syntaxNode.children[0] as SyntaxNode;
+    return syntaxNode.children[0];
 }
 
 export function makeStrLitExpr(value: SyntaxNode): SyntaxNode {
@@ -561,7 +568,7 @@ export function isStrLitExpr(syntaxNode: SyntaxNode): boolean {
 }
 
 export function strLitExprValue(syntaxNode: SyntaxNode): SyntaxNode {
-    return syntaxNode.children[0] as SyntaxNode;
+    return syntaxNode.children[0];
 }
 
 export function makeBoolLitExpr(value: SyntaxNode): SyntaxNode {
@@ -573,7 +580,7 @@ export function isBoolLitExpr(syntaxNode: SyntaxNode): boolean {
 }
 
 export function boolLitExprValue(syntaxNode: SyntaxNode): SyntaxNode {
-    return syntaxNode.children[0] as SyntaxNode;
+    return syntaxNode.children[0];
 }
 
 export function makeNoneLitExpr(): SyntaxNode {
@@ -593,7 +600,7 @@ export function isParenExpr(syntaxNode: SyntaxNode): boolean {
 }
 
 export function parenExprInnerExpr(syntaxNode: SyntaxNode): SyntaxNode {
-    return syntaxNode.children[0] as SyntaxNode;
+    return syntaxNode.children[0];
 }
 
 export function makeDoExpr(statement: SyntaxNode): SyntaxNode {
@@ -605,7 +612,7 @@ export function isDoExpr(syntaxNode: SyntaxNode): boolean {
 }
 
 export function doExprStatement(syntaxNode: SyntaxNode): SyntaxNode {
-    return syntaxNode.children[0] as SyntaxNode;
+    return syntaxNode.children[0];
 }
 
 export function makeArrayInitializerExpr(
@@ -633,7 +640,7 @@ export function isVarRefExpr(syntaxNode: SyntaxNode): boolean {
 }
 
 export function varRefExprName(syntaxNode: SyntaxNode): SyntaxNode {
-    return syntaxNode.children[0] as SyntaxNode;
+    return syntaxNode.children[0];
 }
 
 export function makeQuoteExpr(statements: Array<SyntaxNode>): SyntaxNode {
@@ -659,6 +666,6 @@ export function isUnquoteExpr(syntaxNode: SyntaxNode): boolean {
 }
 
 export function unquoteExprInnerExpr(syntaxNode: SyntaxNode): SyntaxNode {
-    return syntaxNode.children[0] as SyntaxNode;
+    return syntaxNode.children[0];
 }
 

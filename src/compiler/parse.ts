@@ -16,6 +16,7 @@ import {
     makeCallExpr,
     makeCompUnit,
     makeDoExpr,
+    makeEmptyPlaceholder,
     makeEmptyStatement,
     makeExprStatement,
     makeForStatement,
@@ -330,7 +331,7 @@ export class Parser {
             let clauses: Array<SyntaxNode> = [
                 makeIfClause(condExpr, thenBlock),
             ];
-            let elseBlock: SyntaxNode | null = null;
+            let elseBlock: SyntaxNode | undefined = undefined;
             while (this.accept(TokenKind.ElseKeyword)) {
                 if (this.accept(TokenKind.IfKeyword)) {
                     let condExpr = this.parseExpr();
@@ -345,7 +346,10 @@ export class Parser {
                 }
             }
             let clauseList = makeIfClauseList(clauses);
-            let ifStatement = makeIfStatement(clauseList, elseBlock);
+            let ifStatement = makeIfStatement(
+                clauseList,
+                elseBlock ?? makeEmptyPlaceholder(),
+            );
             return [ifStatement, true];
         }
         else if (this.accept(TokenKind.ForKeyword)) {
@@ -370,12 +374,15 @@ export class Parser {
             return [makeNextStatement(), sawSemi];
         }
         else if (this.accept(TokenKind.ReturnKeyword)) {
-            let expr: SyntaxNode | null = null;
+            let expr: SyntaxNode | undefined = undefined;
             if (this.seeingStartOfExpr()) {
                 expr = this.parseExpr();
             }
             let sawSemi = Boolean(this.accept(TokenKind.Semi));
-            return [makeReturnStatement(expr), sawSemi];
+            return [
+                makeReturnStatement(expr ?? makeEmptyPlaceholder()),
+                sawSemi,
+            ];
         }
         else {
             this.parseFail("statement");
@@ -413,11 +420,21 @@ export class Parser {
             if (this.accept(TokenKind.Assign)) {
                 let initExpr = this.parseExpr();
                 let sawSemi = Boolean(this.accept(TokenKind.Semi));
-                return [makeVarDecl(name, null, initExpr), sawSemi];
+                return [
+                    makeVarDecl(name, makeEmptyPlaceholder(), initExpr),
+                    sawSemi,
+                ];
             }
             else {
                 let sawSemi = Boolean(this.accept(TokenKind.Semi));
-                return [makeVarDecl(name, null, null), sawSemi];
+                return [
+                    makeVarDecl(
+                        name,
+                        makeEmptyPlaceholder(),
+                        makeEmptyPlaceholder(),
+                    ),
+                    sawSemi,
+                ];
             }
         }
         else if (this.accept(TokenKind.FuncKeyword)) {
@@ -428,7 +445,10 @@ export class Parser {
             let paramList = this.parseParameterList();
             this.advanceOver(TokenKind.ParenR);
             let body = this.parseBlock();
-            return [makeFuncDecl(name, paramList, null, body), true];
+            return [
+                makeFuncDecl(name, paramList, makeEmptyPlaceholder(), body),
+                true,
+            ];
         }
         else if (this.accept(TokenKind.MacroKeyword)) {
             this.expect(TokenKind.Identifier);
@@ -438,7 +458,10 @@ export class Parser {
             let paramList = this.parseParameterList();
             this.advanceOver(TokenKind.ParenR);
             let body = this.parseBlock();
-            return [makeMacroDecl(name, paramList, null, body), true];
+            return [
+                makeMacroDecl(name, paramList, makeEmptyPlaceholder(), body),
+                true,
+            ];
         }
         else {
             this.parseFail("declaration");
@@ -636,7 +659,7 @@ export class Parser {
             this.expect(TokenKind.Identifier);
             let nameToken = this.accept(TokenKind.Identifier)!;
             let name = makeStrNode(nameToken.payload as string);
-            let param = makeParameter(name, null);
+            let param = makeParameter(name, makeEmptyPlaceholder());
             params.push(param);
             if (!this.accept(TokenKind.Comma)) {
                 break;

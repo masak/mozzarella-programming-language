@@ -23,6 +23,7 @@ import {
     SYNTAX_KIND__CALL_EXPR,
     SYNTAX_KIND__COMPUNIT,
     SYNTAX_KIND__DO_EXPR,
+    SYNTAX_KIND__EMPTY_PLACEHOLDER,
     SYNTAX_KIND__EMPTY_STATEMENT,
     SYNTAX_KIND__EXPR_STATEMENT,
     SYNTAX_KIND__FOR_STATEMENT,
@@ -93,6 +94,7 @@ export function isStatementKind(syntaxNodeValue: SyntaxNodeValue): boolean {
 }
 
 const kindMap: Map<SyntaxKind, bigint> = new Map([
+    [SyntaxKind.EMPTY_PLACEHOLDER, SYNTAX_KIND__EMPTY_PLACEHOLDER],
     [SyntaxKind.INT_NODE, SYNTAX_KIND__INT_NODE],
     [SyntaxKind.STR_NODE, SYNTAX_KIND__STR_NODE],
     [SyntaxKind.BOOL_NODE, SYNTAX_KIND__BOOL_NODE],
@@ -154,15 +156,10 @@ export function kindAndPayloadOfNode(
 }
 
 export function reifyNode(
-    syntaxNode: SyntaxNode | null,
-): SyntaxNodeValue | NoneValue {
-    if (syntaxNode === null) {
-        return new NoneValue();
-    }
-    else {
-        let [kind, payload] = kindAndPayloadOfNode(syntaxNode);
-        let children = syntaxNode.children.map(reifyNode);
-        return new SyntaxNodeValue(kind, children, payload);
-    }
+    syntaxNode: SyntaxNode,
+): SyntaxNodeValue {
+    let [kind, payload] = kindAndPayloadOfNode(syntaxNode);
+    let children = syntaxNode.children.map(reifyNode);
+    return new SyntaxNodeValue(kind, children, payload);
 }
 

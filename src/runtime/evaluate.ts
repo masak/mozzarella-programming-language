@@ -39,6 +39,7 @@ import {
     isCallExpr,
     isCompUnit,
     isDoExpr,
+    isEmptyPlaceholder,
     isEmptyStatement,
     isExprStatement,
     isForStatement,
@@ -330,7 +331,7 @@ class BlockKont {
 
 class IfKont {
     clauses: Array<SyntaxNode>;
-    elseBlock: SyntaxNode | null;
+    elseBlock: SyntaxNode;
     index: number;
     env: Env;
     tail: Kont;
@@ -338,7 +339,7 @@ class IfKont {
 
     constructor(
         clauses: Array<SyntaxNode>,
-        elseBlock: SyntaxNode | null,
+        elseBlock: SyntaxNode,
         index: number,
         env: Env,
         tail: Kont,
@@ -546,7 +547,7 @@ class BlockLocKont {
 
 class IfLocKont {
     clauses: Array<SyntaxNode>;
-    elseBlock: SyntaxNode | null;
+    elseBlock: SyntaxNode;
     index: number;
     env: Env;
     tail: Kont;
@@ -554,7 +555,7 @@ class IfLocKont {
 
     constructor(
         clauses: Array<SyntaxNode>,
-        elseBlock: SyntaxNode | null,
+        elseBlock: SyntaxNode,
         index: number,
         env: Env,
         tail: Kont,
@@ -854,7 +855,7 @@ class Quote1Kont {
 class Quote2Kont {
     index: number;
     node: SyntaxNode;
-    childValues: Array<SyntaxNodeValue | NoneValue>;
+    childValues: Array<SyntaxNodeValue>;
     quoteLevel: number;
     env: Env;
     tail: Kont;
@@ -863,7 +864,7 @@ class Quote2Kont {
     constructor(
         index: number,
         node: SyntaxNode,
-        childValues: Array<SyntaxNodeValue | NoneValue>,
+        childValues: Array<SyntaxNodeValue>,
         quoteLevel: number,
         env: Env,
         tail: Kont,
@@ -1055,10 +1056,6 @@ function reducePState(
     { code: [mode, syntaxNode, quoteLevel], env, kont, jumpMap }: PState,
     staticEnvs: Map<SyntaxNode, Env>,
 ): State {
-    if (syntaxNode === null) {
-        throw new E000_InternalError("null syntax node");
-    }
-
     if (mode === Mode.GetValue) {
         if (isCompUnit(syntaxNode)) {
             let statements = compUnitStatements(syntaxNode);
@@ -1281,7 +1278,10 @@ function reducePState(
         }
         else if (isVarDecl(syntaxNode)) {
             let initExpr = varDeclInitExpr(syntaxNode);
-            if (initExpr !== null) {
+            if (isEmptyPlaceholder(initExpr)) {
+                return new RetState(new NoneValue(), kont);
+            }
+            else {
                 let name = varDeclName(syntaxNode).payload as string;
                 let varKont = new VarKont(name, env, kont);
                 return new PState(
@@ -1290,9 +1290,6 @@ function reducePState(
                     varKont,
                     jumpMap,
                 );
-            }
-            else {
-                return new RetState(new NoneValue(), kont);
             }
         }
         else if (isVarRefExpr(syntaxNode)) {
@@ -1367,7 +1364,7 @@ function reducePState(
         }
         else if (isReturnStatement(syntaxNode)) {
             let expr = returnStatementExpr(syntaxNode);
-            if (expr === null) {
+            if (isEmptyPlaceholder(expr)) {
                 let returnTarget = jumpMap.returnTarget;
                 if (returnTarget === null) {
                     throw new E613_ReturnOutsideRoutineError();
@@ -1639,7 +1636,7 @@ function reducePState(
         }
         else if (isReturnStatement(syntaxNode)) {
             let expr = returnStatementExpr(syntaxNode);
-            if (expr === null) {
+            if (isEmptyPlaceholder(expr)) {
                 let returnTarget = jumpMap.returnTarget;
                 if (returnTarget === null) {
                     throw new E613_ReturnOutsideRoutineError();
@@ -1720,7 +1717,10 @@ function reducePState(
         }
         else if (isVarDecl(syntaxNode)) {
             let initExpr = varDeclInitExpr(syntaxNode);
-            if (initExpr !== null) {
+            if (isEmptyPlaceholder(initExpr)) {
+                return new RetState(new NoneValue(), kont);
+            }
+            else {
                 let name = varDeclName(syntaxNode).payload as string;
                 let varKont = new VarKont(name, env, kont);
                 return new PState(
@@ -1729,9 +1729,6 @@ function reducePState(
                     varKont,
                     jumpMap,
                 );
-            }
-            else {
-                return new RetState(new NoneValue(), kont);
             }
         }
         else {
@@ -1770,7 +1767,7 @@ function reducePState(
                     ? quoteLevel - 1
                     : quoteLevel;
             if (syntaxNode.children.length > 0) {
-                let childValues: Array<SyntaxNodeValue | NoneValue> = [];
+                let childValues: Array<SyntaxNodeValue> = [];
                 let quote2Kont = new Quote2Kont(
                     0,
                     syntaxNode,
@@ -1781,17 +1778,12 @@ function reducePState(
                     jumpMap,
                 );
                 let firstChild = syntaxNode.children[0];
-                if (firstChild === null) {
-                    return new RetState(new NoneValue(), quote2Kont);
-                }
-                else {
-                    return new PState(
-                        [Mode.Interpolate, firstChild, childQuoteLevel],
-                        env,
-                        quote2Kont,
-                        jumpMap,
-                    );
-                }
+                return new PState(
+                    [Mode.Interpolate, firstChild, childQuoteLevel],
+                    env,
+                    quote2Kont,
+                    jumpMap,
+                );
             }
             else {
                 let [kind, payload] = kindAndPayloadOfNode(syntaxNode);
@@ -2173,7 +2165,7 @@ function reduceRetState({ value, kont }: RetState): State {
                     kont.jumpMap,
                 );
             }
-            else if (kont.elseBlock !== null && isBlock(kont.elseBlock)) {
+            else if (isBlock(kont.elseBlock)) {
                 return new PState(
                     [Mode.GetValue, kont.elseBlock, /* quoteLevel */ 0],
                     kont.env,
@@ -2403,7 +2395,7 @@ function reduceRetState({ value, kont }: RetState): State {
                     kont.jumpMap,
                 );
             }
-            else if (kont.elseBlock !== null && isBlock(kont.elseBlock)) {
+            else if (isBlock(kont.elseBlock)) {
                 return new PState(
                     [Mode.GetLocation, kont.elseBlock, /* quoteLevel */ 0],
                     kont.env,
@@ -2943,7 +2935,7 @@ function reduceRetState({ value, kont }: RetState): State {
         }
     }
     else if (kont instanceof Quote2Kont) {
-        kont.childValues[kont.index] = value;
+        kont.childValues[kont.index] = value as SyntaxNodeValue;
         if (kont.index + 1 < kont.node.children.length) {
             let quote2Kont = new Quote2Kont(
                 kont.index + 1,
@@ -2955,17 +2947,12 @@ function reduceRetState({ value, kont }: RetState): State {
                 kont.jumpMap,
             );
             let child = kont.node.children[kont.index + 1];
-            if (child === null) {
-                return new RetState(new NoneValue(), quote2Kont);
-            }
-            else {
-                return new PState(
-                    [Mode.Interpolate, child, kont.quoteLevel],
-                    kont.env,
-                    quote2Kont,
-                    kont.jumpMap,
-                );
-            }
+            return new PState(
+                [Mode.Interpolate, child, kont.quoteLevel],
+                kont.env,
+                quote2Kont,
+                kont.jumpMap,
+            );
         }
         else {
             let [kind, payload] = kindAndPayloadOfNode(kont.node);

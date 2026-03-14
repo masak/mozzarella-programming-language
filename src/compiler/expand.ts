@@ -144,7 +144,7 @@ function traverseNode(
 
     visitDown(syntaxNode, envStack, staticEnvs);
 
-    let newChildren: Array<SyntaxNode | null> = [];
+    let newChildren: Array<SyntaxNode> = [];
     for (let child of syntaxNode.children) {
         if (child instanceof SyntaxNode) {
             let wasReplaced = false;
@@ -246,12 +246,7 @@ export function macroExpandCompUnit(
                         }
                         else if (resultValue instanceof SyntaxNodeValue) {
                             let result = absorbNode(resultValue);
-                            if (result === null) {
-                                // this case is impossible, but the signature
-                                // of `absorbNode` forces us to handle it
-                                replaceWith(makeNoneLitExpr());
-                            }
-                            else if (isExpr(result)) {
+                            if (isExpr(result)) {
                                 replaceWith(result);
                             }
                             else if (isStatement(result)) {
