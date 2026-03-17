@@ -82,8 +82,8 @@ PrimaryExpr -> "true" .
 PrimaryExpr -> "false" .
 PrimaryExpr -> "none" .
 PrimaryExpr -> VarRefExpr .
-PrimaryExpr -> CodeQuoteExpr .
-PrimaryExpr -> CodeUnquoteExpr .
+PrimaryExpr -> QuoteExpr .
+PrimaryExpr -> UnquoteExpr .
 PrimaryExpr -> DoExpr .
 PrimaryExpr -> "(" Expr ")" .
 PrimaryExpr -> "[" "]" .
@@ -94,10 +94,10 @@ ElementList -> ElementList "," Expr .
 
 VarRefExpr -> identifier .
 
-CodeQuoteExpr -> "code" "`" "`" .
-CodeQuoteExpr -> "code" "`" StatementOrDeclList "`" .
+QuoteExpr -> "code" "`" "`" .
+QuoteExpr -> "code" "`" StatementOrDeclList "`" .
 
-CodeUnquoteExpr -> "$" "(" Expr ")" .
+UnquoteExpr -> "$" "(" Expr ")" .
 
 DoExpr -> "do" Statement .
 ```
