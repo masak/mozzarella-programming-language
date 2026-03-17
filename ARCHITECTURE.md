@@ -49,10 +49,10 @@
 * The runtime, implemented in `evaluate.ts`, takes a (validated) syntax tree
   and executes it. It has the following helper dependencies:
     * `boolify.ts` determines how to convert any value to a boolean value
+    * `cell.ts` handles memory cells (targets of assignments)
     * `compare.ts` handles comparison of values, as used by comparison ops
     * `display.ts` converts a value to a string for a REPL
     * `env.ts` declares environments (name/value bindings for variables)
-    * `location.ts` handles locations (targets of assignments)
     * `stringify.ts` can convert any value to a Mozzarella string value
     * The runtime is a CEKJ machine, with the following parts:
         * **Code**, the next bit of the program to evaluate

@@ -11,10 +11,10 @@ import {
     Value,
 } from "./value";
 
-export abstract class Location {
+export abstract class Cell {
 }
 
-export class VarLocation extends Location {
+export class VarCell extends Cell {
     varEnv: Env;
     name: string;
 
@@ -25,7 +25,7 @@ export class VarLocation extends Location {
     }
 }
 
-export class ArrayElementLocation extends Location {
+export class ArrayElementCell extends Cell {
     array: ArrayValue;
     index: number;
 
@@ -36,13 +36,13 @@ export class ArrayElementLocation extends Location {
     }
 }
 
-export function assign(location: Location, value: Value): void {
-    if (location instanceof VarLocation) {
-        bindMutable(location.varEnv, location.name, value);
+export function assign(cell: Cell, value: Value): void {
+    if (cell instanceof VarCell) {
+        bindMutable(cell.varEnv, cell.name, value);
     }
-    else if (location instanceof ArrayElementLocation) {
-        let array = location.array;
-        let index = location.index;
+    else if (cell instanceof ArrayElementCell) {
+        let array = cell.array;
+        let index = cell.index;
         if (index < 0 || index >= array.elements.length) {
             throw new E604_IndexError("Index out of bounds");
         }
@@ -50,7 +50,7 @@ export function assign(location: Location, value: Value): void {
     }
     else {
         throw new E000_InternalError(
-            "Precondition failed: unrecognized Location"
+            "Precondition failed: unrecognized Cell"
         );
     }
 }

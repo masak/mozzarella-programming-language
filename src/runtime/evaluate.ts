@@ -115,11 +115,11 @@ import {
     lookup,
 } from "./env";
 import {
-    ArrayElementLocation,
+    ArrayElementCell,
     assign,
-    Location,
-    VarLocation,
-} from "./location";
+    Cell,
+    VarCell,
+} from "./cell";
 import {
     kindAndPayloadOfNode,
     isExprKind,
@@ -487,11 +487,11 @@ class Assign1Kont {
 }
 
 class Assign2Kont {
-    location: Location;
+    cell: Cell;
     tail: Kont;
 
-    constructor(location: Location, tail: Kont) {
-        this.location = location;
+    constructor(cell: Cell, tail: Kont) {
+        this.cell = cell;
         this.tail = tail;
     }
 }
@@ -587,11 +587,11 @@ class Assign1LocKont {
 }
 
 class Assign2LocKont {
-    location: Location;
+    cell: Cell;
     tail: Kont;
 
-    constructor(location: Location, tail: Kont) {
-        this.location = location;
+    constructor(cell: Cell, tail: Kont) {
+        this.cell = cell;
         this.tail = tail;
     }
 }
@@ -777,11 +777,11 @@ class AssignIgnore1Kont {
 }
 
 class AssignIgnore2Kont {
-    location: Location;
+    cell: Cell;
     tail: Kont;
 
-    constructor(location: Location, tail: Kont) {
-        this.location = location;
+    constructor(cell: Cell, tail: Kont) {
+        this.cell = cell;
         this.tail = tail;
     }
 }
@@ -953,7 +953,7 @@ class Mode {
     }
 
     static GetValue = new Mode("GetValue");
-    static GetLocation = new Mode("GetLocation");
+    static GetCell = new Mode("GetCell");
     static Ignore = new Mode("Ignore");
     static Interpolate = new Mode("Interpolate");
 }
@@ -994,10 +994,10 @@ class PState {
 }
 
 class RetState {
-    value: Value | Location;
+    value: Value | Cell;
     kont: Kont;
 
-    constructor(value: Value | Location, kont: Kont) {
+    constructor(value: Value | Cell, kont: Kont) {
         this.value = value;
         this.kont = kont;
     }
@@ -1179,7 +1179,7 @@ function reducePState(
             else if (opName === "=") {
                 let assign1Kont = new Assign1Kont(rhs, env, kont, jumpMap);
                 return new PState(
-                    [Mode.GetLocation, lhs, quoteLevel],
+                    [Mode.GetCell, lhs, quoteLevel],
                     env,
                     assign1Kont,
                     jumpMap,
@@ -1451,7 +1451,7 @@ function reducePState(
             );
         }
     }
-    else if (mode === Mode.GetLocation) {
+    else if (mode === Mode.GetCell) {
         if (isIndexingExpr(syntaxNode)) {
             let arrayExpr = indexingExprArrayExpr(syntaxNode);
             let indexExpr = indexingExprIndexExpr(syntaxNode);
@@ -1474,12 +1474,12 @@ function reducePState(
             if (!mutable) {
                 throw new E608_ReadonlyError(`Binding '${name}' is readonly`);
             }
-            return new RetState(new VarLocation(varEnv, name), kont);
+            return new RetState(new VarCell(varEnv, name), kont);
         }
         else if (isParenExpr(syntaxNode)) {
             let innerExpr = parenExprInnerExpr(syntaxNode);
             return new PState(
-                [Mode.GetLocation, innerExpr, quoteLevel],
+                [Mode.GetCell, innerExpr, quoteLevel],
                 env,
                 kont,
                 jumpMap,
@@ -1488,7 +1488,7 @@ function reducePState(
         else if (isDoExpr(syntaxNode)) {
             let statement = doExprStatement(syntaxNode);
             return new PState(
-                [Mode.GetLocation, statement, quoteLevel],
+                [Mode.GetCell, statement, quoteLevel],
                 env,
                 kont,
                 jumpMap,
@@ -1502,7 +1502,7 @@ function reducePState(
                 let assign1LocKont
                     = new Assign1LocKont(rhs, env, kont, jumpMap);
                 return new PState(
-                    [Mode.GetLocation, lhs, quoteLevel],
+                    [Mode.GetCell, lhs, quoteLevel],
                     env,
                     assign1LocKont,
                     jumpMap,
@@ -1517,7 +1517,7 @@ function reducePState(
         else if (isBlockStatement(syntaxNode)) {
             return new PState(
                 [
-                    Mode.GetLocation,
+                    Mode.GetCell,
                     blockStatementBlock(syntaxNode),
                     quoteLevel,
                 ],
@@ -1531,12 +1531,12 @@ function reducePState(
             let statements = blockStatements(syntaxNode);
             if (statements.length === 0) {
                 throw new E607_CannotAssignError(
-                    "Can't evaluate an empty block for a location"
+                    "Can't evaluate an empty block for a cell"
                 );
             }
             else if (statements.length === 1) {
                 return new PState(
-                    [Mode.GetLocation, statements[0], quoteLevel],
+                    [Mode.GetCell, statements[0], quoteLevel],
                     env,
                     kont,
                     jumpMap,
@@ -1555,7 +1555,7 @@ function reducePState(
         }
         else if (isExprStatement(syntaxNode)) {
             return new PState(
-                [Mode.GetLocation, exprStatementExpr(syntaxNode), quoteLevel],
+                [Mode.GetCell, exprStatementExpr(syntaxNode), quoteLevel],
                 env,
                 kont,
                 jumpMap,
@@ -1667,7 +1667,7 @@ function reducePState(
                     jumpMap,
                 );
                 return new PState(
-                    [Mode.GetLocation, lhs, quoteLevel],
+                    [Mode.GetCell, lhs, quoteLevel],
                     env,
                     assignIgnore1Kont,
                     jumpMap,
@@ -2360,14 +2360,14 @@ function reduceRetState({ value, kont }: RetState): State {
             throw new E603_TypeError("Can only index using an Int");
         }
         return new RetState(
-            new ArrayElementLocation(kont.array, Number(index.payload)),
+            new ArrayElementCell(kont.array, Number(index.payload)),
             kont.tail,
         );
     }
     else if (kont instanceof Assign1Kont) {
-        let location = value;
+        let cell = value;
         let rhs = kont.rhs;
-        let assign2Kont = new Assign2Kont(location, kont.tail);
+        let assign2Kont = new Assign2Kont(cell, kont.tail);
         return new PState(
             [Mode.GetValue, rhs, /* quoteLevel */ 0],
             kont.env,
@@ -2376,14 +2376,14 @@ function reduceRetState({ value, kont }: RetState): State {
         );
     }
     else if (kont instanceof Assign2Kont) {
-        assign(kont.location, value);
+        assign(kont.cell, value);
         return new RetState(value, kont.tail);
     }
     else if (kont instanceof BlockLocKont) {
         if (kont.nextIndex + 1 >= kont.statements.length) {
             return new PState(
                 [
-                    Mode.GetLocation,
+                    Mode.GetCell,
                     kont.statements[kont.nextIndex],
                     /* quoteLevel */ 0,
                 ],
@@ -2417,7 +2417,7 @@ function reduceRetState({ value, kont }: RetState): State {
             let clause = kont.clauses[kont.index];
             let block = ifClauseBlock(clause);
             return new PState(
-                [Mode.GetLocation, block, /* quoteLevel */  0],
+                [Mode.GetCell, block, /* quoteLevel */  0],
                 kont.env,
                 kont.tail,
                 kont.jumpMap,
@@ -2443,7 +2443,7 @@ function reduceRetState({ value, kont }: RetState): State {
             }
             else if (isBlock(kont.elseBlock)) {
                 return new PState(
-                    [Mode.GetLocation, kont.elseBlock, /* quoteLevel */ 0],
+                    [Mode.GetCell, kont.elseBlock, /* quoteLevel */ 0],
                     kont.env,
                     kont.tail,
                     kont.jumpMap,
@@ -2455,9 +2455,9 @@ function reduceRetState({ value, kont }: RetState): State {
         }
     }
     else if (kont instanceof Assign1LocKont) {
-        let location = value;
+        let cell = value;
         let rhs = kont.rhs;
-        let assign2LocKont = new Assign2LocKont(location, kont.tail);
+        let assign2LocKont = new Assign2LocKont(cell, kont.tail);
         return new PState(
             [Mode.GetValue, rhs, /* quoteLevel */ 0],
             kont.env,
@@ -2466,8 +2466,8 @@ function reduceRetState({ value, kont }: RetState): State {
         );
     }
     else if (kont instanceof Assign2LocKont) {
-        assign(kont.location, value);
-        return new RetState(kont.location, kont.tail);
+        assign(kont.cell, value);
+        return new RetState(kont.cell, kont.tail);
     }
     else if (kont instanceof While1Kont) {
         if (boolify(value)) {
@@ -2625,9 +2625,9 @@ function reduceRetState({ value, kont }: RetState): State {
         }
     }
     else if (kont instanceof AssignIgnore1Kont) {
-        let location = value;
+        let cell = value;
         let rhs = kont.rhs;
-        let assignIgnore2Kont = new AssignIgnore2Kont(location, kont.tail);
+        let assignIgnore2Kont = new AssignIgnore2Kont(cell, kont.tail);
         return new PState(
             [Mode.GetValue, rhs, /* quoteLevel */ 0],
             kont.env,
@@ -2654,7 +2654,7 @@ function reduceRetState({ value, kont }: RetState): State {
         }
     }
     else if (kont instanceof AssignIgnore2Kont) {
-        assign(kont.location, value);
+        assign(kont.cell, value);
         return new RetState(new NoneValue(), kont.tail);
     }
     else if (kont instanceof CallIgnore1Kont) {
