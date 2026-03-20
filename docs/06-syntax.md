@@ -75,7 +75,7 @@ Expr
     InfixOpExpr             -- Expr, StrNode, Expr
     PrefixOpExpr            -- StrNode, Expr
     ParenExpr               -- Expr
-    DoExpr                  -- Block
+    DoExpr                  -- Statement
     ArrayInitializerExpr    -- Expr*
     VarRefExpr              -- StrNode
     QuoteExpr               -- StatementOrDecl*

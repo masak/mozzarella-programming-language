@@ -19,9 +19,9 @@ name.
 
 When stringifying a `MacroValue`, the following procedure is used:
 
-* Return the string `"<func "`, concatenated with the `name`, concatenated with
-  `"("`, concatenated with all the `parameters`, comma-separated, concatenated
-  with `")>"`.
+* Return the string `"<macro "`, concatenated with the `name`, concatenated
+  with `"("`, concatenated with all the `parameters`, comma-separated,
+  concatenated with `")>"`.
 
 When boolifying a `MacroValue`, the boolean value `true` is always returned.
 
@@ -54,50 +54,37 @@ in the program; the only way to produce such a value is to convert a macro
 argument (in the form of built-in syntax) into a `SyntaxNodeValue`; we say that
 the syntax node is **reified** into a `SyntaxNodeValue`.
 
-The following syntax nodes represent tokens.
-
-```
-| Token kind     | Payload  |
-|----------------|----------|
-| `Identifier`   | `string` |
-| `Operator`     | (none)   |
-| `IntLit`       | `bigint` |
-| `StrLit`       | `string` |
-| `TrueKeyword`  | `true`   |
-| `FalseKeyword` | `false`  |
-| `NoneLit`      | (none)   |
-```
-
 The following syntax nodes are uncategorized and serve as either the root node
 of a compilation unit, or as part of larger syntax trees.
 
 ```
-| Syntax node kind | Children               |
-|------------------|------------------------|
-| `CompUnit`       | `(Statement \| Decl)*` |
-| `Block`          | `(Statement \| Decl)*` |
-| `IfClause`       | `Expr, Block`          |
-| `IfClauseList`   | `IfClause*`            |
-| `Parameter`      | `Identifier, null`     |
-| `ParameterList`  | `Parameter*`           |
-| `Argument`       | `Expr`                 |
-| `ArgumentList`   | `Argument*`            |
+| Syntax node kind   | Children               |
+|--------------------|------------------------|
+| `EmptyPlaceholder` | (none)                 |
+| `CompUnit`         | `StatementOrDecl*`     |
+| `Block`            | `StatementOrDecl*`     |
+| `IfClause`         | `Expr, Block`          |
+| `IfClauseList`     | `IfClause*`            |
+| `Parameter`        | `Identifier, Type?`    |
+| `ParameterList`    | `Parameter*`           |
+| `Argument`         | `Expr`                 |
+| `ArgumentList`     | `Argument*`            |
 ```
 
 The following syntax nodes represent expressions.
 
 ```
-| Syntax node kind  | Children                      |
-|-------------------|-------------------------------|
-| `ExprStatement`   | `Expr`                        |
-| `EmptyStatement`  | (none)                        |
-| `BlockStatement`  | `Block`                       |
-| `IfStatement`     | `IfClauseList, Block \| null` |
-| `ForStatement`    | `Identifier, Expr, Block`     |
-| `WhileStatement`  | `Expr, Block`                 |
-| `LastStatement`   | (none)                        |
-| `NextStatement`   | (none)                        |
-| `ReturnStatement` | `Expr \| null`                |
+| Syntax node kind  | Children                  |
+|-------------------|---------------------------|
+| `ExprStatement`   | `Expr`                    |
+| `EmptyStatement`  | (none)                    |
+| `BlockStatement`  | `Block`                   |
+| `IfStatement`     | `IfClauseList, Block?`    |
+| `ForStatement`    | `Identifier, Expr, Block` |
+| `WhileStatement`  | `Expr, Block`             |
+| `LastStatement`   | (none)                    |
+| `NextStatement`   | (none)                    |
+| `ReturnStatement` | `Expr?`                   |
 ```
 
 The following syntax nodes represent declarations.
@@ -113,20 +100,20 @@ The following syntax nodes represent declarations.
 The following syntax nodes represent expressions.
 
 ```
-| Syntax node kind       | Children                      |
-|------------------------|-------------------------------|
-| `PrefixOpExpr`         | `Operator, Expr`              |
-| `InfixOpExpr`          | `Expr, Operator, Expr`        |
-| `IndexingExpr`         | `Expr, Expr`                  |
-| `CallExpr`             | `Expr, ArgumentList`          |
-| `IntLitExpr`           | `IntLit`                      |
-| `StrLitExpr`           | `StrLit`                      |
-| `BoolLitExpr`          | `TrueKeyword \| FalseKeyword` |
-| `NoneLitExpr`          | (none)                        |
-| `ParenExpr`            | `Expr`                        |
-| `DoExpr`               | `Statement`                   |
-| `ArrayInitializerExpr` | `Expr*`                       |
-| `VarRefExpr`           | `Identifier`                  |
+| Syntax node kind       | Children              |
+|------------------------|-----------------------|
+| `PrefixOpExpr`         | `StrNode, Expr`       |
+| `InfixOpExpr`          | `Expr, StrNode, Expr` |
+| `IndexingExpr`         | `Expr, Expr`          |
+| `CallExpr`             | `Expr, ArgumentList`  |
+| `IntLitExpr`           | `IntNode`             |
+| `StrLitExpr`           | `StrNode`             |
+| `BoolLitExpr`          | `BoolNode`            |
+| `NoneLitExpr`          | (none)                |
+| `ParenExpr`            | `Expr`                |
+| `DoExpr`               | `Statement`           |
+| `ArrayInitializerExpr` | `Expr*`               |
+| `VarRefExpr`           | `Identifier`          |
 ```
 
 Conversely, a value returned from a macro is **absorbed** into
