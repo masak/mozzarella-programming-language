@@ -157,15 +157,6 @@ export function* lex(input: string): Generator<Token> {
                     else if (seeingChar('"')) {
                         characters.push('"');
                     }
-                    else if (seeingChar("r")) {
-                        characters.push("\r");
-                    }
-                    else if (seeingChar("t")) {
-                        characters.push("\t");
-                    }
-                    else if (seeingChar('"')) {
-                        characters.push('"');
-                    }
                     else if (seeingChar("\\")) {
                         characters.push("\\");
                     }
