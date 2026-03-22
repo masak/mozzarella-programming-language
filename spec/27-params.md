@@ -7,7 +7,7 @@
 
 **Evaluation**:
 
-* `e0[a1, ..., aN]`:
+* `e0(a1, ..., aN)`:
     * Evaluate `e0` to `v0`.
     * Assert that `v0` has type `FuncValue`.
     * Assert that `v0.parameters` has length `N`.
