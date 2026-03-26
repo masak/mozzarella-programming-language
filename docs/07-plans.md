@@ -264,18 +264,20 @@ error.
 
 Maybe copy Ava or something. Basically just need to be able to do assertions.
 
-## Evaluator plugins
+## Runners
 
 Allow the definition of plugins with an API consisting of methods such as
 `onStatementStart`, `onStatementEnd`, `onBranch`, and `onFunctionCall`. Pass
 arguments to these methods that allow the state of the running evaluator to be
 introspected in various ways.
 
+Beside the API calls for instrumenting things, a runner could wrap the main
+program itself, which could be used for `-n` and `-p`.
+
 ## Code coverage 🧺📏
 
-Make an evaluator plugin that collects statistics for every called function,
-executed statement, and taken branch. Writes it all to a file, preferably an
-HTML file.
+Make a runner that collects statistics for every called function, executed
+statement, and taken branch. Writes it all to a file, preferably an HTML file.
 
 ## Compound assignment 🧪🍱
 
