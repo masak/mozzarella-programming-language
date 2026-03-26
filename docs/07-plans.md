@@ -119,14 +119,25 @@ each other in the same project.
 The addition of a bytecode for a new VM (with a ROM and a RAM), and the
 compilation of the AST to that bytecode.
 
-## Post-AST intermediate representation 🌊🗺
+## Intermediate representation 🪜🗺
 
 A nice in-between form (between AST and bytecode) would be a Mozzarella-like
 syntax, but narrowed to serve the more restricted goals of control flow.
+(Later edit: maybe it should be its own syntax, but somehow "embeddable" back
+into regular Mozzarella code.)
 
 Basic blocks as functions-within-functions, control flow as tail calls between
-these, registers as a `reg` array. Pizlonator phi-and-upsilon form. Compiler
-passes which can efficiently transform this representation.
+these, and registers that act as unique identifiers. Pizlonator phi-and-upsilon
+form. Compiler passes which can efficiently transform this representation.
+
+The main thing is we're tired of the `Kont` types. Instead we create (per
+function) a directed graph, nodes representing instructions and directed edges
+representing transitions. The outdegree is either 1 for normal instructions, or
+2 for "branches". Ta-da, now everything's a graph. We establish a translator
+from the AST to this graph, and a much simpler evaluator for it.
+
+As an almost trivial second step, just turn the maximal sequences of
+1-transition nodes into basic blocks, represented as arrays.
 
 ## Micros 🔬⚡
 
@@ -373,17 +384,6 @@ value) `none`.
 
 Written as `x +| y`, `x +& y`, `x +^ y`, `x +< y`, and `x +> y` (as in Raku);
 semantics identical to `bigint` semantics in JavaScript.
-
-## Intermediate representation 🪜🗺️
-
-The main thing is we're tired of the `Kont` types. Instead we create (per
-function) a directed graph, nodes representing instructions and directed edges
-representing transitions. The outdegree is either 1 for normal instructions, or
-2 for "branches". Ta-da, now everything's a graph. We establish a translator
-from the AST to this graph, and a much simpler evaluator for it.
-
-As an almost trivial second step, just turn the maximal sequences of
-1-transition nodes into basic blocks, represented as arrays.
 
 ## Regular expressions
 
