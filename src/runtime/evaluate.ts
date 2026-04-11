@@ -5,6 +5,7 @@
 // targets_, making `next`/`last`/`return` work.
 import {
     blockStatements,
+    boolLitExprValue,
     compUnitStatements,
     exprStatementExpr,
     funcDeclBody,
@@ -38,6 +39,7 @@ import {
     extend,
 } from "./env";
 import {
+    BoolValue,
     FuncValue,
     IntValue,
     MacroValue,
@@ -342,7 +344,8 @@ handlerMap.set(SyntaxKind.STR_LIT_EXPR, (frame) => {
 });
 
 handlerMap.set(SyntaxKind.BOOL_LIT_EXPR, (frame) => {
-    throw new E000_InternalError("Evaluating BoolLitExpr not implemented yet");
+    let payload = boolLitExprValue(frame.node).payload as boolean;
+    return new BoolValue(payload);
 });
 
 handlerMap.set(SyntaxKind.NONE_LIT_EXPR, (frame) => {
