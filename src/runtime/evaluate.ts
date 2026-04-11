@@ -349,7 +349,7 @@ handlerMap.set(SyntaxKind.BOOL_LIT_EXPR, (frame) => {
 });
 
 handlerMap.set(SyntaxKind.NONE_LIT_EXPR, (frame) => {
-    throw new E000_InternalError("Evaluating NoneLitExpr not implemented yet");
+    return new NoneValue();
 });
 
 handlerMap.set(SyntaxKind.PAREN_EXPR, (frame) => {
