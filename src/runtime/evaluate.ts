@@ -19,6 +19,7 @@ import {
     macroDeclParameterList,
     parameterListParameters,
     parameterName,
+    strLitExprValue,
     SyntaxNode,
     SyntaxKind,
     varDeclName,
@@ -41,6 +42,7 @@ import {
     IntValue,
     MacroValue,
     NoneValue,
+    StrValue,
     UninitValue,
     Value,
 } from "./value";
@@ -335,7 +337,8 @@ handlerMap.set(SyntaxKind.INT_LIT_EXPR, (frame) => {
 });
 
 handlerMap.set(SyntaxKind.STR_LIT_EXPR, (frame) => {
-    throw new E000_InternalError("Evaluating StrListExpr not implemented yet");
+    let payload = strLitExprValue(frame.node).payload as string;
+    return new StrValue(payload);
 });
 
 handlerMap.set(SyntaxKind.BOOL_LIT_EXPR, (frame) => {
