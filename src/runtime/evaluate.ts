@@ -11,6 +11,9 @@ import {
     funcDeclBody,
     funcDeclName,
     funcDeclParameterList,
+    infixOpExprLhs,
+    infixOpExprOpName,
+    infixOpExprRhs,
     intLitExprValue,
     isFuncDecl,
     isMacroDecl,
@@ -20,6 +23,8 @@ import {
     macroDeclParameterList,
     parameterListParameters,
     parameterName,
+    prefixOpExprOperand,
+    prefixOpExprOpName,
     strLitExprValue,
     SyntaxNode,
     SyntaxKind,
@@ -28,6 +33,8 @@ import {
 import {
     E000_InternalError,
     E500_OutOfFuel,
+    E601_ZeroDivisionError,
+    E603_TypeError,
     E611_TooManyArgumentsError,
     E612_NotEnoughArgumentsError,
 } from "./error";
@@ -76,6 +83,7 @@ class Frame {
     env: Env;
     index: number;
     value: Value;
+    v1: Value;
     tail: Frame | null;
 
     constructor(oldFrame: Frame | null, newProps: Partial<Frame>) {
@@ -86,6 +94,7 @@ class Frame {
         this.env = newProps.env ?? oldFrame?.env ?? error("env");
         this.index = newProps.index ?? oldFrame?.index ?? 0;
         this.value = newProps.value ?? oldFrame?.value ?? new NoneValue();
+        this.v1 = newProps.v1 ?? oldFrame?.v1 ?? new NoneValue();
         this.tail = newProps.tail ?? oldFrame?.tail ?? null;
     }
 }
@@ -304,13 +313,180 @@ handlerMap.set(SyntaxKind.MACRO_DECL, (frame) => {
 });
 
 handlerMap.set(SyntaxKind.PREFIX_OP_EXPR, (frame) => {
-    throw new E000_InternalError(
-        "Evaluating PrefixOpExpr not implemented yet"
-    );
+    // let opName = prefixOpExprOpName(node).payload as string;
+    // let operand = prefixOpExprOperand(node);
+    // if (["+", "-"].includes(opName)) {
+    //     let value = eval(operand);
+    //     if (opName === "+") {
+    //         if (!(value instanceof IntValue)) {
+    //             throw new E603_TypeError("Expected Int as operand of +");
+    //         }
+    //         return new IntValue(value.payload);
+    //     }
+    //     else if (opName === "-") {
+    //         if (!(value instanceof IntValue)) {
+    //             throw new E603_TypeError("Expected Int as operand of -");
+    //         }
+    //         return new IntValue(-value.payload);
+    //     }
+    //     else {
+    //         throw new E000_InternalError(`Unknown prefix op ${opName}`);
+    //     }
+    // }
+    // else {
+    //     throw new E000_InternalError(
+    //         `Unknown prefix op type ${opName}`
+    //     );
+    // }
+    let opName = prefixOpExprOpName(frame.node).payload as string;
+    switch (frame.state) {
+        case 0: {
+            let operand = prefixOpExprOperand(frame.node);
+            if (["+", "-"].includes(opName)) {
+                return recurse(
+                    frame,
+                    { state: 1 },
+                    { node: operand, env: frame.env },
+                );
+            }
+            else {
+                throw new E000_InternalError(
+                    `Unknown prefix op type ${opName}`
+                );
+            }
+        }
+        case 1: {
+            let value = frame.value;
+            if (opName === "+") {
+                if (!(value instanceof IntValue)) {
+                    throw new E603_TypeError("Expected Int as operand of +");
+                }
+                return new IntValue(value.payload);
+            }
+            else if (opName === "-") {
+                if (!(value instanceof IntValue)) {
+                    throw new E603_TypeError("Expected Int as operand of -");
+                }
+                return new IntValue(-value.payload);
+            }
+            else {
+                throw new E000_InternalError(`Unknown prefix op ${opName}`);
+            }
+        }
+    }
+    throw new E000_InternalError("Unreachable state");
 });
 
 handlerMap.set(SyntaxKind.INFIX_OP_EXPR, (frame) => {
-    throw new E000_InternalError("Evaluating InfixOpExpr not implemented yet");
+    // let lhs = infixOpExprLhs(node);
+    // let opName = infixOpExprOpName(node).payload as string;
+    // let rhs = infixOpExprRhs(node);
+    // if (["+", "-", "*", "//", "%"].includes(opName)) {
+    //     let left = eval(lhs);
+    //     if (!(left instanceof IntValue)) {
+    //         throw new E603_TypeError(`Expected Int as lhs of ${opName}`);
+    //     }
+    //     let right = eval(rhs);
+    //     if (!(right instanceof IntValue)) {
+    //         throw new E603_TypeError(`Expected Int as rhs of ${opName}`);
+    //     }
+    //     if (opName === "+") {
+    //         return new IntValue(left.payload + right.payload);
+    //     }
+    //     else if (opName === "-") {
+    //         return new IntValue(left.payload - right.payload);
+    //     }
+    //     else if (opName === "*") {
+    //         return new IntValue(left.payload * right.payload);
+    //     }
+    //     else if (opName === "//") {
+    //         if (!(right instanceof IntValue)) {
+    //             throw new E603_TypeError("Expected Int as rhs of //");
+    //         }
+    //         if (right.payload === 0n) {
+    //             throw new E601_ZeroDivisionError("Division by 0");
+    //         }
+    //         let negative = left.payload < 0n !== right.payload < 0n;
+    //         let nonZeroMod = left.payload % right.payload !== 0n;
+    //         let diff = negative && nonZeroMod ? 1n : 0n;
+    //         return new IntValue(left.payload / right.payload - diff);
+    //     }
+    //     else if (opName === "%") {
+    //         if (!(right instanceof IntValue)) {
+    //             throw new E603_TypeError("Expected Int as rhs of %");
+    //         }
+    //         if (right.payload === 0n) {
+    //             throw new E601_ZeroDivisionError("Division by 0");
+    //         }
+    //         return new IntValue(left.payload % right.payload);
+    //     }
+    // }
+    // else {
+    //     throw new E000_InternalError(`Unknown infix op ${opName}`);
+    // }
+    let opName = infixOpExprOpName(frame.node).payload as string;
+    switch (frame.state) {
+        case 0: {
+            if (["+", "-", "*", "//", "%"].includes(opName)) {
+                let lhs = infixOpExprLhs(frame.node);
+                return recurse(
+                    frame,
+                    { state: 1 },
+                    { node: lhs, env: frame.env },
+                );
+            }
+            else {
+                throw new E000_InternalError(`Unknown infix op ${opName}`);
+            }
+        }
+        case 1: {
+            let left = frame.value;
+            if (!(left instanceof IntValue)) {
+                throw new E603_TypeError(`Expected Int as lhs of ${opName}`);
+            }
+            frame.v1 = left;
+            let rhs = infixOpExprRhs(frame.node);
+            return recurse(frame, { state: 2 }, { node: rhs, env: frame.env });
+        }
+        case 2: {
+            let left = frame.v1 as IntValue;
+            let right = frame.value;
+            if (!(right instanceof IntValue)) {
+                throw new E603_TypeError(`Expected Int as rhs of ${opName}`);
+            }
+            if (opName === "+") {
+                return new IntValue(left.payload + right.payload);
+            }
+            else if (opName === "-") {
+                return new IntValue(left.payload - right.payload);
+            }
+            else if (opName === "*") {
+                return new IntValue(left.payload * right.payload);
+            }
+            else if (opName === "//") {
+                if (!(right instanceof IntValue)) {
+                    throw new E603_TypeError("Expected Int as rhs of //");
+                }
+                if (right.payload === 0n) {
+                    throw new E601_ZeroDivisionError("Division by 0");
+                }
+                let negative = left.payload < 0n !== right.payload < 0n;
+                let nonZeroMod = left.payload % right.payload !== 0n;
+                let diff = negative && nonZeroMod ? 1n : 0n;
+                return new IntValue(left.payload / right.payload - diff);
+            }
+            else if (opName === "%") {
+                if (!(right instanceof IntValue)) {
+                    throw new E603_TypeError("Expected Int as rhs of %");
+                }
+                if (right.payload === 0n) {
+                    throw new E601_ZeroDivisionError("Division by 0");
+                }
+                return new IntValue(left.payload % right.payload);
+            }
+        }
+    }
+    throw new E000_InternalError("Unreachable state");
 });
 
 handlerMap.set(SyntaxKind.INDEXING_EXPR, (frame) => {
