@@ -255,9 +255,7 @@ handlerMap.set(SyntaxKind.EXPR_STATEMENT, (frame) => {
 });
 
 handlerMap.set(SyntaxKind.EMPTY_STATEMENT, (frame) => {
-    throw new E000_InternalError(
-        "Evaluating EmptyStatement not implemented yet"
-    );
+    return new NoneValue();
 });
 
 handlerMap.set(SyntaxKind.BLOCK_STATEMENT, (frame) => {
