@@ -250,9 +250,8 @@ handlerMap.set(SyntaxKind.BLOCK, (frame) => {
 });
 
 handlerMap.set(SyntaxKind.EXPR_STATEMENT, (frame) => {
-    return new Frame(frame, {
-        node: exprStatementExpr(frame.node),
-    });
+    let expr = exprStatementExpr(frame.node);
+    return tailRecurse(frame, { node: expr, env: frame.env });
 });
 
 handlerMap.set(SyntaxKind.EMPTY_STATEMENT, (frame) => {
