@@ -34,6 +34,12 @@ import {
     boolify,
 } from "./boolify";
 import {
+    checkForUnchainableOps,
+    comparisonOps,
+    evaluateComparison,
+    findAllChainedOps,
+} from "./compare";
+import {
     E000_InternalError,
     E500_OutOfFuel,
     E601_ZeroDivisionError,
@@ -90,6 +96,8 @@ class Frame {
     index: number;
     value: Value;
     v1: Value;
+    nn: Array<SyntaxNode>;
+    ss: Array<string>;
     tail: Frame | null;
 
     constructor(oldFrame: Frame | null, newProps: Partial<Frame>) {
@@ -101,6 +109,8 @@ class Frame {
         this.index = newProps.index ?? oldFrame?.index ?? 0;
         this.value = newProps.value ?? oldFrame?.value ?? new NoneValue();
         this.v1 = newProps.v1 ?? oldFrame?.v1 ?? new NoneValue();
+        this.nn = newProps.nn ?? oldFrame?.nn ?? [];
+        this.ss = newProps.ss ?? oldFrame?.ss ?? [];
         this.tail = newProps.tail ?? oldFrame?.tail ?? null;
     }
 }
@@ -497,6 +507,21 @@ handlerMap.set(SyntaxKind.INFIX_OP_EXPR, (frame) => {
     //         ? left
     //         : eval(rhs);
     // }
+    // else if (comparisonOps.has(opName)) {
+    //     let [exprs, ops] = findAllChainedOps(node);
+    //     checkForUnchainableOps(ops);
+    //     let prevValue = eval(exprs[0]);
+    //     for (let index = 0; index < exprs.length - 1; index++) {
+    //         let next = exprs[index + 1];
+    //         let nextValue = eval(next);
+    //         let op = ops[index];
+    //         if (!evaluateComparison(prevValue, op, nextValue)) {
+    //             return new BoolValue(false);
+    //         }
+    //         prevValue = nextValue;
+    //     }
+    //     return new BoolValue(true);
+    // }
     // else {
     //     throw new E000_InternalError(`Unknown infix op ${opName}`);
     // }
@@ -533,6 +558,17 @@ handlerMap.set(SyntaxKind.INFIX_OP_EXPR, (frame) => {
                     frame,
                     { state: 6 },
                     { node: lhs, env: frame.env },
+                );
+            }
+            else if (comparisonOps.has(opName)) {
+                let [exprs, ops] = findAllChainedOps(frame.node);
+                frame.nn = exprs;
+                frame.ss = ops;
+                checkForUnchainableOps(ops);
+                return recurse(
+                    frame,
+                    { state: 7 },
+                    { node: exprs[0], env: frame.env },
                 );
             }
             else {
@@ -617,6 +653,32 @@ handlerMap.set(SyntaxKind.INFIX_OP_EXPR, (frame) => {
             else {
                 return tailRecurse(frame, { node: rhs, env: frame.env });
             }
+        }
+        case 7: {
+            let prevValue = frame.value;
+            frame.v1 = prevValue;
+            if (frame.index < frame.nn.length - 1) {
+                let next = frame.nn[frame.index + 1];
+                return recurse(
+                    frame,
+                    { state: 8 },
+                    { node: next, env: frame.env },
+                );
+            }
+            else {
+                return new BoolValue(true);
+            }
+        }
+        case 8: {
+            let nextValue = frame.value;
+            let prevValue = frame.v1;
+            let op = frame.ss[frame.index];
+            if (!evaluateComparison(prevValue, op, nextValue)) {
+                return new BoolValue(false);
+            }
+            frame.v1 = nextValue;
+            frame.index++;
+            return new Frame(frame, { state: 7 });
         }
     }
     throw new E000_InternalError("Unreachable state");
