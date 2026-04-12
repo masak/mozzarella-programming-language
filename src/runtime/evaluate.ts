@@ -23,6 +23,7 @@ import {
     macroDeclParameterList,
     parameterListParameters,
     parameterName,
+    parenExprInnerExpr,
     prefixOpExprOperand,
     prefixOpExprOpName,
     strLitExprValue,
@@ -682,7 +683,8 @@ handlerMap.set(SyntaxKind.NONE_LIT_EXPR, (frame) => {
 });
 
 handlerMap.set(SyntaxKind.PAREN_EXPR, (frame) => {
-    throw new E000_InternalError("Evaluating ParenExpr not implemented yet");
+    let innerExpr = parenExprInnerExpr(frame.node);
+    return tailRecurse(frame, { node: innerExpr, env: frame.env });
 });
 
 handlerMap.set(SyntaxKind.DO_EXPR, (frame) => {
