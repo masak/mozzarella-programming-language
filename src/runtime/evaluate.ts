@@ -208,9 +208,9 @@ handlerMap.set(SyntaxKind.BOOL_NODE, (frame) => {
 handlerMap.set(SyntaxKind.COMPUNIT, (frame) => {
     // let statements = compUnitStatements(node);
     // let lastIndex = statements.length - 1;
-    // for (let index = 0; index < statements.length; index++) {
+    // for (let index = 0; index < statements.length; index++) {    // [0]
     //     let value = eval(statements[index]);
-    //     if (index === lastIndex) {
+    //     if (index === lastIndex) {                               // [1]
     //         return value;
     //     }
     // }
@@ -335,9 +335,9 @@ handlerMap.set(SyntaxKind.MACRO_DECL, (frame) => {
 handlerMap.set(SyntaxKind.PREFIX_OP_EXPR, (frame) => {
     // let opName = prefixOpExprOpName(node).payload as string;
     // let operand = prefixOpExprOperand(node);
-    // if (["+", "-"].includes(opName)) {
+    // if (["+", "-"].includes(opName)) {                           // [0]
     //     let value = eval(operand);
-    //     if (opName === "+") {
+    //     if (opName === "+") {                                    // [1]
     //         if (!(value instanceof IntValue)) {
     //             throw new E603_TypeError("Expected Int as operand of +");
     //         }
@@ -355,11 +355,11 @@ handlerMap.set(SyntaxKind.PREFIX_OP_EXPR, (frame) => {
     // }
     // else if (opName === "~") {
     //     let value = eval(operand);
-    //     return stringify(value);
+    //     return stringify(value);                                 // [2]
     // }
     // else if (["?", "!"].includes(opName)) {
     //     let value = eval(operand);
-    //     if (opName === "?") {
+    //     if (opName === "?") {                                    // [3]
     //         return new BoolValue(boolify(value));
     //     }
     //     else {
@@ -429,13 +429,13 @@ handlerMap.set(SyntaxKind.INFIX_OP_EXPR, (frame) => {
     // let lhs = infixOpExprLhs(node);
     // let opName = infixOpExprOpName(node).payload as string;
     // let rhs = infixOpExprRhs(node);
-    // if (["+", "-", "*", "//", "%"].includes(opName)) {
+    // if (["+", "-", "*", "//", "%"].includes(opName)) {           // [0]
     //     let left = eval(lhs);
-    //     if (!(left instanceof IntValue)) {
+    //     if (!(left instanceof IntValue)) {                       // [1]
     //         throw new E603_TypeError(`Expected Int as lhs of ${opName}`);
     //     }
     //     let right = eval(rhs);
-    //     if (!(right instanceof IntValue)) {
+    //     if (!(right instanceof IntValue)) {                      // [2]
     //         throw new E603_TypeError(`Expected Int as rhs of ${opName}`);
     //     }
     //     if (opName === "+") {
@@ -471,21 +471,21 @@ handlerMap.set(SyntaxKind.INFIX_OP_EXPR, (frame) => {
     // }
     // else if (opName === "~") {
     //     let left = eval(lhs);
-    //     let strLeft = stringify(left);
+    //     let strLeft = stringify(left);                           // [3]
     //     let right = eval(rhs);
-    //     let strRight = stringify(right);
+    //     let strRight = stringify(right);                         // [4]
     //     return new StrValue(strLeft.payload + strRight.payload);
     // }
     // else if (opName === "&&") {
     //     let left = eval(lhs);
-    //     return boolify(left)
+    //     return boolify(left)                                     // [5]
     //         ? eval(rhs)
     //         : left;
     //     }
     // }
     // else if (opName === "||") {
     //     let left = eval(lhs);
-    //     return boolify(left)
+    //     return boolify(left)                                     // [6]
     //         ? left
     //         : eval(rhs);
     // }
@@ -493,10 +493,10 @@ handlerMap.set(SyntaxKind.INFIX_OP_EXPR, (frame) => {
     //     let [exprs, ops] = findAllChainedOps(node);
     //     checkForUnchainableOps(ops);
     //     let prevValue = eval(exprs[0]);
-    //     for (let index = 0; index < exprs.length - 1; index++) {
+    //     for (let index = 0; index < exprs.length - 1; index++) { // [7]
     //         let next = exprs[index + 1];
     //         let nextValue = eval(next);
-    //         let op = ops[index];
+    //         let op = ops[index];                                 // [8]
     //         if (!evaluateComparison(prevValue, op, nextValue)) {
     //             return new BoolValue(false);
     //         }
