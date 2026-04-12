@@ -210,39 +210,41 @@ handlerMap.set(SyntaxKind.COMPUNIT, (frame) => {
     // let statements = compUnitStatements(node);
     // let lastIndex = statements.length - 1;
     // for (let index = 0; index < statements.length; index++) {    // [0]
-    //     let value = eval(statements[index]);
-    //     if (index === lastIndex) {                               // [1]
-    //         return value;
+    //     let statement = statements[index];
+    //     if (index === lastIndex) {
+    //         return eval(statement);
+    //     }
+    //     else {
+    //         eval(statement);
     //     }
     // }
     // return new NoneValue();
 
-    switch (frame.state) {
-        case 0: {
-            let statements = compUnitStatements(frame.node);
-            if (frame.index < statements.length) {
-                return recurse(
-                    frame,
-                    1,
-                    { node: statements[frame.index], env: frame.env },
-                );
-            }
-            else {
-                return new NoneValue();
-            }
+    let statements = compUnitStatements(frame.node);
+    let lastIndex = statements.length - 1;
+    if (frame.index < statements.length) {
+        let statement = statements[frame.index];
+        if (frame.index === lastIndex) {
+            return tailRecurse(
+                frame,
+                { node: statement, env: frame.env },
+            );
         }
-        case 1: {
-            let statements = compUnitStatements(frame.node);
-            let lastIndex = statements.length - 1;
-            if (frame.index === lastIndex) {
-                return frame.value;
-            }
-            else {
-                return new Frame(frame, { state: 0, index: frame.index + 1 });
-            }
+        else {
+            frame.index++;
+            return recurse(
+                frame,
+                0,
+                {
+                    node: statement,
+                    env: frame.env,
+                },
+            );
         }
     }
-    throw new E000_InternalError("Unreachable state");
+    else {
+        return new NoneValue();
+    }
 });
 
 handlerMap.set(SyntaxKind.BLOCK, (frame) => {
