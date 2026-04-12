@@ -4,6 +4,7 @@
 // environment, kontinuation with a "k". The J part contains a table of _jump
 // targets_, making `next`/`last`/`return` work.
 import {
+    blockStatementBlock,
     blockStatements,
     boolLitExprValue,
     chainedOpExprChainList,
@@ -97,6 +98,7 @@ class Frame {
     state: number;
     quoteLevel: number;
     env: Env;
+    staticEnvs: Map<SyntaxNode, Env>;
     index: number;
     value: Value;
     v1: Value;
@@ -110,6 +112,9 @@ class Frame {
         this.state = newProps.state ?? oldFrame?.state ?? 0;
         this.quoteLevel = newProps.quoteLevel ?? oldFrame?.quoteLevel ?? 0;
         this.env = newProps.env ?? oldFrame?.env ?? error("env");
+        this.staticEnvs = newProps.staticEnvs
+            ?? oldFrame?.staticEnvs
+            ?? error("staticEnvs");
         this.index = newProps.index ?? oldFrame?.index ?? 0;
         this.value = newProps.value ?? oldFrame?.value ?? new NoneValue();
         this.v1 = newProps.v1 ?? oldFrame?.v1 ?? new NoneValue();
@@ -121,10 +126,7 @@ class Frame {
 
 function load(compUnit: SyntaxNode, staticEnvs: Map<SyntaxNode, Env>): Frame {
     let env = initializeEnv(emptyEnv(), compUnit, staticEnvs);
-    return new Frame(null, {
-        node: compUnit,
-        env,
-    });
+    return new Frame(null, { node: compUnit, env, staticEnvs });
 }
 
 function recurse(
@@ -232,7 +234,11 @@ handlerMap.set(SyntaxKind.COMPUNIT, (frame) => {
         if (frame.index === lastIndex) {
             return tailRecurse(
                 frame,
-                { node: statement, env: frame.env },
+                {
+                    node: statement,
+                    env: frame.env,
+                    staticEnvs: frame.staticEnvs,
+                },
             );
         }
         else {
@@ -243,6 +249,7 @@ handlerMap.set(SyntaxKind.COMPUNIT, (frame) => {
                 {
                     node: statement,
                     env: frame.env,
+                    staticEnvs: frame.staticEnvs,
                 },
             );
         }
@@ -253,12 +260,78 @@ handlerMap.set(SyntaxKind.COMPUNIT, (frame) => {
 });
 
 handlerMap.set(SyntaxKind.BLOCK, (frame) => {
-    throw new E000_InternalError("Evaluating Block not implemented yet");
+    // env = initializeEnv(extend(env), node, staticEnvs)           // [0]
+    // let statements = compUnitStatements(node);
+    // let lastIndex = statements.length - 1;
+    // for (let index = 0; index < statements.length; index++) {    // [1]
+    //     let statement = statements[index];
+    //     if (index === lastIndex) {
+    //         return eval(statement);
+    //     }
+    //     else {
+    //         eval(statement);
+    //     }
+    // }
+    // return new NoneValue();
+
+    let statements = blockStatements(frame.node);
+    let lastIndex = statements.length - 1;
+    switch (frame.state) {
+        case 0: {
+            let env = initializeEnv(
+                extend(frame.env),
+                frame.node,
+                frame.staticEnvs,
+            );
+            return new Frame(
+                frame,
+                {
+                    state: 1,
+                    env,
+                    staticEnvs: frame.staticEnvs,
+                }
+            );
+        }
+        case 1: {
+            if (frame.index < statements.length) {
+                let statement = statements[frame.index];
+                if (frame.index === lastIndex) {
+                    return tailRecurse(
+                        frame,
+                        {
+                            node: statement,
+                            env: frame.env,
+                            staticEnvs: frame.staticEnvs,
+                        },
+                    );
+                }
+                else {
+                    frame.index++;
+                    return recurse(
+                        frame,
+                        1,
+                        {
+                            node: statement,
+                            env: frame.env,
+                            staticEnvs: frame.staticEnvs,
+                        },
+                    );
+                }
+            }
+            else {
+                return new NoneValue();
+            }
+        }
+    }
+    throw new E000_InternalError("Unreachable state");
 });
 
 handlerMap.set(SyntaxKind.EXPR_STATEMENT, (frame) => {
     let expr = exprStatementExpr(frame.node);
-    return tailRecurse(frame, { node: expr, env: frame.env });
+    return tailRecurse(
+        frame,
+        { node: expr, env: frame.env, staticEnvs: frame.staticEnvs },
+    );
 });
 
 handlerMap.set(SyntaxKind.EMPTY_STATEMENT, (frame) => {
@@ -266,8 +339,10 @@ handlerMap.set(SyntaxKind.EMPTY_STATEMENT, (frame) => {
 });
 
 handlerMap.set(SyntaxKind.BLOCK_STATEMENT, (frame) => {
-    throw new E000_InternalError(
-        "Evaluating BlockStatement not implemented yet"
+    let block = blockStatementBlock(frame.node);
+    return tailRecurse(
+        frame,
+        { node: block, env: frame.env, staticEnvs: frame.staticEnvs },
     );
 });
 
@@ -381,13 +456,37 @@ handlerMap.set(SyntaxKind.PREFIX_OP_EXPR, (frame) => {
         case 0: {
             let operand = prefixOpExprOperand(frame.node);
             if (["+", "-"].includes(opName)) {
-                return recurse(frame, 1, { node: operand, env: frame.env });
+                return recurse(
+                    frame,
+                    1,
+                    {
+                        node: operand,
+                        env: frame.env,
+                        staticEnvs: frame.staticEnvs,
+                    },
+                );
             }
             else if (opName === "~") {
-                return recurse(frame, 2, { node: operand, env: frame.env });
+                return recurse(
+                    frame,
+                    2,
+                    {
+                        node: operand,
+                        env: frame.env,
+                        staticEnvs: frame.staticEnvs,
+                    }
+                );
             }
             else if (["?", "!"].includes(opName)) {
-                return recurse(frame, 3, { node: operand, env: frame.env });
+                return recurse(
+                    frame,
+                    3,
+                    {
+                        node: operand,
+                        env: frame.env,
+                        staticEnvs: frame.staticEnvs,
+                    }
+                );
             }
             else {
                 throw new E000_InternalError(
@@ -513,23 +612,63 @@ handlerMap.set(SyntaxKind.INFIX_OP_EXPR, (frame) => {
         case 0: {
             if (["+", "-", "*", "//", "%"].includes(opName)) {
                 let lhs = infixOpExprLhs(frame.node);
-                return recurse(frame, 1, { node: lhs, env: frame.env });
+                return recurse(
+                    frame,
+                    1,
+                    {
+                        node: lhs,
+                        env: frame.env,
+                        staticEnvs: frame.staticEnvs,
+                    }
+                );
             }
             else if (opName === "~") {
                 let lhs = infixOpExprLhs(frame.node);
-                return recurse(frame, 3, { node: lhs, env: frame.env });
+                return recurse(
+                    frame,
+                    3,
+                    {
+                        node: lhs,
+                        env: frame.env,
+                        staticEnvs: frame.staticEnvs,
+                    }
+                );
             }
             else if (comparisonOps.has(opName)) {
                 let lhs = infixOpExprLhs(frame.node);
-                return recurse(frame, 7, { node: lhs, env: frame.env });
+                return recurse(
+                    frame,
+                    7,
+                    {
+                        node: lhs,
+                        env: frame.env,
+                        staticEnvs: frame.staticEnvs,
+                    },
+                );
             }
             else if (opName === "&&") {
                 let lhs = infixOpExprLhs(frame.node);
-                return recurse(frame, 5, { node: lhs, env: frame.env });
+                return recurse(
+                    frame,
+                    5,
+                    {
+                        node: lhs,
+                        env: frame.env,
+                        staticEnvs: frame.staticEnvs,
+                    }
+                );
             }
             else if (opName === "||") {
                 let lhs = infixOpExprLhs(frame.node);
-                return recurse(frame, 6, { node: lhs, env: frame.env });
+                return recurse(
+                    frame,
+                    6,
+                    {
+                        node: lhs,
+                        env: frame.env,
+                        staticEnvs: frame.staticEnvs,
+                    }
+                );
             }
             else {
                 throw new E000_InternalError(`Unknown infix op ${opName}`);
@@ -542,7 +681,15 @@ handlerMap.set(SyntaxKind.INFIX_OP_EXPR, (frame) => {
             }
             frame.v1 = left;
             let rhs = infixOpExprRhs(frame.node);
-            return recurse(frame, 2, { node: rhs, env: frame.env });
+            return recurse(
+                frame,
+                2,
+                {
+                    node: rhs,
+                    env: frame.env,
+                    staticEnvs: frame.staticEnvs,
+                }
+            );
         }
         case 2: {
             let left = frame.v1 as IntValue;
@@ -586,7 +733,15 @@ handlerMap.set(SyntaxKind.INFIX_OP_EXPR, (frame) => {
             let strLeft = stringify(left);
             frame.v1 = strLeft;
             let rhs = infixOpExprRhs(frame.node);
-            return recurse(frame, 4, { node: rhs, env: frame.env });
+            return recurse(
+                frame,
+                4,
+                {
+                    node: rhs,
+                    env: frame.env,
+                    staticEnvs: frame.staticEnvs,
+                },
+            );
         }
         case 4: {
             let strLeft = frame.v1 as StrValue;
@@ -598,7 +753,14 @@ handlerMap.set(SyntaxKind.INFIX_OP_EXPR, (frame) => {
             let left = frame.value;
             let rhs = infixOpExprRhs(frame.node);
             if (boolify(left)) {
-                return tailRecurse(frame, { node: rhs, env: frame.env });
+                return tailRecurse(
+                    frame,
+                    {
+                        node: rhs,
+                        env: frame.env,
+                        staticEnvs: frame.staticEnvs,
+                    },
+                );
             }
             else {
                 return left;
@@ -611,14 +773,25 @@ handlerMap.set(SyntaxKind.INFIX_OP_EXPR, (frame) => {
                 return left;
             }
             else {
-                return tailRecurse(frame, { node: rhs, env: frame.env });
+                return tailRecurse(
+                    frame,
+                    {
+                        node: rhs,
+                        env: frame.env,
+                        staticEnvs: frame.staticEnvs,
+                    },
+                );
             }
         }
         case 7: {
             let left = frame.value;
             frame.v1 = left;
             let rhs = infixOpExprRhs(frame.node);
-            return recurse(frame, 8, { node: rhs, env: frame.env });
+            return recurse(
+                frame,
+                8,
+                { node: rhs, env: frame.env, staticEnvs: frame.staticEnvs },
+            );
         }
         case 8: {
             let left = frame.v1;
@@ -651,14 +824,26 @@ handlerMap.set(SyntaxKind.CHAINED_OP_EXPR, (frame) => {
             frame.nn = chainListElements(chainedOpExprChainList(frame.node));
             checkForUnchainableOps(frame.nn);
             let lhs = chainedOpExprLhs(frame.node);
-            return recurse(frame, 1, { node: lhs, env: frame.env });
+            return recurse(
+                frame,
+                1,
+                { node: lhs, env: frame.env, staticEnvs: frame.staticEnvs },
+            );
         }
         case 1: {
             if (frame.index < frame.nn.length) {
                 let element = frame.nn[frame.index];
                 let operand = chainElementOperand(element);
                 frame.v1 = frame.value;
-                return recurse(frame, 2, { node: operand, env: frame.env });
+                return recurse(
+                    frame,
+                    2,
+                    {
+                        node: operand,
+                        env: frame.env,
+                        staticEnvs: frame.staticEnvs,
+                    },
+                );
             }
             else {
                 return new BoolValue(true);
@@ -720,7 +905,10 @@ handlerMap.set(SyntaxKind.NONE_LIT_EXPR, (frame) => {
 
 handlerMap.set(SyntaxKind.PAREN_EXPR, (frame) => {
     let innerExpr = parenExprInnerExpr(frame.node);
-    return tailRecurse(frame, { node: innerExpr, env: frame.env });
+    return tailRecurse(
+        frame,
+        { node: innerExpr, env: frame.env, staticEnvs: frame.staticEnvs },
+    );
 });
 
 handlerMap.set(SyntaxKind.DO_EXPR, (frame) => {
