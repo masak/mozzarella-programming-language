@@ -13,6 +13,7 @@ import {
     chainElementOpName,
     chainListElements,
     compUnitStatements,
+    doExprStatement,
     exprStatementExpr,
     funcDeclBody,
     funcDeclName,
@@ -912,7 +913,11 @@ handlerMap.set(SyntaxKind.PAREN_EXPR, (frame) => {
 });
 
 handlerMap.set(SyntaxKind.DO_EXPR, (frame) => {
-    throw new E000_InternalError("Evaluating DoExpr not implemented yet");
+    let statement = doExprStatement(frame.node);
+    return tailRecurse(
+        frame,
+        { node: statement, env: frame.env, staticEnvs: frame.staticEnvs },
+    );
 });
 
 handlerMap.set(SyntaxKind.ARRAY_INITIALIZER_EXPR, (frame) => {
