@@ -6,6 +6,11 @@
 import {
     blockStatements,
     boolLitExprValue,
+    chainedOpExprChainList,
+    chainedOpExprLhs,
+    chainElementOperand,
+    chainElementOpName,
+    chainListElements,
     compUnitStatements,
     exprStatementExpr,
     funcDeclBody,
@@ -33,6 +38,10 @@ import {
 import {
     boolify,
 } from "./boolify";
+import {
+    checkForUnchainableOps,
+    evaluateComparison,
+} from "./compare";
 import {
     E000_InternalError,
     E500_OutOfFuel,
@@ -90,6 +99,8 @@ class Frame {
     index: number;
     value: Value;
     v1: Value;
+    nn: Array<SyntaxNode>;
+    ss: Array<string>;
     tail: Frame | null;
 
     constructor(oldFrame: Frame | null, newProps: Partial<Frame>) {
@@ -101,6 +112,8 @@ class Frame {
         this.index = newProps.index ?? oldFrame?.index ?? 0;
         this.value = newProps.value ?? oldFrame?.value ?? new NoneValue();
         this.v1 = newProps.v1 ?? oldFrame?.v1 ?? new NoneValue();
+        this.nn = newProps.nn ?? oldFrame?.nn ?? [];
+        this.ss = newProps.ss ?? oldFrame?.ss ?? [];
         this.tail = newProps.tail ?? oldFrame?.tail ?? null;
     }
 }
@@ -181,6 +194,8 @@ export function initializeEnv(
 
     return env;
 }
+
+const comparisonOps = new Set(["<", "<=", ">", ">=", "==", "!="]);
 
 type Handler = (frame: Frame) => Frame | Value;
 let handlerMap = new Map<SyntaxKind, Handler>();
@@ -476,6 +491,10 @@ handlerMap.set(SyntaxKind.INFIX_OP_EXPR, (frame) => {
     //         }
     //         return new IntValue(left.payload % right.payload);
     //     }
+    //     else if (comparisonOps.has(opName)) {
+    //         let compareResult = evaluateComparison(left, opName, right);
+    //         return new BoolValue(compareResult);
+    //     }
     // }
     // else if (opName === "~") {
     //     let left = eval(lhs);
@@ -483,6 +502,12 @@ handlerMap.set(SyntaxKind.INFIX_OP_EXPR, (frame) => {
     //     let right = eval(rhs);
     //     let strRight = stringify(right);
     //     return new StrValue(strLeft.payload + strRight.payload);
+    // }
+    // else if (comparisonOps.has(opName)) {
+    //     let left = eval(lhs);
+    //     let right = eval(rhs);
+    //     let compareResult = evaluateComparison(left, opName, right);
+    //     return new BoolValue(compareResult);
     // }
     // else if (opName === "&&") {
     //     let left = eval(lhs);
@@ -516,6 +541,14 @@ handlerMap.set(SyntaxKind.INFIX_OP_EXPR, (frame) => {
                 return recurse(
                     frame,
                     { state: 3 },
+                    { node: lhs, env: frame.env },
+                );
+            }
+            else if (comparisonOps.has(opName)) {
+                let lhs = infixOpExprLhs(frame.node);
+                return recurse(
+                    frame,
+                    { state: 7 },
                     { node: lhs, env: frame.env },
                 );
             }
@@ -617,6 +650,71 @@ handlerMap.set(SyntaxKind.INFIX_OP_EXPR, (frame) => {
             else {
                 return tailRecurse(frame, { node: rhs, env: frame.env });
             }
+        }
+        case 7: {
+            let left = frame.value;
+            frame.v1 = left;
+            let rhs = infixOpExprRhs(frame.node);
+            return recurse(frame, { state: 8 }, { node: rhs, env: frame.env });
+        }
+        case 8: {
+            let left = frame.v1;
+            let right = frame.value;
+            let compareResult = evaluateComparison(left, opName, right);
+            return new BoolValue(compareResult);
+        }
+    }
+    throw new E000_InternalError("Unreachable state");
+});
+
+handlerMap.set(SyntaxKind.CHAINED_OP_EXPR, (frame) => {
+    // let elements = chainListElements(chainedOpExprChainList(node));
+    // checkForUnchainableOps(elements);
+    // let lhs = chainedOpExprLhs(node);
+    // let prev = eval(lhs);
+    // for (let element of elements) {
+    //     let opName = chainElementOpName(element);
+    //     let operand = chainElementOperand(element);
+    //     let next = eval(operand);
+    //     if (!evaluateComparison(prev, opName, next)) {
+    //         return new BoolValue(false);
+    //     }
+    //     prev = next;
+    // }
+    // return new BoolValue(true);
+
+    switch (frame.state) {
+        case 0: {
+            frame.nn = chainListElements(chainedOpExprChainList(frame.node));
+            checkForUnchainableOps(frame.nn);
+            let lhs = chainedOpExprLhs(frame.node);
+            return recurse(frame, { state: 1 }, { node: lhs, env: frame.env });
+        }
+        case 1: {
+            if (frame.index < frame.nn.length) {
+                let element = frame.nn[frame.index];
+                let operand = chainElementOperand(element);
+                frame.v1 = frame.value;
+                return recurse(
+                    frame,
+                    { state: 2 },
+                    { node: operand, env: frame.env },
+                );
+            }
+            else {
+                return new BoolValue(true);
+            }
+        }
+        case 2: {
+            let prev = frame.v1;
+            let element = frame.nn[frame.index];
+            let opName = chainElementOpName(element).payload as string;
+            let next = frame.value;
+            if (!evaluateComparison(prev, opName, next)) {
+                return new BoolValue(false);
+            }
+            frame.v1 = next;
+            return new Frame(frame, { state: 1, index: frame.index + 1 });
         }
     }
     throw new E000_InternalError("Unreachable state");
