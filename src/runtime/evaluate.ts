@@ -134,14 +134,8 @@ function recurse(
     );
 }
 
-function tailRecurse(
-    parentFrame: Frame,
-    childProps: Partial<Frame>,
-): Frame {
-    return new Frame(
-        null,
-        { ...childProps, tail: parentFrame.tail },
-    );
+function tailRecurse(parentFrame: Frame, childProps: Partial<Frame>): Frame {
+    return new Frame(null, { ...childProps, tail: parentFrame.tail });
 }
 
 export function initializeEnv(
