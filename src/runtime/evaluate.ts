@@ -46,6 +46,9 @@ import {
     extend,
 } from "./env";
 import {
+    stringify,
+} from "./stringify";
+import {
     BoolValue,
     FuncValue,
     IntValue,
@@ -333,6 +336,10 @@ handlerMap.set(SyntaxKind.PREFIX_OP_EXPR, (frame) => {
     //         throw new E000_InternalError(`Unknown prefix op ${opName}`);
     //     }
     // }
+    // else if (opName === "~") {
+    //     let value = eval(operand);
+    //     return stringify(value);
+    // }
     // else {
     //     throw new E000_InternalError(
     //         `Unknown prefix op type ${opName}`
@@ -346,6 +353,13 @@ handlerMap.set(SyntaxKind.PREFIX_OP_EXPR, (frame) => {
                 return recurse(
                     frame,
                     { state: 1 },
+                    { node: operand, env: frame.env },
+                );
+            }
+            else if (opName === "~") {
+                return recurse(
+                    frame,
+                    { state: 2 },
                     { node: operand, env: frame.env },
                 );
             }
@@ -372,6 +386,10 @@ handlerMap.set(SyntaxKind.PREFIX_OP_EXPR, (frame) => {
             else {
                 throw new E000_InternalError(`Unknown prefix op ${opName}`);
             }
+        }
+        case 2: {
+            let value = frame.value;
+            return stringify(value);
         }
     }
     throw new E000_InternalError("Unreachable state");
@@ -421,6 +439,13 @@ handlerMap.set(SyntaxKind.INFIX_OP_EXPR, (frame) => {
     //         return new IntValue(left.payload % right.payload);
     //     }
     // }
+    // else if (opName === "~") {
+    //     let left = eval(lhs);
+    //     let strLeft = stringify(left);
+    //     let right = eval(right);
+    //     let strRight = stringify(right);
+    //     return new StrValue(strLeft.payload + strRight.payload);
+    // }
     // else {
     //     throw new E000_InternalError(`Unknown infix op ${opName}`);
     // }
@@ -432,6 +457,14 @@ handlerMap.set(SyntaxKind.INFIX_OP_EXPR, (frame) => {
                 return recurse(
                     frame,
                     { state: 1 },
+                    { node: lhs, env: frame.env },
+                );
+            }
+            else if (opName === "~") {
+                let lhs = infixOpExprLhs(frame.node);
+                return recurse(
+                    frame,
+                    { state: 3 },
                     { node: lhs, env: frame.env },
                 );
             }
@@ -484,6 +517,19 @@ handlerMap.set(SyntaxKind.INFIX_OP_EXPR, (frame) => {
                 }
                 return new IntValue(left.payload % right.payload);
             }
+        }
+        case 3: {
+            let left = frame.value;
+            let strLeft = stringify(left);
+            frame.v1 = strLeft;
+            let rhs = infixOpExprRhs(frame.node);
+            return recurse(frame, { state: 4 }, { node: rhs, env: frame.env });
+        }
+        case 4: {
+            let strLeft = frame.v1 as StrValue;
+            let right = frame.value;
+            let strRight = stringify(right);
+            return new StrValue(strLeft.payload + strRight.payload);
         }
     }
     throw new E000_InternalError("Unreachable state");
