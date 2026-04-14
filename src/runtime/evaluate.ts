@@ -13,10 +13,16 @@ import {
     funcDeclBody,
     funcDeclName,
     funcDeclParameterList,
+    ifClauseBlock,
+    ifClauseCondExpr,
+    ifClauseListClauses,
+    ifStatementClauseList,
+    ifStatementElseBlock,
     infixOpExprLhs,
     infixOpExprOpName,
     infixOpExprRhs,
     intLitExprValue,
+    isBlock,
     isFuncDecl,
     isMacroDecl,
     isVarDecl,
@@ -330,7 +336,46 @@ handlerMap.set(SyntaxKind.IF_CLAUSE_LIST, (frame) => {
 });
 
 handlerMap.set(SyntaxKind.IF_STATEMENT, (frame) => {
-    throw new E000_InternalError("Evaluating IfStatement not implemented yet");
+    // let clauses = ifClauseListClauses(ifStatementClauseList(node));
+    // for (let index = 0; index < clauses.length; index++) {       // [0]
+    //     let condExpr = ifClauseCondExpr(clauses[index]);
+    //     let cond = eval(condExpr);
+    //     if (boolify(cond)) {                                     // [1]
+    //         let block = ifClauseBlock(clauses[index]);
+    //         return eval(block);
+    //     }
+    // }
+    // let elseBlock = ifStatementElseBlock(node);
+    // if (isBlock(elseBlock)) {
+    //     return eval(elseBlock);
+    // }
+    // return new NoneValue();
+
+    let clauses = ifClauseListClauses(ifStatementClauseList(frame.node));
+    switch (frame.state) {
+        case 0: {
+            if (frame.index < clauses.length) {
+                let condExpr = ifClauseCondExpr(clauses[frame.index]);
+                return recurse(frame, 1, { node: condExpr });
+            }
+            else {
+                let elseBlock = ifStatementElseBlock(frame.node);
+                if (isBlock(elseBlock)) {
+                    return tailRecurse(frame, { node: elseBlock });
+                }
+                return new NoneValue();
+            }
+        }
+        case 1: {
+            let cond = frame.value;
+            if (boolify(cond)) {
+                let block = ifClauseBlock(clauses[frame.index]);
+                return tailRecurse(frame, { node: block });
+            }
+            return new Frame(frame, { state: 0, index: frame.index + 1 });
+        }
+    }
+    throw new E000_InternalError("Unreachable state");
 });
 
 handlerMap.set(SyntaxKind.FOR_STATEMENT, (frame) => {
