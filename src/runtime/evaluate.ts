@@ -19,6 +19,8 @@ import {
     ifClauseListClauses,
     ifStatementClauseList,
     ifStatementElseBlock,
+    indexingExprArrayExpr,
+    indexingExprIndexExpr,
     infixOpExprLhs,
     infixOpExprOpName,
     infixOpExprRhs,
@@ -54,6 +56,7 @@ import {
     E500_OutOfFuel,
     E601_ZeroDivisionError,
     E603_TypeError,
+    E604_IndexError,
     E611_TooManyArgumentsError,
     E612_NotEnoughArgumentsError,
 } from "./error";
@@ -745,9 +748,48 @@ handlerMap.set(SyntaxKind.INFIX_OP_EXPR, (frame) => {
 });
 
 handlerMap.set(SyntaxKind.INDEXING_EXPR, (frame) => {
-    throw new E000_InternalError(
-        "Evaluating IndexingExpr not implemented yet"
-    );
+    // let arrayExpr = indexingExprArrayExpr(node);
+    // let array = eval(arrayExpr);
+    // if (!(array instanceof ArrayValue)) {
+    //     throw new E603_TypeError("Can only index an Array");
+    // }
+    // let indexExpr = indexingExprIndexExpr(node);
+    // let index = eval(indexExpr);
+    // if (!(index instanceof IntValue)) {
+    //     throw new E603_TypeError("Can only index using an Int");
+    // }
+    // if (index.payload < 0 || index.payload >= array.elements.length) {
+    //     throw new E604_IndexError("Index out of bounds");
+    // }
+    // return array.elements[Number(index.payload)];
+
+    switch (frame.state) {
+        case 0: {
+            let arrayExpr = indexingExprArrayExpr(frame.node);
+            return recurse(frame, 1, { node: arrayExpr });
+        }
+        case 1: {
+            let array = frame.value;
+            if (!(array instanceof ArrayValue)) {
+                throw new E603_TypeError("Can only index an Array");
+            }
+            frame.v1 = array;
+            let indexExpr = indexingExprIndexExpr(frame.node);
+            return recurse(frame, 2, { node: indexExpr });
+        }
+        case 2: {
+            let array = frame.v1 as ArrayValue;
+            let index = frame.value;
+            if (!(index instanceof IntValue)) {
+                throw new E603_TypeError("Can only index using an Int");
+            }
+            if (index.payload < 0 || index.payload >= array.elements.length) {
+                throw new E604_IndexError("Index out of bounds");
+            }
+            return array.elements[Number(index.payload)];
+        }
+    }
+    throw new E000_InternalError("Unreachable state");
 });
 
 handlerMap.set(SyntaxKind.ARGUMENT, (frame) => {
