@@ -4,6 +4,7 @@
 // environment, kontinuation with a "k". The J part contains a table of _jump
 // targets_, making `next`/`last`/`return` work.
 import {
+    arrayInitializerExprElements,
     blockStatementBlock,
     blockStatements,
     boolLitExprValue,
@@ -70,6 +71,7 @@ import {
     stringify,
 } from "./stringify";
 import {
+    ArrayValue,
     BoolValue,
     FuncValue,
     IntValue,
@@ -111,6 +113,7 @@ class Frame {
     v1: Value;
     nn: Array<SyntaxNode>;
     ss: Array<string>;
+    vv: Array<Value>;
     tail: Frame | null;
 
     constructor(oldFrame: Frame | null, newProps: Partial<Frame>) {
@@ -127,6 +130,7 @@ class Frame {
         this.v1 = newProps.v1 ?? oldFrame?.v1 ?? new NoneValue();
         this.nn = newProps.nn ?? oldFrame?.nn ?? [];
         this.ss = newProps.ss ?? oldFrame?.ss ?? [];
+        this.vv = newProps.vv ?? oldFrame?.vv ?? [];
         this.tail = newProps.tail ?? oldFrame?.tail ?? null;
     }
 }
@@ -827,9 +831,30 @@ handlerMap.set(SyntaxKind.DO_EXPR, (frame) => {
 });
 
 handlerMap.set(SyntaxKind.ARRAY_INITIALIZER_EXPR, (frame) => {
-    throw new E000_InternalError(
-        "Evaluating ArrayInitializerExpr not implemented yet"
-    );
+    // let elements = arrayInitializerExprElements(node);
+    // let elemValues = [];
+    // for (let index = 0; index < elements.length; index++) {      // [0]
+    //     let value = eval(elements[index]);
+    //     elemValues[index] = value;
+    // }
+    // return new ArrayValue(elemValues);
+
+    let elements = arrayInitializerExprElements(frame.node);
+    switch (frame.state) {
+        case 0: {
+            if (frame.index < elements.length) {
+                return recurse(frame, 1, { node: elements[frame.index] });
+            }
+            else {
+                return new ArrayValue(frame.vv);
+            }
+        }
+        case 1: {
+            frame.vv[frame.index] = frame.value;
+            return new Frame(frame, { state: 0, index: frame.index + 1 });
+        }
+    }
+    throw new E000_InternalError("Unreachable state");
 });
 
 handlerMap.set(SyntaxKind.VAR_REF_EXPR, (frame) => {
