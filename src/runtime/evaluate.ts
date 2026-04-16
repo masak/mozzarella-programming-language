@@ -11,6 +11,9 @@ import {
     compUnitStatements,
     doExprStatement,
     exprStatementExpr,
+    forStatementArrayExpr,
+    forStatementBody,
+    forStatementName,
     funcDeclBody,
     funcDeclName,
     funcDeclParameterList,
@@ -390,9 +393,57 @@ handlerMap.set(SyntaxKind.IF_STATEMENT, (frame) => {
 });
 
 handlerMap.set(SyntaxKind.FOR_STATEMENT, (frame) => {
-    throw new E000_InternalError(
-        "Evaluating ForStatement not implemented yet"
-    );
+    // env = extend(env);
+    // let name = forStatementName(node).payload as string;
+    // bindReadonly(env, name, new UninitValue());
+    // let arrayExpr = forStatementArrayExpr(node);
+    // let arrayValue = eval(arrayExpr);
+    // if (!(arrayValue instanceof ArrayValue)) {
+    //     throw new E603_TypeError("Type error: not an array");
+    // }
+    // let body = forStatementBody(node);
+    // for (let index = 0; index < arrayValue.elements.length; index++) {
+    //     let bodyEnv = extend(kont.env);
+    //     let element = arrayValue.elements[0];
+    //     bindReadonly(bodyEnv, kont.name, element);
+    //     eval(body, bodyEnv);
+    // }
+    // return new NoneValue();
+
+    switch (frame.state) {
+        case 0: {
+            let env = extend(frame.env);
+            let name = forStatementName(frame.node).payload as string;
+            bindReadonly(env, name, new UninitValue());
+            let arrayExpr = forStatementArrayExpr(frame.node);
+            return recurse(frame, 1, { node: arrayExpr, env });
+        }
+        case 1: {
+            if (!(frame.value instanceof ArrayValue)) {
+                throw new E603_TypeError("Type error: not an array");
+            }
+            frame.v1 = frame.value;
+            return new Frame(frame, { state: 2 });
+        }
+        case 2: {
+            let arrayValue = frame.v1 as ArrayValue;
+            if (frame.index < arrayValue.elements.length) {
+                let bodyEnv = extend(frame.env);
+                let name = forStatementName(frame.node).payload as string;
+                let element = arrayValue.elements[frame.index];
+                bindReadonly(bodyEnv, name, element);
+                let body = forStatementBody(frame.node);
+                return recurse(frame, 3, { node: body, env: bodyEnv });
+            }
+            else {
+                return new NoneValue();
+            }
+        }
+        case 3: {
+            return new Frame(frame, { state: 2, index: frame.index + 1 });
+        }
+    }
+    throw new E000_InternalError("Unreachable state");
 });
 
 handlerMap.set(SyntaxKind.WHILE_STATEMENT, (frame) => {
