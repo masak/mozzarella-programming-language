@@ -26,6 +26,7 @@ import {
     infixOpExprRhs,
     intLitExprValue,
     isBlock,
+    isEmptyPlaceholder,
     isFuncDecl,
     isMacroDecl,
     isVarDecl,
@@ -40,6 +41,7 @@ import {
     strLitExprValue,
     SyntaxNode,
     SyntaxKind,
+    varDeclInitExpr,
     varDeclName,
 } from "../compiler/syntax";
 import {
@@ -416,7 +418,35 @@ handlerMap.set(SyntaxKind.RETURN_STATEMENT, (frame) => {
 });
 
 handlerMap.set(SyntaxKind.VAR_DECL, (frame) => {
-    throw new E000_InternalError("Evaluating VarDecl not implemented yet");
+    // let initExpr = varDeclInitExpr(node);
+    // if (isEmptyPlaceholder(initExpr)) {
+    //     return new NoneValue();
+    // }
+    // else {
+    //     let value = eval(initExpr);
+    //     let name = varDeclName(node).payload as string;
+    //     bindMutable(env, name, value);
+    //     return new NoneValue();
+    // }
+
+    switch (frame.state) {
+        case 0: {
+            let initExpr = varDeclInitExpr(frame.node);
+            if (isEmptyPlaceholder(initExpr)) {
+                return new NoneValue();
+            }
+            else {
+                return recurse(frame, 1, { node: initExpr });
+            }
+        }
+        case 1: {
+            let value = frame.value;
+            let name = varDeclName(frame.node).payload as string;
+            bindMutable(frame.env, name, value);
+            return new NoneValue();
+        }
+    }
+    throw new E000_InternalError("Unreachable state");
 });
 
 handlerMap.set(SyntaxKind.PARAMETER, (frame) => {
