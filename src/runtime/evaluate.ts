@@ -43,6 +43,7 @@ import {
     SyntaxKind,
     varDeclInitExpr,
     varDeclName,
+    varRefExprName,
 } from "../compiler/syntax";
 import {
     boolify,
@@ -54,6 +55,14 @@ import {
     findAllChainedOps,
 } from "./compare";
 import {
+    bindMutable,
+    bindReadonly,
+    emptyEnv,
+    lookup,
+    Env,
+    extend,
+} from "./env";
+import {
     E000_InternalError,
     E500_OutOfFuel,
     E601_ZeroDivisionError,
@@ -62,13 +71,6 @@ import {
     E611_TooManyArgumentsError,
     E612_NotEnoughArgumentsError,
 } from "./error";
-import {
-    bindMutable,
-    bindReadonly,
-    emptyEnv,
-    Env,
-    extend,
-} from "./env";
 import {
     stringify,
 } from "./stringify";
@@ -893,7 +895,9 @@ handlerMap.set(SyntaxKind.ARRAY_INITIALIZER_EXPR, (frame) => {
 });
 
 handlerMap.set(SyntaxKind.VAR_REF_EXPR, (frame) => {
-    throw new E000_InternalError("Evaluating VarRefExpr not implemented yet");
+    let name = varRefExprName(frame.node).payload as string;
+    let value = lookup(frame.env, name);
+    return value;
 });
 
 handlerMap.set(SyntaxKind.QUOTE_EXPR, (frame) => {
