@@ -52,6 +52,12 @@ import {
     boolify,
 } from "./boolify";
 import {
+    ArrayElementCell,
+    assign,
+    Cell,
+    VarCell,
+} from "./cell";
+import {
     checkForUnchainableOps,
     comparisonOps,
     evaluateComparison,
@@ -61,6 +67,7 @@ import {
     bindMutable,
     bindReadonly,
     emptyEnv,
+    findEnvOfName,
     lookup,
     Env,
     extend,
@@ -71,6 +78,8 @@ import {
     E601_ZeroDivisionError,
     E603_TypeError,
     E604_IndexError,
+    E607_CannotAssignError,
+    E608_ReadonlyError,
     E611_TooManyArgumentsError,
     E612_NotEnoughArgumentsError,
 } from "./error";
@@ -117,6 +126,7 @@ class Frame {
     staticEnvs: Map<SyntaxNode, Env>;
     index: number;
     value: Value;
+    cell: Cell | null;
     v1: Value;
     nn: Array<SyntaxNode>;
     ss: Array<string>;
@@ -134,6 +144,7 @@ class Frame {
             ?? error("staticEnvs");
         this.index = newProps.index ?? oldFrame?.index ?? 0;
         this.value = newProps.value ?? oldFrame?.value ?? new NoneValue();
+        this.cell = newProps.cell ?? oldFrame?.cell ?? null;
         this.v1 = newProps.v1 ?? oldFrame?.v1 ?? new NoneValue();
         this.nn = newProps.nn ?? oldFrame?.nn ?? [];
         this.ss = newProps.ss ?? oldFrame?.ss ?? [];
@@ -223,7 +234,15 @@ export function initializeEnv(
     return env;
 }
 
-type Handler = (frame: Frame) => Frame | Value;
+function assertNotAssignable(frame: Frame) {
+    if (frame.mode === Mode.GetCell) {
+        throw new E607_CannotAssignError(
+            "Cannot assign to " + frame.node.kind.name
+        );
+    }
+}
+
+type Handler = (frame: Frame) => Frame | Value | Cell;
 let handlerMap = new Map<SyntaxKind, Handler>();
 
 handlerMap.set(SyntaxKind.EMPTY_PLACEHOLDER, (frame) => {
@@ -243,6 +262,7 @@ handlerMap.set(SyntaxKind.BOOL_NODE, (frame) => {
 });
 
 handlerMap.set(SyntaxKind.COMPUNIT, (frame) => {
+    // assertNotAssignable();
     // let statements = compUnitStatements(node);
     // let lastIndex = statements.length - 1;
     // for (let index = 0; index < statements.length; index++) {    // [0]
@@ -256,6 +276,7 @@ handlerMap.set(SyntaxKind.COMPUNIT, (frame) => {
     // }
     // return new NoneValue();
 
+    assertNotAssignable(frame);
     let statements = compUnitStatements(frame.node);
     let lastIndex = statements.length - 1;
     if (frame.index < statements.length) {
@@ -286,6 +307,11 @@ handlerMap.set(SyntaxKind.BLOCK, (frame) => {
     //         eval(statement);
     //     }
     // }
+    // if (mode === Mode.GetCell) {
+    //     throw new E607_CannotAssignError(
+    //         "Cannot assign to empty block"
+    //     );
+    // }
     // return new NoneValue();
 
     let statements = blockStatements(frame.node);
@@ -310,7 +336,10 @@ handlerMap.set(SyntaxKind.BLOCK, (frame) => {
             if (frame.index < statements.length) {
                 let statement = statements[frame.index];
                 if (frame.index === lastIndex) {
-                    return tailRecurse(frame, { node: statement });
+                    return tailRecurse(
+                        frame,
+                        { node: statement, mode: frame.mode },
+                    );
                 }
                 else {
                     frame.index++;
@@ -318,6 +347,11 @@ handlerMap.set(SyntaxKind.BLOCK, (frame) => {
                 }
             }
             else {
+                if (frame.mode === Mode.GetCell) {
+                    throw new E607_CannotAssignError(
+                        "Cannot assign to empty block"
+                    );
+                }
                 return new NoneValue();
             }
         }
@@ -327,7 +361,7 @@ handlerMap.set(SyntaxKind.BLOCK, (frame) => {
 
 handlerMap.set(SyntaxKind.EXPR_STATEMENT, (frame) => {
     let expr = exprStatementExpr(frame.node);
-    return tailRecurse(frame, { node: expr });
+    return tailRecurse(frame, { node: expr, mode: frame.mode });
 });
 
 handlerMap.set(SyntaxKind.EMPTY_STATEMENT, (frame) => {
@@ -336,7 +370,7 @@ handlerMap.set(SyntaxKind.EMPTY_STATEMENT, (frame) => {
 
 handlerMap.set(SyntaxKind.BLOCK_STATEMENT, (frame) => {
     let block = blockStatementBlock(frame.node);
-    return tailRecurse(frame, { node: block });
+    return tailRecurse(frame, { node: block, mode: frame.mode });
 });
 
 handlerMap.set(SyntaxKind.IF_CLAUSE, (frame) => {
@@ -363,6 +397,7 @@ handlerMap.set(SyntaxKind.IF_STATEMENT, (frame) => {
     // if (isBlock(elseBlock)) {
     //     return eval(elseBlock);
     // }
+    // assertNotAssignable();
     // return new NoneValue();
 
     let clauses = ifClauseListClauses(ifStatementClauseList(frame.node));
@@ -375,8 +410,12 @@ handlerMap.set(SyntaxKind.IF_STATEMENT, (frame) => {
             else {
                 let elseBlock = ifStatementElseBlock(frame.node);
                 if (isBlock(elseBlock)) {
-                    return tailRecurse(frame, { node: elseBlock });
+                    return tailRecurse(
+                        frame,
+                        { node: elseBlock, mode: frame.mode },
+                    );
                 }
+                assertNotAssignable(frame);
                 return new NoneValue();
             }
         }
@@ -384,7 +423,10 @@ handlerMap.set(SyntaxKind.IF_STATEMENT, (frame) => {
             let cond = frame.value;
             if (boolify(cond)) {
                 let block = ifClauseBlock(clauses[frame.index]);
-                return tailRecurse(frame, { node: block });
+                return tailRecurse(
+                    frame,
+                    { node: block, mode: frame.mode },
+                );
             }
             return new Frame(frame, { state: 0, index: frame.index + 1 });
         }
@@ -393,6 +435,7 @@ handlerMap.set(SyntaxKind.IF_STATEMENT, (frame) => {
 });
 
 handlerMap.set(SyntaxKind.FOR_STATEMENT, (frame) => {
+    // assertNotAssignable();
     // env = extend(env);
     // let name = forStatementName(node).payload as string;
     // bindReadonly(env, name, new UninitValue());
@@ -410,6 +453,7 @@ handlerMap.set(SyntaxKind.FOR_STATEMENT, (frame) => {
     // }
     // return new NoneValue();
 
+    assertNotAssignable(frame);
     switch (frame.state) {
         case 0: {
             let env = extend(frame.env);
@@ -471,6 +515,7 @@ handlerMap.set(SyntaxKind.RETURN_STATEMENT, (frame) => {
 });
 
 handlerMap.set(SyntaxKind.VAR_DECL, (frame) => {
+    // assertNotAssignable();
     // let initExpr = varDeclInitExpr(node);
     // if (isEmptyPlaceholder(initExpr)) {
     //     return new NoneValue();
@@ -482,6 +527,7 @@ handlerMap.set(SyntaxKind.VAR_DECL, (frame) => {
     //     return new NoneValue();
     // }
 
+    assertNotAssignable(frame);
     switch (frame.state) {
         case 0: {
             let initExpr = varDeclInitExpr(frame.node);
@@ -521,6 +567,7 @@ handlerMap.set(SyntaxKind.MACRO_DECL, (frame) => {
 });
 
 handlerMap.set(SyntaxKind.PREFIX_OP_EXPR, (frame) => {
+    // assertNotAssignable();
     // let opName = prefixOpExprOpName(node).payload as string;
     // let operand = prefixOpExprOperand(node);
     // if (["+", "-"].includes(opName)) {                           // [0]
@@ -559,6 +606,8 @@ handlerMap.set(SyntaxKind.PREFIX_OP_EXPR, (frame) => {
     //         `Unknown prefix op type ${opName}`
     //     );
     // }
+
+    assertNotAssignable(frame);
     let opName = prefixOpExprOpName(frame.node).payload as string;
     switch (frame.state) {
         case 0: {
@@ -617,6 +666,9 @@ handlerMap.set(SyntaxKind.INFIX_OP_EXPR, (frame) => {
     // let lhs = infixOpExprLhs(node);
     // let opName = infixOpExprOpName(node).payload as string;
     // let rhs = infixOpExprRhs(node);
+    // if (opName !== "=") {
+    //     assertNotAssignable();
+    // }
     // if (["+", "-", "*", "//", "%"].includes(opName)) {           // [0]
     //     let left = eval(lhs);
     //     if (!(left instanceof IntValue)) {                       // [1]
@@ -692,10 +744,24 @@ handlerMap.set(SyntaxKind.INFIX_OP_EXPR, (frame) => {
     //     }
     //     return new BoolValue(true);
     // }
+    // else if (opName === "=") {
+    //     let cell = evalCell(lhs);
+    //     let value = eval(rhs);                                   // [9]
+    //     assign(cell, value);                                     // [10]
+    //     if (mode === Mode.GetValue) {
+    //         return value;
+    //     }
+    //     else if (mode === Mode.GetCell) {
+    //         return cell;
+    //     }
+    // }
     // else {
     //     throw new E000_InternalError(`Unknown infix op ${opName}`);
     // }
     let opName = infixOpExprOpName(frame.node).payload as string;
+    if (opName !== "=") {
+        assertNotAssignable(frame);
+    }
     switch (frame.state) {
         case 0: {
             if (["+", "-", "*", "//", "%"].includes(opName)) {
@@ -720,6 +786,10 @@ handlerMap.set(SyntaxKind.INFIX_OP_EXPR, (frame) => {
                 frame.ss = ops;
                 checkForUnchainableOps(ops);
                 return recurse(frame, 7, { node: exprs[0] });
+            }
+            else if (opName === "=") {
+                let lhs = infixOpExprLhs(frame.node);
+                return recurse(frame, 9, { node: lhs, mode: Mode.GetCell });
             }
             else {
                 throw new E000_InternalError(`Unknown infix op ${opName}`);
@@ -826,6 +896,24 @@ handlerMap.set(SyntaxKind.INFIX_OP_EXPR, (frame) => {
             frame.index++;
             return new Frame(frame, { state: 7 });
         }
+        case 9: {
+            let rhs = infixOpExprRhs(frame.node);
+            return recurse(frame, 10, { node: rhs });
+        }
+        case 10: {
+            let cell = frame.cell!;
+            let value = frame.value;
+            assign(cell, value);
+            if (frame.mode === Mode.GetValue) {
+                return value;
+            }
+            else if (frame.mode === Mode.GetCell) {
+                return cell;
+            }
+            else {
+                throw new E000_InternalError("Unknown mode in '='");
+            }
+        }
     }
     throw new E000_InternalError("Unreachable state");
 });
@@ -844,7 +932,15 @@ handlerMap.set(SyntaxKind.INDEXING_EXPR, (frame) => {
     // if (index.payload < 0 || index.payload >= array.elements.length) {
     //     throw new E604_IndexError("Index out of bounds");
     // }
-    // return array.elements[Number(index.payload)];
+    // if (mode === Mode.GetValue) {
+    //     return array.elements[Number(index.payload)];
+    // }
+    // else if (mode === Mode.GetCell) {
+    //     return new ArrayElementCell(array, Number(index.payload));
+    // }
+    // else {
+    //     throw new E000_InternalError("Unknown mode in indexingExpr");
+    // }
 
     switch (frame.state) {
         case 0: {
@@ -869,7 +965,15 @@ handlerMap.set(SyntaxKind.INDEXING_EXPR, (frame) => {
             if (index.payload < 0 || index.payload >= array.elements.length) {
                 throw new E604_IndexError("Index out of bounds");
             }
-            return array.elements[Number(index.payload)];
+            if (frame.mode === Mode.GetValue) {
+                return array.elements[Number(index.payload)];
+            }
+            else if (frame.mode === Mode.GetCell) {
+                return new ArrayElementCell(array, Number(index.payload));
+            }
+            else {
+                throw new E000_InternalError("Unknown mode in indexingExpr");
+            }
         }
     }
     throw new E000_InternalError("Unreachable state");
@@ -890,35 +994,40 @@ handlerMap.set(SyntaxKind.CALL_EXPR, (frame) => {
 });
 
 handlerMap.set(SyntaxKind.INT_LIT_EXPR, (frame) => {
+    assertNotAssignable(frame);
     let payload = intLitExprValue(frame.node).payload as bigint;
     return new IntValue(payload);
 });
 
 handlerMap.set(SyntaxKind.STR_LIT_EXPR, (frame) => {
+    assertNotAssignable(frame);
     let payload = strLitExprValue(frame.node).payload as string;
     return new StrValue(payload);
 });
 
 handlerMap.set(SyntaxKind.BOOL_LIT_EXPR, (frame) => {
+    assertNotAssignable(frame);
     let payload = boolLitExprValue(frame.node).payload as boolean;
     return new BoolValue(payload);
 });
 
 handlerMap.set(SyntaxKind.NONE_LIT_EXPR, (frame) => {
+    assertNotAssignable(frame);
     return new NoneValue();
 });
 
 handlerMap.set(SyntaxKind.PAREN_EXPR, (frame) => {
     let innerExpr = parenExprInnerExpr(frame.node);
-    return tailRecurse(frame, { node: innerExpr });
+    return tailRecurse(frame, { node: innerExpr, mode: frame.mode });
 });
 
 handlerMap.set(SyntaxKind.DO_EXPR, (frame) => {
     let statement = doExprStatement(frame.node);
-    return tailRecurse(frame, { node: statement });
+    return tailRecurse(frame, { node: statement, mode: frame.mode });
 });
 
 handlerMap.set(SyntaxKind.ARRAY_INITIALIZER_EXPR, (frame) => {
+    // assertNotAssignable();
     // let elements = arrayInitializerExprElements(node);
     // let elemValues = [];
     // for (let index = 0; index < elements.length; index++) {      // [0]
@@ -927,6 +1036,7 @@ handlerMap.set(SyntaxKind.ARRAY_INITIALIZER_EXPR, (frame) => {
     // }
     // return new ArrayValue(elemValues);
 
+    assertNotAssignable(frame);
     let elements = arrayInitializerExprElements(frame.node);
     switch (frame.state) {
         case 0: {
@@ -947,11 +1057,24 @@ handlerMap.set(SyntaxKind.ARRAY_INITIALIZER_EXPR, (frame) => {
 
 handlerMap.set(SyntaxKind.VAR_REF_EXPR, (frame) => {
     let name = varRefExprName(frame.node).payload as string;
-    let value = lookup(frame.env, name);
-    return value;
+    if (frame.mode === Mode.GetValue) {
+        let value = lookup(frame.env, name);
+        return value;
+    }
+    else if (frame.mode === Mode.GetCell) {
+        let [mutable, varEnv] = findEnvOfName(frame.env, name);
+        if (!mutable) {
+            throw new E608_ReadonlyError(`Binding '${name}' is readonly`);
+        }
+        return new VarCell(varEnv, name);
+    }
+    else {
+        throw new E000_InternalError("Unknown mode in varRefExpr");
+    }
 });
 
 handlerMap.set(SyntaxKind.QUOTE_EXPR, (frame) => {
+    assertNotAssignable(frame);
     throw new E000_InternalError("Evaluating QuoteExpr not implemented yet");
 });
 
@@ -980,6 +1103,10 @@ export function runCompUnit(
         if (result instanceof Frame) {
             frame = result;
         }
+        else if (result instanceof Cell) {
+            frame = frame.tail!;
+            frame.cell = result;
+        }
         else if (frame.tail) {
             frame = frame.tail;
             frame.value = result;
@@ -1001,6 +1128,10 @@ export function runCompUnitWithFuel(
         let result = step(frame, staticEnvs);
         if (result instanceof Frame) {
             frame = result;
+        }
+        else if (result instanceof Cell) {
+            frame = frame.tail!;
+            frame.cell = result;
         }
         else if (frame.tail) {
             frame = frame.tail;
@@ -1060,6 +1191,10 @@ export function callMacro(
         let result = step(frame, staticEnvs);
         if (result instanceof Frame) {
             frame = result;
+        }
+        else if (result instanceof Cell) {
+            frame = frame.tail!;
+            frame.cell = result;
         }
         else if (frame.tail) {
             frame = frame.tail;
