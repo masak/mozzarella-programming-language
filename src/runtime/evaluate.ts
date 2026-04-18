@@ -1092,38 +1092,11 @@ function step(frame: Frame, staticEnvs: Map<SyntaxNode, Env>): Frame | Value {
     return handler(frame);
 }
 
-export function runCompUnit(
-    compUnit: SyntaxNode,
+function run(
+    frame: Frame,
     staticEnvs: Map<SyntaxNode, Env>,
+    fuel: number = Infinity,
 ): Value {
-    let frame = load(compUnit, staticEnvs);
-
-    while (true) {
-        let result = step(frame, staticEnvs);
-        if (result instanceof Frame) {
-            frame = result;
-        }
-        else if (result instanceof Cell) {
-            frame = frame.tail!;
-            frame.cell = result;
-        }
-        else if (frame.tail) {
-            frame = frame.tail;
-            frame.value = result;
-        }
-        else {
-            return result;
-        }
-    }
-}
-
-export function runCompUnitWithFuel(
-    compUnit: SyntaxNode,
-    fuel: number,
-    staticEnvs: Map<SyntaxNode, Env>,
-): Value {
-    let frame = load(compUnit, staticEnvs);
-
     while (true) {
         let result = step(frame, staticEnvs);
         if (result instanceof Frame) {
@@ -1146,6 +1119,23 @@ export function runCompUnitWithFuel(
             throw new E500_OutOfFuel();
         }
     }
+}
+
+export function runCompUnit(
+    compUnit: SyntaxNode,
+    staticEnvs: Map<SyntaxNode, Env>,
+): Value {
+    let frame = load(compUnit, staticEnvs);
+    return run(frame, staticEnvs);
+}
+
+export function runCompUnitWithFuel(
+    compUnit: SyntaxNode,
+    fuel: number,
+    staticEnvs: Map<SyntaxNode, Env>,
+): Value {
+    let frame = load(compUnit, staticEnvs);
+    return run(frame, staticEnvs, fuel);
 }
 
 function zip<T, U>(ts: Array<T>, us: Array<U>): Array<[T, U]> {
@@ -1186,23 +1176,6 @@ export function callMacro(
         quoteLevel: 0,
         env: bodyEnv,
     });
-
-    while (true) {
-        let result = step(frame, staticEnvs);
-        if (result instanceof Frame) {
-            frame = result;
-        }
-        else if (result instanceof Cell) {
-            frame = frame.tail!;
-            frame.cell = result;
-        }
-        else if (frame.tail) {
-            frame = frame.tail;
-            frame.value = result;
-        }
-        else {
-            return result;
-        }
-    }
+    return run(frame, staticEnvs);
 }
 
