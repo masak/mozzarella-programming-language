@@ -82,6 +82,7 @@ import {
     E604_IndexError,
     E607_CannotAssignError,
     E608_ReadonlyError,
+    E609_LastOutsideLoopError,
     E611_TooManyArgumentsError,
     E612_NotEnoughArgumentsError,
 } from "./error";
@@ -133,6 +134,7 @@ class Frame {
     nn: Array<SyntaxNode>;
     ss: Array<string>;
     vv: Array<Value>;
+    jumpMap: JumpMap;
     tail: Frame | null;
 
     constructor(oldFrame: Frame | null, newProps: Partial<Frame>) {
@@ -151,15 +153,35 @@ class Frame {
         this.nn = newProps.nn ?? oldFrame?.nn ?? [];
         this.ss = newProps.ss ?? oldFrame?.ss ?? [];
         this.vv = newProps.vv ?? oldFrame?.vv ?? [];
+        this.jumpMap = newProps.jumpMap
+            ?? oldFrame?.jumpMap
+            ?? error("jumpMap");
         this.tail = newProps.tail ?? oldFrame?.tail ?? null;
     }
 }
 
-function load(compUnit: SyntaxNode, staticEnvs: Map<SyntaxNode, Env>): Frame {
-    let env = initializeEnv(emptyEnv(), compUnit, staticEnvs);
-    return new Frame(null, { node: compUnit, env, staticEnvs });
+class JumpMap {
+    lastTarget: Frame | null = null;
+    nextTarget: Frame | null = null;
+    returnTarget: Frame | null = null;
 }
 
+function cloneJumpMap(original: JumpMap): JumpMap {
+    let copy = new JumpMap();
+    copy.lastTarget = original.lastTarget;
+    copy.nextTarget = original.nextTarget;
+    copy.returnTarget = original.returnTarget;
+    return copy;
+}
+
+function load(compUnit: SyntaxNode, staticEnvs: Map<SyntaxNode, Env>): Frame {
+    let env = initializeEnv(emptyEnv(), compUnit, staticEnvs);
+    let jumpMap = new JumpMap();
+    return new Frame(null, { node: compUnit, env, staticEnvs, jumpMap });
+}
+
+// Clones the current frame, sets the clone's state to the desired target
+// state, and creates a new child frame with the desired properties.
 function recurse(
     parentFrame: Frame,
     state: number,
@@ -170,18 +192,22 @@ function recurse(
         {
             env: parentFrame.env,
             staticEnvs: parentFrame.staticEnvs,
+            jumpMap: parentFrame.jumpMap,
             ...childProps,
             tail: new Frame(parentFrame, { state }),
         },
     );
 }
 
+// Replaces the current frame with a new child frame with the desired
+// properties.
 function tailRecurse(parentFrame: Frame, childProps: Partial<Frame>): Frame {
     return new Frame(
         null,
         {
             env: parentFrame.env,
             staticEnvs: parentFrame.staticEnvs,
+            jumpMap: parentFrame.jumpMap,
             ...childProps,
             tail: parentFrame.tail,
         },
@@ -478,8 +504,14 @@ handlerMap.set(SyntaxKind.FOR_STATEMENT, (frame) => {
                 let name = forStatementName(frame.node).payload as string;
                 let element = arrayValue.elements[frame.index];
                 bindReadonly(bodyEnv, name, element);
+                let jumpMap = cloneJumpMap(frame.jumpMap);
+                jumpMap.lastTarget = frame.tail;
                 let body = forStatementBody(frame.node);
-                return recurse(frame, 3, { node: body, env: bodyEnv });
+                return recurse(
+                    frame,
+                    3,
+                    { node: body, env: bodyEnv, jumpMap },
+                );
             }
             else {
                 return new NoneValue();
@@ -512,7 +544,9 @@ handlerMap.set(SyntaxKind.WHILE_STATEMENT, (frame) => {
         case 1: {
             let cond = frame.value;
             if (boolify(cond)) {
-                return recurse(frame, 0, { node: body });
+                let jumpMap = cloneJumpMap(frame.jumpMap);
+                jumpMap.lastTarget = frame.tail;
+                return recurse(frame, 0, { node: body, jumpMap });
             }
             else {
                 return new NoneValue();
@@ -523,9 +557,15 @@ handlerMap.set(SyntaxKind.WHILE_STATEMENT, (frame) => {
 });
 
 handlerMap.set(SyntaxKind.LAST_STATEMENT, (frame) => {
-    throw new E000_InternalError(
-        "Evaluating LastStatement not implemented yet"
-    );
+    let lastTarget = frame.jumpMap.lastTarget;
+    if (lastTarget === null) {
+        throw new E609_LastOutsideLoopError(
+            "'last' outside of loop"
+        );
+    }
+    else {
+        return lastTarget;
+    }
 });
 
 handlerMap.set(SyntaxKind.NEXT_STATEMENT, (frame) => {
@@ -1201,6 +1241,7 @@ export function callMacro(
         node: macroValue.body,
         quoteLevel: 0,
         env: bodyEnv,
+        jumpMap: new JumpMap(),
     });
     return run(frame, staticEnvs);
 }
