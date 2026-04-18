@@ -47,6 +47,8 @@ import {
     varDeclInitExpr,
     varDeclName,
     varRefExprName,
+    whileStatementBody,
+    whileStatementCondExpr,
 } from "../compiler/syntax";
 import {
     boolify,
@@ -491,9 +493,33 @@ handlerMap.set(SyntaxKind.FOR_STATEMENT, (frame) => {
 });
 
 handlerMap.set(SyntaxKind.WHILE_STATEMENT, (frame) => {
-    throw new E000_InternalError(
-        "Evaluating WhileStatement not implemented yet"
-    );
+    // let condExpr = whileStatementCondExpr(node);
+    // let body = whileStatementBody(node);
+    // let cond = eval(condExpr);
+    // while (boolify(cond)) {
+    //     // (set up jumpMap stuff)
+    //     eval(body);
+    //     cond = eval(condExpr);
+    // }
+    // return new NoneValue();
+
+    let condExpr = whileStatementCondExpr(frame.node);
+    let body = whileStatementBody(frame.node);
+    switch (frame.state) {
+        case 0: {
+            return recurse(frame, 1, { node: condExpr });
+        }
+        case 1: {
+            let cond = frame.value;
+            if (boolify(cond)) {
+                return recurse(frame, 0, { node: body });
+            }
+            else {
+                return new NoneValue();
+            }
+        }
+    }
+    throw new E000_InternalError("Unreachable state");
 });
 
 handlerMap.set(SyntaxKind.LAST_STATEMENT, (frame) => {
