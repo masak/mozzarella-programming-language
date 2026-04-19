@@ -45,11 +45,13 @@ import {
     macroDeclBody,
     macroDeclName,
     macroDeclParameterList,
+    makeEmptyPlaceholder,
     parameterListParameters,
     parameterName,
     parenExprInnerExpr,
     prefixOpExprOperand,
     prefixOpExprOpName,
+    returnStatementExpr,
     strLitExprValue,
     SyntaxNode,
     SyntaxKind,
@@ -93,6 +95,7 @@ import {
     E610_NextOutsideLoopError,
     E611_TooManyArgumentsError,
     E612_NotEnoughArgumentsError,
+    E613_ReturnOutsideRoutineError,
     E614_MacroAtRuntimeError,
 } from "./error";
 import {
@@ -144,7 +147,7 @@ class Frame {
     ss: Array<string>;
     vv: Array<Value>;
     jumpMap: JumpMap;
-    tail: Frame | null;
+    tail: Frame;
 
     constructor(oldFrame: Frame | null, newProps: Partial<Frame>) {
         this.mode = newProps.mode ?? oldFrame?.mode ?? Mode.GetValue;
@@ -165,7 +168,7 @@ class Frame {
         this.jumpMap = newProps.jumpMap
             ?? oldFrame?.jumpMap
             ?? error("jumpMap");
-        this.tail = newProps.tail ?? oldFrame?.tail ?? null;
+        this.tail = newProps.tail ?? oldFrame?.tail ?? error("tail");
     }
 }
 
@@ -183,10 +186,29 @@ function cloneJumpMap(original: JumpMap): JumpMap {
     return copy;
 }
 
+function initialize<T>(fn: () => T): T {
+    return fn();
+}
+
+let rootFrame: Frame = initialize(() => {
+    let rf = new Frame(null, {
+        node: makeEmptyPlaceholder(),
+        env: emptyEnv(),
+        staticEnvs: new Map(),
+        jumpMap: new JumpMap(),
+        tail: ({} as any) as Frame,
+    });
+    rf.tail = rf;   // tie the knot
+    return rf;
+});
+
 function load(compUnit: SyntaxNode, staticEnvs: Map<SyntaxNode, Env>): Frame {
     let env = initializeEnv(emptyEnv(), compUnit, staticEnvs);
     let jumpMap = new JumpMap();
-    return new Frame(null, { node: compUnit, env, staticEnvs, jumpMap });
+    return new Frame(
+        null,
+        { node: compUnit, env, staticEnvs, jumpMap, tail: rootFrame },
+    );
 }
 
 // Clones the current frame, sets the clone's state to the desired target
@@ -606,9 +628,42 @@ handlerMap.set(SyntaxKind.NEXT_STATEMENT, (frame) => {
 });
 
 handlerMap.set(SyntaxKind.RETURN_STATEMENT, (frame) => {
-    throw new E000_InternalError(
-        "Evaluating ReturnStatement not implemented yet"
-    );
+    // let expr = returnStatementExpr(node);
+    // let value;
+    // if (isEmptyPlaceholder(expr)) {
+    //     value = new NoneValue();
+    // }
+    // else {
+    //     value = eval(expr);
+    // }
+    // (jump to jumpMap.returnTarget with value)
+
+    let expr = returnStatementExpr(frame.node);
+    switch (frame.state) {
+        case 0: {
+            if (isEmptyPlaceholder(expr)) {
+                frame.value = new NoneValue();
+                return new Frame(frame, { state: 1 });
+            }
+            else {
+                return recurse(frame, 1, { node: expr });
+            }
+        }
+        case 1: {
+            let value = frame.value;
+            let returnTarget = frame.jumpMap.returnTarget;
+            if (returnTarget === null) {
+                throw new E613_ReturnOutsideRoutineError(
+                    "'return' outside of routine"
+                );
+            }
+            else {
+                returnTarget.value = value;
+                return returnTarget;
+            }
+        }
+    }
+    throw new E000_InternalError("Unreachable state");
 });
 
 handlerMap.set(SyntaxKind.VAR_DECL, (frame) => {
@@ -1213,7 +1268,7 @@ handlerMap.set(SyntaxKind.CALL_EXPR, (frame) => {
             }
             else {
                 let jumpMap = cloneJumpMap(frame.jumpMap);
-                jumpMap.returnTarget = frame.tail;
+                jumpMap.returnTarget = new Frame(frame, { state: 4 });
                 jumpMap.lastTarget = null;
                 jumpMap.nextTarget = null;
                 let funcValue = frame.v1 as FuncValue;
@@ -1238,6 +1293,10 @@ handlerMap.set(SyntaxKind.CALL_EXPR, (frame) => {
             let argValue = frame.value;
             frame.vv[frame.index] = argValue;
             return new Frame(frame, { state: 2, index: frame.index + 1 });
+        }
+        case 4: {
+            let value = frame.value;
+            return value;
         }
     }
     throw new E000_InternalError("Unreachable state");
@@ -1359,13 +1418,16 @@ function run(
     while (true) {
         let result = step(frame, staticEnvs);
         if (result instanceof Frame) {
+            if (result === rootFrame) {
+                return result.value;
+            }
             frame = result;
         }
         else if (result instanceof Cell) {
             frame = frame.tail!;
             frame.cell = result;
         }
-        else if (frame.tail) {
+        else if (frame.tail !== rootFrame) {
             frame = frame.tail;
             frame.value = result;
         }
@@ -1421,6 +1483,7 @@ export function callMacro(
         quoteLevel: 0,
         env: bodyEnv,
         jumpMap: new JumpMap(),
+        tail: rootFrame,
     });
     return run(frame, staticEnvs);
 }
