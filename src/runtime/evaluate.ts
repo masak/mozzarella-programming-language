@@ -637,7 +637,8 @@ handlerMap.set(SyntaxKind.PARAMETER_LIST, (frame) => {
 });
 
 handlerMap.set(SyntaxKind.FUNC_DECL, (frame) => {
-    throw new E000_InternalError("Evaluating FuncDecl not implemented yet");
+    assertNotAssignable(frame);
+    return new NoneValue();
 });
 
 handlerMap.set(SyntaxKind.MACRO_DECL, (frame) => {
