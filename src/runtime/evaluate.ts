@@ -83,6 +83,7 @@ import {
     E607_CannotAssignError,
     E608_ReadonlyError,
     E609_LastOutsideLoopError,
+    E610_NextOutsideLoopError,
     E611_TooManyArgumentsError,
     E612_NotEnoughArgumentsError,
 } from "./error";
@@ -477,6 +478,7 @@ handlerMap.set(SyntaxKind.FOR_STATEMENT, (frame) => {
     //     let bodyEnv = extend(kont.env);
     //     let element = arrayValue.elements[0];
     //     bindReadonly(bodyEnv, kont.name, element);
+    //     // (set up jumpMap stuff)
     //     eval(body, bodyEnv);
     // }
     // return new NoneValue();
@@ -506,6 +508,7 @@ handlerMap.set(SyntaxKind.FOR_STATEMENT, (frame) => {
                 bindReadonly(bodyEnv, name, element);
                 let jumpMap = cloneJumpMap(frame.jumpMap);
                 jumpMap.lastTarget = frame.tail;
+                jumpMap.nextTarget = new Frame(frame, { state: 3 });
                 let body = forStatementBody(frame.node);
                 return recurse(
                     frame,
@@ -546,6 +549,7 @@ handlerMap.set(SyntaxKind.WHILE_STATEMENT, (frame) => {
             if (boolify(cond)) {
                 let jumpMap = cloneJumpMap(frame.jumpMap);
                 jumpMap.lastTarget = frame.tail;
+                jumpMap.nextTarget = new Frame(frame, { state: 0 });
                 return recurse(frame, 0, { node: body, jumpMap });
             }
             else {
@@ -559,9 +563,7 @@ handlerMap.set(SyntaxKind.WHILE_STATEMENT, (frame) => {
 handlerMap.set(SyntaxKind.LAST_STATEMENT, (frame) => {
     let lastTarget = frame.jumpMap.lastTarget;
     if (lastTarget === null) {
-        throw new E609_LastOutsideLoopError(
-            "'last' outside of loop"
-        );
+        throw new E609_LastOutsideLoopError("'last' outside of loop");
     }
     else {
         return lastTarget;
@@ -569,9 +571,13 @@ handlerMap.set(SyntaxKind.LAST_STATEMENT, (frame) => {
 });
 
 handlerMap.set(SyntaxKind.NEXT_STATEMENT, (frame) => {
-    throw new E000_InternalError(
-        "Evaluating NextStatement not implemented yet"
-    );
+    let nextTarget = frame.jumpMap.nextTarget;
+    if (nextTarget === null) {
+        throw new E610_NextOutsideLoopError("'next' outside of loop");
+    }
+    else {
+        return nextTarget;
+    }
 });
 
 handlerMap.set(SyntaxKind.RETURN_STATEMENT, (frame) => {
