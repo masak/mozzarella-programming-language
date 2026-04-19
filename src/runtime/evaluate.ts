@@ -710,7 +710,8 @@ handlerMap.set(SyntaxKind.FUNC_DECL, (frame) => {
 });
 
 handlerMap.set(SyntaxKind.MACRO_DECL, (frame) => {
-    throw new E000_InternalError("Evaluating MacroDecl not implemented yet");
+    assertNotAssignable(frame);
+    return new NoneValue();
 });
 
 handlerMap.set(SyntaxKind.PREFIX_OP_EXPR, (frame) => {
@@ -1436,12 +1437,18 @@ export function callMacro(
         bindReadonly(bodyEnv, param, arg);
     }
 
+    let jumpMap = new JumpMap();
+    jumpMap.returnTarget = rootFrame;
+    jumpMap.lastTarget = null;
+    jumpMap.nextTarget = null;
+
     let frame = new Frame(null, {
         mode: Mode.Ignore,
         node: macroValue.body,
         quoteLevel: 0,
         env: bodyEnv,
-        jumpMap: new JumpMap(),
+        staticEnvs,
+        jumpMap,
         tail: rootFrame,
     });
     return run(frame, staticEnvs);
