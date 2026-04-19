@@ -4,10 +4,14 @@
 // environment, kontinuation with a "k". The J part contains a table of _jump
 // targets_, making `next`/`last`/`return` work.
 import {
+    argumentExpr,
+    argumentListArguments,
     arrayInitializerExprElements,
     blockStatementBlock,
     blockStatements,
     boolLitExprValue,
+    callExprArgumentList,
+    callExprFuncExpr,
     chainedOpExprChainList,
     chainedOpExprLhs,
     chainElementOperand,
@@ -89,6 +93,7 @@ import {
     E610_NextOutsideLoopError,
     E611_TooManyArgumentsError,
     E612_NotEnoughArgumentsError,
+    E614_MacroAtRuntimeError,
 } from "./error";
 import {
     stringify,
@@ -274,6 +279,20 @@ function assertNotAssignable(frame: Frame) {
             "Cannot assign to " + frame.node.kind.name
         );
     }
+}
+
+function zip<T, U>(ts: Array<T>, us: Array<U>): Array<[T, U]> {
+    if (ts.length !== us.length) {
+        throw new E000_InternalError(
+            `Precondition failed: unequal lengths ${ts.length} ` +
+            `and ${us.length}`
+        );
+    }
+    let result: Array<[T, U]> = [];
+    for (let i = 0; i < ts.length; i++) {
+        result.push([ts[i], us[i]]);
+    }
+    return result;
 }
 
 type Handler = (frame: Frame) => Frame | Value | Cell;
@@ -712,13 +731,17 @@ handlerMap.set(SyntaxKind.PREFIX_OP_EXPR, (frame) => {
                 if (!(value instanceof IntValue)) {
                     throw new E603_TypeError("Expected Int as operand of +");
                 }
-                return new IntValue(value.payload);
+                return frame.mode === Mode.Ignore
+                    ? new NoneValue()
+                    : new IntValue(value.payload);
             }
             else if (opName === "-") {
                 if (!(value instanceof IntValue)) {
                     throw new E603_TypeError("Expected Int as operand of -");
                 }
-                return new IntValue(-value.payload);
+                return frame.mode === Mode.Ignore
+                    ? new NoneValue()
+                    : new IntValue(-value.payload);
             }
             else {
                 throw new E000_InternalError(`Unknown prefix op ${opName}`);
@@ -726,11 +749,16 @@ handlerMap.set(SyntaxKind.PREFIX_OP_EXPR, (frame) => {
         }
         case 2: {
             let value = frame.value;
-            return stringify(value);
+            return frame.mode === Mode.Ignore
+                ? new NoneValue()
+                : stringify(value);
         }
         case 3: {
             let value = frame.value;
-            if (opName === "?") {
+            if (frame.mode === Mode.Ignore) {
+                return new NoneValue()
+            }
+            else if (opName === "?") {
                 return new BoolValue(boolify(value));
             }
             else {
@@ -883,13 +911,19 @@ handlerMap.set(SyntaxKind.INFIX_OP_EXPR, (frame) => {
                 throw new E603_TypeError(`Expected Int as rhs of ${opName}`);
             }
             if (opName === "+") {
-                return new IntValue(left.payload + right.payload);
+                return frame.mode === Mode.Ignore
+                    ? new NoneValue()
+                    : new IntValue(left.payload + right.payload);
             }
             else if (opName === "-") {
-                return new IntValue(left.payload - right.payload);
+                return frame.mode === Mode.Ignore
+                    ? new NoneValue()
+                    : new IntValue(left.payload - right.payload);
             }
             else if (opName === "*") {
-                return new IntValue(left.payload * right.payload);
+                return frame.mode === Mode.Ignore
+                    ? new NoneValue()
+                    : new IntValue(left.payload * right.payload);
             }
             else if (opName === "//") {
                 if (!(right instanceof IntValue)) {
@@ -901,7 +935,9 @@ handlerMap.set(SyntaxKind.INFIX_OP_EXPR, (frame) => {
                 let negative = left.payload < 0n !== right.payload < 0n;
                 let nonZeroMod = left.payload % right.payload !== 0n;
                 let diff = negative && nonZeroMod ? 1n : 0n;
-                return new IntValue(left.payload / right.payload - diff);
+                return frame.mode === Mode.Ignore
+                    ? new NoneValue()
+                    : new IntValue(left.payload / right.payload - diff);
             }
             else if (opName === "%") {
                 if (!(right instanceof IntValue)) {
@@ -910,7 +946,9 @@ handlerMap.set(SyntaxKind.INFIX_OP_EXPR, (frame) => {
                 if (right.payload === 0n) {
                     throw new E601_ZeroDivisionError("Division by 0");
                 }
-                return new IntValue(left.payload % right.payload);
+                return frame.mode === Mode.Ignore
+                    ? new NoneValue()
+                    : new IntValue(left.payload % right.payload);
             }
         }
         case 3: {
@@ -924,7 +962,9 @@ handlerMap.set(SyntaxKind.INFIX_OP_EXPR, (frame) => {
             let strLeft = frame.v1 as StrValue;
             let right = frame.value;
             let strRight = stringify(right);
-            return new StrValue(strLeft.payload + strRight.payload);
+            return frame.mode === Mode.Ignore
+                ? new NoneValue()
+                : new StrValue(strLeft.payload + strRight.payload);
         }
         case 5: {
             let left = frame.value;
@@ -933,14 +973,18 @@ handlerMap.set(SyntaxKind.INFIX_OP_EXPR, (frame) => {
                 return tailRecurse(frame, { node: rhs });
             }
             else {
-                return left;
+                return frame.mode === Mode.Ignore
+                    ? new NoneValue()
+                    : left;
             }
         }
         case 6: {
             let left = frame.value;
             let rhs = infixOpExprRhs(frame.node);
             if (boolify(left)) {
-                return left;
+                return frame.mode === Mode.Ignore
+                    ? new NoneValue()
+                    : left;
             }
             else {
                 return tailRecurse(frame, { node: rhs });
@@ -972,8 +1016,13 @@ handlerMap.set(SyntaxKind.INFIX_OP_EXPR, (frame) => {
             else if (frame.mode === Mode.GetCell) {
                 return cell;
             }
+            else if (frame.mode === Mode.Ignore) {
+                return new NoneValue();
+            }
             else {
-                throw new E000_InternalError("Unknown mode in '='");
+                throw new E000_InternalError(
+                    `Unknown mode in '=' (${frame.mode.name})`
+                );
             }
         }
     }
@@ -1011,7 +1060,9 @@ handlerMap.set(SyntaxKind.CHAINED_OP_EXPR, (frame) => {
                 return recurse(frame, 2, { node: operand });
             }
             else {
-                return new BoolValue(true);
+                return frame.mode === Mode.Ignore
+                    ? new NoneValue()
+                    : new BoolValue(true);
             }
         }
         case 2: {
@@ -1024,24 +1075,6 @@ handlerMap.set(SyntaxKind.CHAINED_OP_EXPR, (frame) => {
             }
             frame.v1 = next;
             return new Frame(frame, { state: 1, index: frame.index + 1 });
-        }
-        case 9: {
-            let rhs = infixOpExprRhs(frame.node);
-            return recurse(frame, 10, { node: rhs });
-        }
-        case 10: {
-            let cell = frame.cell!;
-            let value = frame.value;
-            assign(cell, value);
-            if (frame.mode === Mode.GetValue) {
-                return value;
-            }
-            else if (frame.mode === Mode.GetCell) {
-                return cell;
-            }
-            else {
-                throw new E000_InternalError("Unknown mode in '='");
-            }
         }
     }
     throw new E000_InternalError("Unreachable state");
@@ -1100,8 +1133,8 @@ handlerMap.set(SyntaxKind.INDEXING_EXPR, (frame) => {
             else if (frame.mode === Mode.GetCell) {
                 return new ArrayElementCell(array, Number(index.payload));
             }
-            else {
-                throw new E000_InternalError("Unknown mode in indexingExpr");
+            else {  // Mode.Ignore
+                return new NoneValue();
             }
         }
     }
@@ -1119,25 +1152,119 @@ handlerMap.set(SyntaxKind.ARGUMENT_LIST, (frame) => {
 });
 
 handlerMap.set(SyntaxKind.CALL_EXPR, (frame) => {
-    throw new E000_InternalError("Evaluating CallExpr not implemented yet");
+    // let funcExpr = callExprFuncExpr(node);
+    // let args = argumentListArguments(callExprArgumentList(node));
+    // let funcValue = eval(funcExpr);
+    // if (funcValue instanceof MacroValue) {
+    //     throw new E614_MacroAtRuntimeError();
+    // }
+    // if (!(funcValue instanceof FuncValue)) {
+    //     throw new E603_TypeError("Not callable: not a function");
+    // }
+    // if (args.length > funcValue.parameters.length) {
+    //     throw new E611_TooManyArgumentsError();
+    // }
+    // else if (args.length < funcValue.parameters.length) {
+    //     throw new E612_NotEnoughArgumentsError();
+    // }
+    // let argValues
+    //     = Array.from({ length: args.length }, () => new UninitValue());
+    // for (let index = 0; index < args.length; index++) {
+    //     let argExpr = argumentExpr(args[index]);
+    //     let argValue = eval(argExpr);
+    //     argValues[index] = argValue;
+    // }
+    // // (set up jumpMap stuff)
+    // let bodyEnv = extend(kont.funcValue.outerEnv);
+    // for (let [param, arg] of zip(funcValue.parameters, argValues)) {
+    //     bindReadonly(bodyEnv, param, arg);
+    // }
+    // return eval(funcValue.body, bodyEnv);
+
+    let funcExpr = callExprFuncExpr(frame.node);
+    let args = argumentListArguments(callExprArgumentList(frame.node));
+    switch (frame.state) {
+        case 0: {
+            return recurse(frame, 1, { node: funcExpr });
+        }
+        case 1: {
+            let funcValue = frame.value;
+            if (funcValue instanceof MacroValue) {
+                throw new E614_MacroAtRuntimeError();
+            }
+            if (!(funcValue instanceof FuncValue)) {
+                throw new E603_TypeError("Not callable: not a function");
+            }
+            if (args.length > funcValue.parameters.length) {
+                throw new E611_TooManyArgumentsError();
+            }
+            else if (args.length < funcValue.parameters.length) {
+                throw new E612_NotEnoughArgumentsError();
+            }
+            frame.v1 = funcValue;
+            frame.vv
+                = Array.from({ length: args.length }, () => new UninitValue());
+            return new Frame(frame, { state: 2 });
+        }
+        case 2: {
+            if (frame.index < args.length) {
+                let argExpr = argumentExpr(args[frame.index]);
+                return recurse(frame, 3, { node: argExpr });
+            }
+            else {
+                let jumpMap = cloneJumpMap(frame.jumpMap);
+                jumpMap.returnTarget = frame.tail;
+                jumpMap.lastTarget = null;
+                jumpMap.nextTarget = null;
+                let funcValue = frame.v1 as FuncValue;
+                let argValues = frame.vv;
+                let bodyEnv = extend(funcValue.outerEnv);
+                for (let [param, arg] of
+                     zip(funcValue.parameters, argValues)) {
+                    bindReadonly(bodyEnv, param, arg);
+                }
+                return tailRecurse(
+                    frame,
+                    {
+                        node: funcValue.body,
+                        mode: Mode.Ignore,
+                        env: bodyEnv,
+                        jumpMap,
+                    },
+                );
+            }
+        }
+        case 3: {
+            let argValue = frame.value;
+            frame.vv[frame.index] = argValue;
+            return new Frame(frame, { state: 2, index: frame.index + 1 });
+        }
+    }
+    throw new E000_InternalError("Unreachable state");
 });
 
 handlerMap.set(SyntaxKind.INT_LIT_EXPR, (frame) => {
     assertNotAssignable(frame);
     let payload = intLitExprValue(frame.node).payload as bigint;
-    return new IntValue(payload);
+    return frame.mode === Mode.Ignore
+        ? new NoneValue()
+        : new IntValue(payload);
 });
 
 handlerMap.set(SyntaxKind.STR_LIT_EXPR, (frame) => {
     assertNotAssignable(frame);
     let payload = strLitExprValue(frame.node).payload as string;
-    return new StrValue(payload);
+    return frame.mode === Mode.Ignore
+        ? new NoneValue()
+        : new StrValue(payload);
 });
 
 handlerMap.set(SyntaxKind.BOOL_LIT_EXPR, (frame) => {
     assertNotAssignable(frame);
     let payload = boolLitExprValue(frame.node).payload as boolean;
-    return new BoolValue(payload);
+    return frame.mode === Mode.Ignore
+        ? new NoneValue()
+        : new BoolValue(payload);
 });
 
 handlerMap.set(SyntaxKind.NONE_LIT_EXPR, (frame) => {
@@ -1173,7 +1300,9 @@ handlerMap.set(SyntaxKind.ARRAY_INITIALIZER_EXPR, (frame) => {
                 return recurse(frame, 1, { node: elements[frame.index] });
             }
             else {
-                return new ArrayValue(frame.vv);
+                return frame.mode === Mode.Ignore
+                    ? new NoneValue()
+                    : new ArrayValue(frame.vv);
             }
         }
         case 1: {
@@ -1197,8 +1326,9 @@ handlerMap.set(SyntaxKind.VAR_REF_EXPR, (frame) => {
         }
         return new VarCell(varEnv, name);
     }
-    else {
-        throw new E000_InternalError("Unknown mode in varRefExpr");
+    else {  // Mode.Ignore
+        /* ignore */ lookup(frame.env, name);
+        return new NoneValue();
     }
 });
 
@@ -1265,20 +1395,6 @@ export function runCompUnitWithFuel(
 ): Value {
     let frame = load(compUnit, staticEnvs);
     return run(frame, staticEnvs, fuel);
-}
-
-function zip<T, U>(ts: Array<T>, us: Array<U>): Array<[T, U]> {
-    if (ts.length !== us.length) {
-        throw new E000_InternalError(
-            `Precondition failed: unequal lengths ${ts.length} ` +
-            `and ${us.length}`
-        );
-    }
-    let result: Array<[T, U]> = [];
-    for (let i = 0; i < ts.length; i++) {
-        result.push([ts[i], us[i]]);
-    }
-    return result;
 }
 
 export function callMacro(
