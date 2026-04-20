@@ -39,8 +39,10 @@ import {
     intLitExprValue,
     isBlock,
     isEmptyPlaceholder,
+    isExprStatement,
     isFuncDecl,
     isMacroDecl,
+    isStatement,
     isVarDecl,
     macroDeclBody,
     macroDeclName,
@@ -51,6 +53,7 @@ import {
     parenExprInnerExpr,
     prefixOpExprOperand,
     prefixOpExprOpName,
+    quoteExprStatements,
     returnStatementExpr,
     strLitExprValue,
     SyntaxNode,
@@ -99,6 +102,9 @@ import {
     E614_MacroAtRuntimeError,
 } from "./error";
 import {
+    kindAndPayloadOfNode,
+} from "./reify";
+import {
     stringify,
 } from "./stringify";
 import {
@@ -109,6 +115,8 @@ import {
     MacroValue,
     NoneValue,
     StrValue,
+    SYNTAX_KIND__BLOCK,
+    SyntaxNodeValue,
     UninitValue,
     Value,
 } from "./value";
@@ -123,7 +131,6 @@ class Mode {
     static GetValue = new Mode("GetValue");
     static GetCell = new Mode("GetCell");
     static Ignore = new Mode("Ignore");
-    static Interpolate = new Mode("Interpolate");
 }
 
 function error(propName: string): never {
@@ -1210,7 +1217,7 @@ handlerMap.set(SyntaxKind.ARGUMENT_LIST, (frame) => {
 handlerMap.set(SyntaxKind.CALL_EXPR, (frame) => {
     // let funcExpr = callExprFuncExpr(node);
     // let args = argumentListArguments(callExprArgumentList(node));
-    // let funcValue = eval(funcExpr);
+    // let funcValue = eval(funcExpr);                              // [1]
     // if (funcValue instanceof MacroValue) {
     //     throw new E614_MacroAtRuntimeError();
     // }
@@ -1225,10 +1232,10 @@ handlerMap.set(SyntaxKind.CALL_EXPR, (frame) => {
     // }
     // let argValues
     //     = Array.from({ length: args.length }, () => new UninitValue());
-    // for (let index = 0; index < args.length; index++) {
+    // for (let index = 0; index < args.length; index++) {          // [2]
     //     let argExpr = argumentExpr(args[index]);
     //     let argValue = eval(argExpr);
-    //     argValues[index] = argValue;
+    //     argValues[index] = argValue;                             // [3]
     // }
     // // (set up jumpMap stuff)
     // let bodyEnv = extend(kont.funcValue.outerEnv);
@@ -1389,8 +1396,105 @@ handlerMap.set(SyntaxKind.VAR_REF_EXPR, (frame) => {
 });
 
 handlerMap.set(SyntaxKind.QUOTE_EXPR, (frame) => {
+    // assertNotAssignable(frame);
+    // let statements = quoteExprStatements(node);
+    // let statementValues: Array<Value> = [];
+    // for (let index = 0; index < statements.length; index++) {
+    //     statementValues[index] = interpolate(statement);         // [1]
+    // }
+    //
+    // if (statements.length === 1 && isExprStatement(statements[0])) {
+    //     return statementValues[0].children[0] as SyntaxNodeValue;
+    // }
+    // else if (statements.length === 1 && isStatement(statements[0])) {
+    //     return statementValues[0] as SyntaxNodeValue;
+    // }
+    // else {
+    //     return new SyntaxNodeValue(
+    //         new IntValue(SYNTAX_KIND__BLOCK),
+    //         statementValues,
+    //         new NoneValue(),
+    //     );
+    // }
+    //
+    // function interpolate(node): SyntaxNodeValue {
+    //     let childValues: Array<SyntaxNodeValue> = [];
+    //     for (let childNode of node.children) {
+    //         childValues.push(interpolate(childNode));
+    //     }
+    //
+    //     let [kind, payload] = kindAndPayloadOfNode(node);
+    //     return new SyntaxNodeValue(kind, childValues, payload);
+    // }
+
     assertNotAssignable(frame);
-    throw new E000_InternalError("Evaluating QuoteExpr not implemented yet");
+    let statements = quoteExprStatements(frame.node);
+    switch (frame.state) {
+        case 0: {
+            if (frame.index < statements.length) {
+                return recurse(
+                    frame,
+                    1,
+                    {
+                        node: frame.node,
+                        state: 2,
+                        nn: [statements[frame.index]],
+                    },
+                );
+            }
+            else {
+                if (frame.mode === Mode.Ignore) {
+                    return new NoneValue();
+                }
+                else if (statements.length === 1
+                    && isExprStatement(statements[0])) {
+                    return (frame.vv[0] as SyntaxNodeValue).children[0];
+                }
+                else if (statements.length === 1
+                         && isStatement(statements[0])) {
+                    return frame.vv[0];
+                }
+                else {
+                    return new SyntaxNodeValue(
+                        new IntValue(SYNTAX_KIND__BLOCK),
+                        frame.vv as Array<SyntaxNodeValue>,
+                        new NoneValue(),
+                    );
+                }
+            }
+        }
+        case 1: {
+            frame.vv[frame.index] = frame.value;
+            return new Frame(frame, { state: 0, index: frame.index + 1 });
+        }
+        case 2: {
+            let subNode = frame.nn[0];
+            if (frame.index < subNode.children.length) {
+                return recurse(
+                    frame,
+                    3,
+                    {
+                        node: frame.node,
+                        state: 2,
+                        nn: [subNode.children[frame.index]],
+                    },
+                );
+            }
+            else {
+                let [kind, payload] = kindAndPayloadOfNode(subNode);
+                return new SyntaxNodeValue(
+                    kind,
+                    frame.vv as Array<SyntaxNodeValue>,
+                    payload,
+                );
+            }
+        }
+        case 3: {
+            frame.vv[frame.index] = frame.value;
+            return new Frame(frame, { state: 2, index: frame.index + 1 });
+        }
+    }
+    throw new E000_InternalError("Unreachable state");
 });
 
 handlerMap.set(SyntaxKind.UNQUOTE_EXPR, (frame) => {
