@@ -1228,7 +1228,7 @@ handlerMap.set(SyntaxKind.CALL_EXPR, (frame) => {
             }
             else {
                 let jumpMap = cloneJumpMap(frame.jumpMap);
-                jumpMap.returnTarget = new Frame(frame, { state: 4 });
+                jumpMap.returnTarget = frame.tail;
                 jumpMap.lastTarget = null;
                 jumpMap.nextTarget = null;
                 let funcValue = frame.v1 as FuncValue;
@@ -1253,10 +1253,6 @@ handlerMap.set(SyntaxKind.CALL_EXPR, (frame) => {
             let argValue = frame.value;
             frame.vv[frame.index] = argValue;
             return new Frame(frame, { state: 2, index: frame.index + 1 });
-        }
-        case 4: {
-            let value = frame.value;
-            return value;
         }
     }
     throw new E000_InternalError("Unreachable state");
