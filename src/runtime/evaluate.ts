@@ -37,7 +37,9 @@ import {
     isExprStatement,
     isFuncDecl,
     isMacroDecl,
+    isQuoteExpr,
     isStatement,
+    isUnquoteExpr,
     isVarDecl,
     macroDeclBody,
     macroDeclName,
@@ -53,6 +55,7 @@ import {
     strLitExprValue,
     SyntaxNode,
     SyntaxKind,
+    unquoteExprInnerExpr,
     varDeclInitExpr,
     varDeclName,
     varRefExprName,
@@ -99,6 +102,8 @@ import {
     E614_MacroAtRuntimeError,
 } from "./error";
 import {
+    isExprKind,
+    isStatementKind,
     kindAndPayloadOfNode,
 } from "./reify";
 import {
@@ -113,6 +118,14 @@ import {
     NoneValue,
     StrValue,
     SYNTAX_KIND__BLOCK,
+    SYNTAX_KIND__BOOL_LIT_EXPR,
+    SYNTAX_KIND__BOOL_NODE,
+    SYNTAX_KIND__DO_EXPR,
+    SYNTAX_KIND__INT_LIT_EXPR,
+    SYNTAX_KIND__INT_NODE,
+    SYNTAX_KIND__NONE_LIT_EXPR,
+    SYNTAX_KIND__STR_LIT_EXPR,
+    SYNTAX_KIND__STR_NODE,
     SyntaxNodeValue,
     UninitValue,
     Value,
@@ -1398,6 +1411,7 @@ handlerMap.set(SyntaxKind.QUOTE_EXPR, (frame) => {
                         node: frame.node,
                         state: 2,
                         nn: [statements[frame.index]],
+                        quoteLevel: 1,
                     },
                 );
             }
@@ -1428,36 +1442,136 @@ handlerMap.set(SyntaxKind.QUOTE_EXPR, (frame) => {
         }
         case 2: {
             let subNode = frame.nn[0];
-            if (frame.index < subNode.children.length) {
-                return recurse(
-                    frame,
-                    3,
-                    {
-                        node: frame.node,
-                        state: 2,
-                        nn: [subNode.children[frame.index]],
-                    },
+            if (isUnquoteExpr(subNode) && frame.quoteLevel < 1) {
+                throw new E000_InternalError(
+                    "Precondition failed: Quote level too low"
                 );
             }
-            else {
-                let [kind, payload] = kindAndPayloadOfNode(subNode);
-                return new SyntaxNodeValue(
-                    kind,
-                    frame.vv as Array<SyntaxNodeValue>,
-                    payload,
+            else if (isUnquoteExpr(subNode) && frame.quoteLevel === 1) {
+                return recurse(
+                    frame,
+                    4,
+                    { node: unquoteExprInnerExpr(subNode) },
                 );
+            }
+            else {  // either UnquoteExpr at quoteLevel > 1, or any other node
+                let quoteLevel = isQuoteExpr(subNode)
+                    ? frame.quoteLevel + 1
+                    : isUnquoteExpr(subNode)
+                        ? frame.quoteLevel - 1
+                        : frame.quoteLevel;
+                if (frame.index < subNode.children.length) {
+                    return recurse(
+                        frame,
+                        3,
+                        {
+                            node: frame.node,
+                            state: 2,
+                            nn: [subNode.children[frame.index]],
+                            quoteLevel,
+                        },
+                    );
+                }
+                else {
+                    let [kind, payload] = kindAndPayloadOfNode(subNode);
+                    return new SyntaxNodeValue(
+                        kind,
+                        frame.vv as Array<SyntaxNodeValue>,
+                        payload,
+                    );
+                }
             }
         }
         case 3: {
             frame.vv[frame.index] = frame.value;
             return new Frame(frame, { state: 2, index: frame.index + 1 });
         }
+        case 4: {
+            let value = frame.value;
+            if (value instanceof IntValue) {
+                return new SyntaxNodeValue(
+                    new IntValue(SYNTAX_KIND__INT_LIT_EXPR),
+                    [new SyntaxNodeValue(
+                        new IntValue(SYNTAX_KIND__INT_NODE),
+                        [],
+                        value,
+                    )],
+                    new NoneValue(),
+                );
+            }
+            else if (value instanceof StrValue) {
+                return new SyntaxNodeValue(
+                    new IntValue(SYNTAX_KIND__STR_LIT_EXPR),
+                    [new SyntaxNodeValue(
+                        new IntValue(SYNTAX_KIND__STR_NODE),
+                        [],
+                        value,
+                    )],
+                    new NoneValue(),
+                );
+            }
+            else if (value instanceof BoolValue) {
+                if (value.payload) {
+                    return new SyntaxNodeValue(
+                        new IntValue(SYNTAX_KIND__BOOL_LIT_EXPR),
+                        [new SyntaxNodeValue(
+                            new IntValue(SYNTAX_KIND__BOOL_NODE),
+                            [],
+                            value,
+                        )],
+                        new NoneValue(),
+                    );
+                }
+                else {
+                    return new SyntaxNodeValue(
+                        new IntValue(SYNTAX_KIND__BOOL_LIT_EXPR),
+                        [new SyntaxNodeValue(
+                            new IntValue(SYNTAX_KIND__BOOL_NODE),
+                            [],
+                            value,
+                        )],
+                        new NoneValue(),
+                    );
+                }
+            }
+            else if (value instanceof NoneValue) {
+                return new SyntaxNodeValue(
+                    new IntValue(SYNTAX_KIND__NONE_LIT_EXPR),
+                    [],
+                    value,
+                );
+            }
+            else if (value instanceof SyntaxNodeValue) {
+                if (isExprKind(value)) {
+                    return value;
+                }
+                else if (isStatementKind(value)) {
+                    return new SyntaxNodeValue(
+                        new IntValue(SYNTAX_KIND__DO_EXPR),
+                        [value],
+                        new NoneValue(),
+                    );
+                }
+                else {
+                    throw new E603_TypeError(
+                        "Unknown syntax node kind in quote interpolation"
+                    );
+                }
+            }
+            else {
+                throw new E603_TypeError(
+                    "Unknown syntax node kind in quote interpolation"
+                );
+            }
+        }
     }
     throw new E000_InternalError("Unreachable state");
 });
 
 handlerMap.set(SyntaxKind.UNQUOTE_EXPR, (frame) => {
-    throw new E000_InternalError("Evaluating UnquoteExpr not implemented yet");
+    throw new E000_InternalError(
+        "Precondition failed: evaluating UnquoteExpr"
+    );
 });
 
 function step(frame: Frame, staticEnvs: Map<SyntaxNode, Env>): Frame | Value {
