@@ -42,6 +42,7 @@ import {
     SYNTAX_KIND__RETURN_STATEMENT,
     SYNTAX_KIND__STR_LIT_EXPR,
     SYNTAX_KIND__STR_NODE,
+    SYNTAX_KIND__UNQUOTE_EXPR,
     SYNTAX_KIND__VAR_DECL,
     SYNTAX_KIND__VAR_REF_EXPR,
     SYNTAX_KIND__WHILE_STATEMENT,
@@ -222,6 +223,9 @@ export function displayValue(value: Value, seen: Set<Value>): string {
         }
         else if (hasKind(value, SYNTAX_KIND__QUOTE_EXPR)) {
             kind = "QuoteExpr";
+        }
+        else if (hasKind(value, SYNTAX_KIND__UNQUOTE_EXPR)) {
+            kind = "UnquoteExpr";
         }
         else {
             throw new E000_InternalError(
