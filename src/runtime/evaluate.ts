@@ -207,19 +207,25 @@ function initialize<T>(fn: () => T): T {
     return fn();
 }
 
-let rootFrame: Frame = initialize(() => {
-    let rf = new Frame(null, {
-        node: makeEmptyPlaceholder(),
-        env: emptyEnv(),
-        staticEnvs: new Map(),
-        jumpMap: new JumpMap(),
-        tail: ({} as any) as Frame,
+function makeRootFrame(): Frame {
+    return initialize(() => {
+        let rootFrame = new Frame(null, {
+            node: makeEmptyPlaceholder(),
+            env: emptyEnv(),
+            staticEnvs: new Map(),
+            jumpMap: new JumpMap(),
+            tail: ({} as any) as Frame,
+        });
+        rootFrame.tail = rootFrame;   // tie the knot
+        return rootFrame;
     });
-    rf.tail = rf;   // tie the knot
-    return rf;
-});
+}
 
-function load(compUnit: SyntaxNode, staticEnvs: Map<SyntaxNode, Env>): Frame {
+function load(
+    compUnit: SyntaxNode,
+    staticEnvs: Map<SyntaxNode, Env>,
+    rootFrame: Frame,
+): Frame {
     let env = initializeEnv(emptyEnv(), compUnit, staticEnvs);
     let jumpMap = new JumpMap();
     return new Frame(
@@ -1587,6 +1593,7 @@ function step(frame: Frame, staticEnvs: Map<SyntaxNode, Env>): Frame | Value {
 function run(
     frame: Frame,
     staticEnvs: Map<SyntaxNode, Env>,
+    rootFrame: Frame,
     fuel: number = Infinity,
 ): Value {
     while (true) {
@@ -1620,8 +1627,9 @@ export function runCompUnit(
     compUnit: SyntaxNode,
     staticEnvs: Map<SyntaxNode, Env>,
 ): Value {
-    let frame = load(compUnit, staticEnvs);
-    return run(frame, staticEnvs);
+    let rootFrame = makeRootFrame();
+    let frame = load(compUnit, staticEnvs, rootFrame);
+    return run(frame, staticEnvs, rootFrame);
 }
 
 export function runCompUnitWithFuel(
@@ -1629,8 +1637,9 @@ export function runCompUnitWithFuel(
     fuel: number,
     staticEnvs: Map<SyntaxNode, Env>,
 ): Value {
-    let frame = load(compUnit, staticEnvs);
-    return run(frame, staticEnvs, fuel);
+    let rootFrame = makeRootFrame();
+    let frame = load(compUnit, staticEnvs, rootFrame);
+    return run(frame, staticEnvs, rootFrame, fuel);
 }
 
 export function callMacro(
@@ -1651,6 +1660,8 @@ export function callMacro(
         bindReadonly(bodyEnv, param, arg);
     }
 
+    let rootFrame = makeRootFrame();
+
     let jumpMap = new JumpMap();
     jumpMap.returnTarget = rootFrame;
     jumpMap.lastTarget = null;
@@ -1665,6 +1676,6 @@ export function callMacro(
         jumpMap,
         tail: rootFrame,
     });
-    return run(frame, staticEnvs);
+    return run(frame, staticEnvs, rootFrame);
 }
 
