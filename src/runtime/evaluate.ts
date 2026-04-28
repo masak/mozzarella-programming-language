@@ -231,22 +231,6 @@ type Handler = (frame: Frame) => Frame | Value | Cell;
 
 let handlerMap = new Map<SyntaxKind, Handler>();
 
-handlerMap.set(SyntaxKind.EMPTY_PLACEHOLDER, (frame) => {
-    throw new E000_InternalError("Tried to evaluate EmptyPlaceholder");
-});
-
-handlerMap.set(SyntaxKind.STR_NODE, (frame) => {
-    throw new E000_InternalError("Tried to evaluate StrNode");
-});
-
-handlerMap.set(SyntaxKind.INT_NODE, (frame) => {
-    throw new E000_InternalError("Tried to evaluate IntNode");
-});
-
-handlerMap.set(SyntaxKind.BOOL_NODE, (frame) => {
-    throw new E000_InternalError("Tried to evaluate BoolNode");
-});
-
 handlerMap.set(SyntaxKind.COMPUNIT, (frame) => {
     // assertNotAssignable();
     // let statements = compUnitStatements(node);
@@ -357,16 +341,6 @@ handlerMap.set(SyntaxKind.EMPTY_STATEMENT, (frame) => {
 handlerMap.set(SyntaxKind.BLOCK_STATEMENT, (frame) => {
     let block = blockStatementBlock(frame.node);
     return tailRecurse(frame, { node: block, mode: frame.mode });
-});
-
-handlerMap.set(SyntaxKind.IF_CLAUSE, (frame) => {
-    throw new E000_InternalError("Evaluating IfClause not implemented yet");
-});
-
-handlerMap.set(SyntaxKind.IF_CLAUSE_LIST, (frame) => {
-    throw new E000_InternalError(
-        "Evaluating IfClauseList not implemented yet"
-    );
 });
 
 handlerMap.set(SyntaxKind.IF_STATEMENT, (frame) => {
@@ -608,16 +582,6 @@ handlerMap.set(SyntaxKind.VAR_DECL, (frame) => {
         }
     }
     throw new E000_InternalError("Unreachable state");
-});
-
-handlerMap.set(SyntaxKind.PARAMETER, (frame) => {
-    throw new E000_InternalError("Evaluating Parameter not implemented yet");
-});
-
-handlerMap.set(SyntaxKind.PARAMETER_LIST, (frame) => {
-    throw new E000_InternalError(
-        "Evaluating ParameterList not implemented yet"
-    );
 });
 
 handlerMap.set(SyntaxKind.FUNC_DECL, (frame) => {
@@ -1105,16 +1069,6 @@ handlerMap.set(SyntaxKind.INDEXING_EXPR, (frame) => {
         }
     }
     throw new E000_InternalError("Unreachable state");
-});
-
-handlerMap.set(SyntaxKind.ARGUMENT, (frame) => {
-    throw new E000_InternalError("Evaluating Argument not implemented yet");
-});
-
-handlerMap.set(SyntaxKind.ARGUMENT_LIST, (frame) => {
-    throw new E000_InternalError(
-        "Evaluating ArgumentList not implemented yet"
-    );
 });
 
 handlerMap.set(SyntaxKind.CALL_EXPR, (frame) => {
