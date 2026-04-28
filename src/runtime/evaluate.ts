@@ -47,7 +47,6 @@ import {
     parameterListParameters,
     parameterName,
     parenExprInnerExpr,
-    prefixOpExprOperand,
     prefixOpExprOpName,
     quoteExprStatements,
     returnStatementExpr,
@@ -109,6 +108,9 @@ import {
     recurse,
     tailRecurse,
 } from "./frame";
+import {
+    prefixOpMap,
+} from "./prefix";
 import {
     isExprKind,
     isStatementKind,
@@ -589,108 +591,15 @@ handlerMap.set(SyntaxKind.MACRO_DECL, (frame) => {
 });
 
 handlerMap.set(SyntaxKind.PREFIX_OP_EXPR, (frame) => {
-    // assertNotAssignable();
-    // let opName = prefixOpExprOpName(node).payload as string;
-    // let operand = prefixOpExprOperand(node);
-    // if (["+", "-"].includes(opName)) {                           // [0]
-    //     let value = eval(operand);
-    //     if (opName === "+") {                                    // [1]
-    //         if (!(value instanceof IntValue)) {
-    //             throw new E603_TypeError("Expected Int as operand of +");
-    //         }
-    //         return new IntValue(value.payload);
-    //     }
-    //     else if (opName === "-") {
-    //         if (!(value instanceof IntValue)) {
-    //             throw new E603_TypeError("Expected Int as operand of -");
-    //         }
-    //         return new IntValue(-value.payload);
-    //     }
-    //     else {
-    //         throw new E000_InternalError(`Unknown prefix op ${opName}`);
-    //     }
-    // }
-    // else if (opName === "~") {
-    //     let value = eval(operand);
-    //     return stringify(value);                                 // [2]
-    // }
-    // else if (["?", "!"].includes(opName)) {
-    //     let value = eval(operand);
-    //     if (opName === "?") {                                    // [3]
-    //         return new BoolValue(boolify(value));
-    //     }
-    //     else {
-    //         return new BoolValue(!boolify(value));
-    //     }
-    // }
-    // else {
-    //     throw new E000_InternalError(
-    //         `Unknown prefix op type ${opName}`
-    //     );
-    // }
-
     assertNotAssignable(frame);
     let opName = prefixOpExprOpName(frame.node).payload as string;
-    switch (frame.state) {
-        case 0: {
-            let operand = prefixOpExprOperand(frame.node);
-            if (["+", "-"].includes(opName)) {
-                return recurse(frame, 1, { node: operand });
-            }
-            else if (opName === "~") {
-                return recurse(frame, 2, { node: operand });
-            }
-            else if (["?", "!"].includes(opName)) {
-                return recurse(frame, 3, { node: operand });
-            }
-            else {
-                throw new E000_InternalError(
-                    `Unknown prefix op type ${opName}`
-                );
-            }
-        }
-        case 1: {
-            let value = frame.value;
-            if (opName === "+") {
-                if (!(value instanceof IntValue)) {
-                    throw new E603_TypeError("Expected Int as operand of +");
-                }
-                return frame.mode === Mode.Ignore
-                    ? new NoneValue()
-                    : new IntValue(value.payload);
-            }
-            else if (opName === "-") {
-                if (!(value instanceof IntValue)) {
-                    throw new E603_TypeError("Expected Int as operand of -");
-                }
-                return frame.mode === Mode.Ignore
-                    ? new NoneValue()
-                    : new IntValue(-value.payload);
-            }
-            else {
-                throw new E000_InternalError(`Unknown prefix op ${opName}`);
-            }
-        }
-        case 2: {
-            let value = frame.value;
-            return frame.mode === Mode.Ignore
-                ? new NoneValue()
-                : stringify(value);
-        }
-        case 3: {
-            let value = frame.value;
-            if (frame.mode === Mode.Ignore) {
-                return new NoneValue()
-            }
-            else if (opName === "?") {
-                return new BoolValue(boolify(value));
-            }
-            else {
-                return new BoolValue(!boolify(value));
-            }
-        }
+    let handler = prefixOpMap.get(opName);
+    if (handler === undefined) {
+        throw new E000_InternalError(
+            `Missing handler for prefix op '${opName}'`
+        );
     }
-    throw new E000_InternalError("Unreachable state");
+    return handler(frame);
 });
 
 handlerMap.set(SyntaxKind.INFIX_OP_EXPR, (frame) => {
