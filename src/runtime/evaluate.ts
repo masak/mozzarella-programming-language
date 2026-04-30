@@ -28,9 +28,7 @@ import {
     ifStatementElseBlock,
     indexingExprArrayExpr,
     indexingExprIndexExpr,
-    infixOpExprLhs,
     infixOpExprOpName,
-    infixOpExprRhs,
     intLitExprValue,
     isBlock,
     isEmptyPlaceholder,
@@ -65,16 +63,9 @@ import {
 } from "./boolify";
 import {
     ArrayElementCell,
-    assign,
     Cell,
     VarCell,
 } from "./cell";
-import {
-    checkForUnchainableOps,
-    comparisonOps,
-    evaluateComparison,
-    findAllChainedOps,
-} from "./compare";
 import {
     bindMutable,
     bindReadonly,
@@ -87,7 +78,6 @@ import {
 import {
     E000_InternalError,
     E500_OutOfFuel,
-    E601_ZeroDivisionError,
     E603_TypeError,
     E604_IndexError,
     E607_CannotAssignError,
@@ -100,6 +90,7 @@ import {
     E614_MacroAtRuntimeError,
 } from "./error";
 import {
+    assertNotAssignable,
     cloneJumpMap,
     Frame,
     JumpMap,
@@ -109,6 +100,9 @@ import {
     tailRecurse,
 } from "./frame";
 import {
+    infixOpMap,
+} from "./infix";
+import {
     prefixOpMap,
 } from "./prefix";
 import {
@@ -116,9 +110,6 @@ import {
     isStatementKind,
     kindAndPayloadOfNode,
 } from "./reify";
-import {
-    stringify,
-} from "./stringify";
 import {
     ArrayValue,
     BoolValue,
@@ -200,14 +191,6 @@ function load(
         null,
         { node: compUnit, env, staticEnvs, jumpMap, tail: rootFrame },
     );
-}
-
-function assertNotAssignable(frame: Frame) {
-    if (frame.mode === Mode.GetCell) {
-        throw new E607_CannotAssignError(
-            "Cannot assign to " + frame.node.kind.name
-        );
-    }
 }
 
 function zip<T, U>(ts: Array<T>, us: Array<U>): Array<[T, U]> {
@@ -603,279 +586,14 @@ handlerMap.set(SyntaxKind.PREFIX_OP_EXPR, (frame) => {
 });
 
 handlerMap.set(SyntaxKind.INFIX_OP_EXPR, (frame) => {
-    // let lhs = infixOpExprLhs(node);
-    // let opName = infixOpExprOpName(node).payload as string;
-    // let rhs = infixOpExprRhs(node);
-    // if (opName !== "=") {
-    //     assertNotAssignable();
-    // }
-    // if (["+", "-", "*", "//", "%"].includes(opName)) {           // [0]
-    //     let left = eval(lhs);
-    //     if (!(left instanceof IntValue)) {                       // [1]
-    //         throw new E603_TypeError(`Expected Int as lhs of ${opName}`);
-    //     }
-    //     let right = eval(rhs);
-    //     if (!(right instanceof IntValue)) {                      // [2]
-    //         throw new E603_TypeError(`Expected Int as rhs of ${opName}`);
-    //     }
-    //     if (opName === "+") {
-    //         return new IntValue(left.payload + right.payload);
-    //     }
-    //     else if (opName === "-") {
-    //         return new IntValue(left.payload - right.payload);
-    //     }
-    //     else if (opName === "*") {
-    //         return new IntValue(left.payload * right.payload);
-    //     }
-    //     else if (opName === "//") {
-    //         if (!(right instanceof IntValue)) {
-    //             throw new E603_TypeError("Expected Int as rhs of //");
-    //         }
-    //         if (right.payload === 0n) {
-    //             throw new E601_ZeroDivisionError("Division by 0");
-    //         }
-    //         let negative = left.payload < 0n !== right.payload < 0n;
-    //         let nonZeroMod = left.payload % right.payload !== 0n;
-    //         let diff = negative && nonZeroMod ? 1n : 0n;
-    //         return new IntValue(left.payload / right.payload - diff);
-    //     }
-    //     else if (opName === "%") {
-    //         if (!(right instanceof IntValue)) {
-    //             throw new E603_TypeError("Expected Int as rhs of %");
-    //         }
-    //         if (right.payload === 0n) {
-    //             throw new E601_ZeroDivisionError("Division by 0");
-    //         }
-    //         return new IntValue(left.payload % right.payload);
-    //     }
-    // }
-    // else if (opName === "~") {
-    //     let left = eval(lhs);
-    //     let strLeft = stringify(left);                           // [3]
-    //     let right = eval(rhs);
-    //     let strRight = stringify(right);                         // [4]
-    //     return new StrValue(strLeft.payload + strRight.payload);
-    // }
-    // else if (opName === "&&") {
-    //     let left = eval(lhs);
-    //     return boolify(left)                                     // [5]
-    //         ? eval(rhs)
-    //         : left;
-    //     }
-    // }
-    // else if (opName === "||") {
-    //     let left = eval(lhs);
-    //     return boolify(left)                                     // [6]
-    //         ? left
-    //         : eval(rhs);
-    // }
-    // else if (comparisonOps.has(opName)) {
-    //     let [exprs, ops] = findAllChainedOps(node);
-    //     checkForUnchainableOps(ops);
-    //     let prevValue = eval(exprs[0]);
-    //     for (let index = 0; index < exprs.length - 1; index++) { // [7]
-    //         let next = exprs[index + 1];
-    //         let nextValue = eval(next);
-    //         let op = ops[index];                                 // [8]
-    //         if (!evaluateComparison(prevValue, op, nextValue)) {
-    //             return new BoolValue(false);
-    //         }
-    //         prevValue = nextValue;
-    //     }
-    //     return new BoolValue(true);
-    // }
-    // else if (opName === "=") {
-    //     let cell = evalCell(lhs);
-    //     let value = eval(rhs);                                   // [9]
-    //     assign(cell, value);                                     // [10]
-    //     if (mode === Mode.GetValue) {
-    //         return value;
-    //     }
-    //     else if (mode === Mode.GetCell) {
-    //         return cell;
-    //     }
-    // }
-    // else {
-    //     throw new E000_InternalError(`Unknown infix op ${opName}`);
-    // }
     let opName = infixOpExprOpName(frame.node).payload as string;
-    if (opName !== "=") {
-        assertNotAssignable(frame);
+    let handler = infixOpMap.get(opName);
+    if (handler === undefined) {
+        throw new E000_InternalError(
+            `Missing handler for infix op '${opName}'`
+        );
     }
-    switch (frame.state) {
-        case 0: {
-            if (["+", "-", "*", "//", "%"].includes(opName)) {
-                let lhs = infixOpExprLhs(frame.node);
-                return recurse(frame, 1, { node: lhs });
-            }
-            else if (opName === "~") {
-                let lhs = infixOpExprLhs(frame.node);
-                return recurse(frame, 3, { node: lhs });
-            }
-            else if (opName === "&&") {
-                let lhs = infixOpExprLhs(frame.node);
-                return recurse(frame, 5, { node: lhs });
-            }
-            else if (opName === "||") {
-                let lhs = infixOpExprLhs(frame.node);
-                return recurse(frame, 6, { node: lhs });
-            }
-            else if (comparisonOps.has(opName)) {
-                let [exprs, ops] = findAllChainedOps(frame.node);
-                frame.nn = exprs;
-                frame.ss = ops;
-                checkForUnchainableOps(ops);
-                return recurse(frame, 7, { node: exprs[0] });
-            }
-            else if (opName === "=") {
-                let lhs = infixOpExprLhs(frame.node);
-                return recurse(frame, 9, { node: lhs, mode: Mode.GetCell });
-            }
-            else {
-                throw new E000_InternalError(`Unknown infix op ${opName}`);
-            }
-        }
-        case 1: {
-            let left = frame.value;
-            if (!(left instanceof IntValue)) {
-                throw new E603_TypeError(`Expected Int as lhs of ${opName}`);
-            }
-            frame.v1 = left;
-            let rhs = infixOpExprRhs(frame.node);
-            return recurse(frame, 2, { node: rhs });
-        }
-        case 2: {
-            let left = frame.v1 as IntValue;
-            let right = frame.value;
-            if (!(right instanceof IntValue)) {
-                throw new E603_TypeError(`Expected Int as rhs of ${opName}`);
-            }
-            if (opName === "+") {
-                return frame.mode === Mode.Ignore
-                    ? new NoneValue()
-                    : new IntValue(left.payload + right.payload);
-            }
-            else if (opName === "-") {
-                return frame.mode === Mode.Ignore
-                    ? new NoneValue()
-                    : new IntValue(left.payload - right.payload);
-            }
-            else if (opName === "*") {
-                return frame.mode === Mode.Ignore
-                    ? new NoneValue()
-                    : new IntValue(left.payload * right.payload);
-            }
-            else if (opName === "//") {
-                if (!(right instanceof IntValue)) {
-                    throw new E603_TypeError("Expected Int as rhs of //");
-                }
-                if (right.payload === 0n) {
-                    throw new E601_ZeroDivisionError("Division by 0");
-                }
-                let negative = left.payload < 0n !== right.payload < 0n;
-                let nonZeroMod = left.payload % right.payload !== 0n;
-                let diff = negative && nonZeroMod ? 1n : 0n;
-                return frame.mode === Mode.Ignore
-                    ? new NoneValue()
-                    : new IntValue(left.payload / right.payload - diff);
-            }
-            else if (opName === "%") {
-                if (!(right instanceof IntValue)) {
-                    throw new E603_TypeError("Expected Int as rhs of %");
-                }
-                if (right.payload === 0n) {
-                    throw new E601_ZeroDivisionError("Division by 0");
-                }
-                return frame.mode === Mode.Ignore
-                    ? new NoneValue()
-                    : new IntValue(left.payload % right.payload);
-            }
-        }
-        case 3: {
-            let left = frame.value;
-            let strLeft = stringify(left);
-            frame.v1 = strLeft;
-            let rhs = infixOpExprRhs(frame.node);
-            return recurse(frame, 4, { node: rhs });
-        }
-        case 4: {
-            let strLeft = frame.v1 as StrValue;
-            let right = frame.value;
-            let strRight = stringify(right);
-            return frame.mode === Mode.Ignore
-                ? new NoneValue()
-                : new StrValue(strLeft.payload + strRight.payload);
-        }
-        case 5: {
-            let left = frame.value;
-            let rhs = infixOpExprRhs(frame.node);
-            if (boolify(left)) {
-                return tailRecurse(frame, { node: rhs });
-            }
-            else {
-                return frame.mode === Mode.Ignore
-                    ? new NoneValue()
-                    : left;
-            }
-        }
-        case 6: {
-            let left = frame.value;
-            let rhs = infixOpExprRhs(frame.node);
-            if (boolify(left)) {
-                return frame.mode === Mode.Ignore
-                    ? new NoneValue()
-                    : left;
-            }
-            else {
-                return tailRecurse(frame, { node: rhs });
-            }
-        }
-        case 7: {
-            let prevValue = frame.value;
-            frame.v1 = prevValue;
-            if (frame.index < frame.nn.length - 1) {
-                let next = frame.nn[frame.index + 1];
-                return recurse(frame, 8, { node: next });
-            }
-            else {
-                return frame.mode === Mode.Ignore
-                    ? new NoneValue()
-                    : new BoolValue(true);
-            }
-        }
-        case 8: {
-            let nextValue = frame.value;
-            let prevValue = frame.v1;
-            let op = frame.ss[frame.index];
-            if (!evaluateComparison(prevValue, op, nextValue)) {
-                return frame.mode === Mode.Ignore
-                    ? new NoneValue()
-                    : new BoolValue(false);
-            }
-            frame.v1 = nextValue;
-            frame.index++;
-            return new Frame(frame, { state: 7 });
-        }
-        case 9: {
-            let rhs = infixOpExprRhs(frame.node);
-            return recurse(frame, 10, { node: rhs });
-        }
-        case 10: {
-            let cell = frame.cell!;
-            let value = frame.value;
-            assign(cell, value);
-            if (frame.mode === Mode.GetValue) {
-                return value;
-            }
-            else if (frame.mode === Mode.GetCell) {
-                return cell;
-            }
-            else {  // Mode.Ignore
-                return new NoneValue();
-            }
-        }
-    }
-    throw new E000_InternalError("Unreachable state");
+    return handler(frame);
 });
 
 handlerMap.set(SyntaxKind.INDEXING_EXPR, (frame) => {

@@ -11,6 +11,7 @@ import {
 } from "./env";
 import {
     E000_InternalError,
+    E607_CannotAssignError,
 } from "./error";
 import {
     NoneValue,
@@ -142,5 +143,13 @@ export function tailRecurse(
             tail: parentFrame.tail,
         },
     );
+}
+
+export function assertNotAssignable(frame: Frame) {
+    if (frame.mode === Mode.GetCell) {
+        throw new E607_CannotAssignError(
+            "Cannot assign to " + frame.node.kind.name
+        );
+    }
 }
 
