@@ -375,21 +375,22 @@ handlerMap.set(SyntaxKind.IF_STATEMENT, (frame) => {
 
 handlerMap.set(SyntaxKind.FOR_STATEMENT, (frame) => {
     // assertNotAssignable();
-    // env = extend(env);
+    // env = extend(env);                                           // [0]
     // let name = forStatementName(node).payload as string;
     // bindReadonly(env, name, new UninitValue());
     // let arrayExpr = forStatementArrayExpr(node);
-    // let arrayValue = eval(arrayExpr);
+    // let arrayValue = eval(arrayExpr);                            // [1]
     // if (!(arrayValue instanceof ArrayValue)) {
     //     throw new E603_TypeError("Type error: not an array");
     // }
     // let body = forStatementBody(node);
     // for (let index = 0; index < arrayValue.elements.length; index++) {
+    //                                                              // [2]
     //     let bodyEnv = extend(kont.env);
     //     let element = arrayValue.elements[0];
     //     bindReadonly(bodyEnv, kont.name, element);
     //     // (set up jumpMap stuff)
-    //     eval(body, bodyEnv);
+    //     eval(body, bodyEnv);                                     // [3]
     // }
     // return new NoneValue();
 
@@ -438,10 +439,10 @@ handlerMap.set(SyntaxKind.FOR_STATEMENT, (frame) => {
 });
 
 handlerMap.set(SyntaxKind.WHILE_STATEMENT, (frame) => {
-    // let condExpr = whileStatementCondExpr(node);
+    // let condExpr = whileStatementCondExpr(node);                 // [0]
     // let body = whileStatementBody(node);
     // let cond = eval(condExpr);
-    // while (boolify(cond)) {
+    // while (boolify(cond)) {                                      // [1]
     //     // (set up jumpMap stuff)
     //     eval(body);
     //     cond = eval(condExpr);
@@ -491,7 +492,7 @@ handlerMap.set(SyntaxKind.NEXT_STATEMENT, (frame) => {
 });
 
 handlerMap.set(SyntaxKind.RETURN_STATEMENT, (frame) => {
-    // let expr = returnStatementExpr(node);
+    // let expr = returnStatementExpr(node);                        // [0]
     // let value;
     // if (isEmptyPlaceholder(expr)) {
     //     value = new NoneValue();
@@ -499,7 +500,7 @@ handlerMap.set(SyntaxKind.RETURN_STATEMENT, (frame) => {
     // else {
     //     value = eval(expr);
     // }
-    // (jump to jumpMap.returnTarget with value)
+    // (jump to jumpMap.returnTarget with value)                    // [1]
 
     let expr = returnStatementExpr(frame.node);
     switch (frame.state) {
@@ -531,13 +532,13 @@ handlerMap.set(SyntaxKind.RETURN_STATEMENT, (frame) => {
 
 handlerMap.set(SyntaxKind.VAR_DECL, (frame) => {
     // assertNotAssignable();
-    // let initExpr = varDeclInitExpr(node);
+    // let initExpr = varDeclInitExpr(node);                        // [0]
     // if (isEmptyPlaceholder(initExpr)) {
     //     return new NoneValue();
     // }
     // else {
     //     let value = eval(initExpr);
-    //     let name = varDeclName(node).payload as string;
+    //     let name = varDeclName(node).payload as string;          // [1]
     //     bindMutable(env, name, value);
     //     return new NoneValue();
     // }
@@ -597,14 +598,14 @@ handlerMap.set(SyntaxKind.INFIX_OP_EXPR, (frame) => {
 });
 
 handlerMap.set(SyntaxKind.INDEXING_EXPR, (frame) => {
-    // let arrayExpr = indexingExprArrayExpr(node);
+    // let arrayExpr = indexingExprArrayExpr(node);                 // [0]
     // let array = eval(arrayExpr);
-    // if (!(array instanceof ArrayValue)) {
+    // if (!(array instanceof ArrayValue)) {                        // [1]
     //     throw new E603_TypeError("Can only index an Array");
     // }
     // let indexExpr = indexingExprIndexExpr(node);
     // let index = eval(indexExpr);
-    // if (!(index instanceof IntValue)) {
+    // if (!(index instanceof IntValue)) {                          // [2]
     //     throw new E603_TypeError("Can only index using an Int");
     // }
     // if (index.payload < 0 || index.payload >= array.elements.length) {
@@ -794,7 +795,7 @@ handlerMap.set(SyntaxKind.ARRAY_INITIALIZER_EXPR, (frame) => {
     // let elemValues = [];
     // for (let index = 0; index < elements.length; index++) {      // [0]
     //     let value = eval(elements[index]);
-    //     elemValues[index] = value;
+    //     elemValues[index] = value;                               // [1]
     // }
     // return new ArrayValue(elemValues);
 
@@ -842,7 +843,7 @@ handlerMap.set(SyntaxKind.QUOTE_EXPR, (frame) => {
     // assertNotAssignable(frame);
     // let statements = quoteExprStatements(node);
     // let statementValues: Array<Value> = [];
-    // for (let index = 0; index < statements.length; index++) {
+    // for (let index = 0; index < statements.length; index++) {    // [0]
     //     statementValues[index] = interpolate(statement);         // [1]
     // }
     //
