@@ -41,6 +41,19 @@ tangled.
 -------------------------------------------------------
 ```
 
+### Proper semicolon handling
+
+The desired rule is: a statement can be properly terminated either by a
+semicolon (`;`), or by (a) the statement itself ending with a closing curly
+(`}`), and (b) the statement being followed by whitespace with a newline in it.
+
+### Respectable compiler errors
+
+This has two parts. One, that the error messages should be humane and help the
+human with possible next steps. Two, that the error messages, whenever
+possible, should be connected to source location information, and show the
+source at which the error occurred.
+
 ## Features
 
 There's a
