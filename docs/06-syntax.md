@@ -61,8 +61,8 @@ StatementOrDecl
       ReturnStatement       -- Expr?
   Decl
     VarDecl                 -- StrNode, Type?, Expr?
-    FuncDecl                -- StrNode, ParamList, Type?, Block
-    MacroDecl               -- StrNode, ParamList, Type?, Block
+    FuncDecl                -- StrNode, ParameterList, Type?, Block
+    MacroDecl               -- StrNode, ParameterList, Type?, Block
 Expr
   AssignExpr                -- Expr, Expr
   IndexingExpr              -- Expr, Expr
