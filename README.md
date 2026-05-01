@@ -12,6 +12,35 @@ $ npm install
 $ npm test
 ```
 
+## Current ongoing tasks
+
+### Frame refactor
+
+A rewrite of the evaluator that takes up less code, and makes the code less
+tangled.
+
+```
+                          work
+                       ----------            [here]
+              work                  work       |
+            ----------           ----------    |
+   planning                               finishing up
+  ----------                               ----------
+-------------------------------------------------------
+```
+
+### Blade 32: hygiene
+
+```
+                          work
+    [here]             ----------
+      |       work                  work
+      |     ----------           ----------
+   planning                               finishing up
+  ----------                               ----------
+-------------------------------------------------------
+```
+
 ## Features
 
 There's a
