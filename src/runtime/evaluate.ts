@@ -705,14 +705,11 @@ handlerMap.set(SyntaxKind.INDEXING_EXPR, (frame) => {
             if (index.payload < 0 || index.payload >= array.elements.length) {
                 throw new E604_IndexError("Index out of bounds");
             }
-            if (frame.mode === Mode.GetValue) {
-                return array.elements[Number(index.payload)];
-            }
-            else if (frame.mode === Mode.GetCell) {
+            if (frame.mode === Mode.GetCell) {
                 return new ArrayElementCell(array, Number(index.payload));
             }
-            else {  // Mode.Ignore
-                return new NoneValue();
+            else {
+                return array.elements[Number(index.payload)];
             }
         }
     }
@@ -814,25 +811,19 @@ handlerMap.set(SyntaxKind.CALL_EXPR, (frame) => {
 handlerMap.set(SyntaxKind.INT_LIT_EXPR, (frame) => {
     assertNotAssignable(frame);
     let payload = intLitExprValue(frame.node).payload as bigint;
-    return frame.mode === Mode.Ignore
-        ? new NoneValue()
-        : new IntValue(payload);
+    return new IntValue(payload);
 });
 
 handlerMap.set(SyntaxKind.STR_LIT_EXPR, (frame) => {
     assertNotAssignable(frame);
     let payload = strLitExprValue(frame.node).payload as string;
-    return frame.mode === Mode.Ignore
-        ? new NoneValue()
-        : new StrValue(payload);
+    return new StrValue(payload);
 });
 
 handlerMap.set(SyntaxKind.BOOL_LIT_EXPR, (frame) => {
     assertNotAssignable(frame);
     let payload = boolLitExprValue(frame.node).payload as boolean;
-    return frame.mode === Mode.Ignore
-        ? new NoneValue()
-        : new BoolValue(payload);
+    return new BoolValue(payload);
 });
 
 handlerMap.set(SyntaxKind.NONE_LIT_EXPR, (frame) => {
@@ -868,9 +859,7 @@ handlerMap.set(SyntaxKind.ARRAY_INITIALIZER_EXPR, (frame) => {
                 return recurse(frame, 1, { node: elements[frame.index] });
             }
             else {
-                return frame.mode === Mode.Ignore
-                    ? new NoneValue()
-                    : new ArrayValue(frame.vv);
+                return new ArrayValue(frame.vv);
             }
         }
         case 1: {
@@ -883,20 +872,16 @@ handlerMap.set(SyntaxKind.ARRAY_INITIALIZER_EXPR, (frame) => {
 
 handlerMap.set(SyntaxKind.VAR_REF_EXPR, (frame) => {
     let name = varRefExprName(frame.node).payload as string;
-    if (frame.mode === Mode.GetValue) {
-        let value = lookup(frame.env, name);
-        return value;
-    }
-    else if (frame.mode === Mode.GetCell) {
+    if (frame.mode === Mode.GetCell) {
         let [mutable, varEnv] = findEnvOfName(frame.env, name);
         if (!mutable) {
             throw new E608_ReadonlyError(`Binding '${name}' is readonly`);
         }
         return new VarCell(varEnv, name);
     }
-    else {  // Mode.Ignore
-        /* ignore */ lookup(frame.env, name);
-        return new NoneValue();
+    else {
+        let value = lookup(frame.env, name);
+        return value;
     }
 });
 
@@ -949,10 +934,7 @@ handlerMap.set(SyntaxKind.QUOTE_EXPR, (frame) => {
                 );
             }
             else {
-                if (frame.mode === Mode.Ignore) {
-                    return new NoneValue();
-                }
-                else if (statements.length === 1
+                if (statements.length === 1
                     && isExprStatement(statements[0])) {
                     return (frame.vv[0] as SyntaxNodeValue).children[0];
                 }
@@ -1111,7 +1093,7 @@ function step(frame: Frame, staticEnvs: Map<SyntaxNode, Env>): Frame | Value {
     let handler = handlerMap.get(frame.node.kind);
     if (handler === undefined) {
         throw new E000_InternalError(
-            `Missing handler for ${frame.node.constructor.name}`
+            `Missing handler for ${frame.node.kind.name}`
         );
     }
     return handler(frame);
@@ -1124,12 +1106,16 @@ function run(
     fuel: number = Infinity,
 ): Value {
     while (true) {
+        if (frame === rootFrame) {
+            return frame.value;
+        }
         let result = step(frame, staticEnvs);
         if (result instanceof Frame) {
-            if (result === rootFrame) {
-                return result.value;
-            }
             frame = result;
+        }
+        else if (frame.mode === Mode.Ignore) {
+            frame = frame.tail!;
+            frame.value = new NoneValue();
         }
         else if (result instanceof Cell) {
             frame = frame.tail!;

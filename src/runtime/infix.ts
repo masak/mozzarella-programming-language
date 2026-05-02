@@ -31,7 +31,6 @@ import {
 import {
     BoolValue,
     IntValue,
-    NoneValue,
     StrValue,
     Value,
 } from "./value";
@@ -61,9 +60,7 @@ infixOpMap.set("+", (frame) => {
             if (!(right instanceof IntValue)) {
                 throw new E603_TypeError("Expected Int as rhs of +");
             }
-            return frame.mode === Mode.Ignore
-                ? new NoneValue()
-                : new IntValue(left.payload + right.payload);
+            return new IntValue(left.payload + right.payload);
         }
     }
     throw new E000_InternalError("Unreachable state");
@@ -91,9 +88,7 @@ infixOpMap.set("-", (frame) => {
             if (!(right instanceof IntValue)) {
                 throw new E603_TypeError("Expected Int as rhs of +");
             }
-            return frame.mode === Mode.Ignore
-                ? new NoneValue()
-                : new IntValue(left.payload - right.payload);
+            return new IntValue(left.payload - right.payload);
         }
     }
     throw new E000_InternalError("Unreachable state");
@@ -121,9 +116,7 @@ infixOpMap.set("*", (frame) => {
             if (!(right instanceof IntValue)) {
                 throw new E603_TypeError("Expected Int as rhs of +");
             }
-            return frame.mode === Mode.Ignore
-                ? new NoneValue()
-                : new IntValue(left.payload * right.payload);
+            return new IntValue(left.payload * right.payload);
         }
     }
     throw new E000_InternalError("Unreachable state");
@@ -157,9 +150,7 @@ infixOpMap.set("//", (frame) => {
             let negative = left.payload < 0n !== right.payload < 0n;
             let nonZeroMod = left.payload % right.payload !== 0n;
             let diff = negative && nonZeroMod ? 1n : 0n;
-            return frame.mode === Mode.Ignore
-                ? new NoneValue()
-                : new IntValue(left.payload / right.payload - diff);
+            return new IntValue(left.payload / right.payload - diff);
         }
     }
     throw new E000_InternalError("Unreachable state");
@@ -190,9 +181,7 @@ infixOpMap.set("%", (frame) => {
             if (right.payload === 0n) {
                 throw new E601_ZeroDivisionError("Division by 0");
             }
-            return frame.mode === Mode.Ignore
-                ? new NoneValue()
-                : new IntValue(left.payload % right.payload);
+            return new IntValue(left.payload % right.payload);
         }
     }
     throw new E000_InternalError("Unreachable state");
@@ -216,9 +205,7 @@ infixOpMap.set("~", (frame) => {
             let strLeft = frame.v1 as StrValue;
             let right = frame.value;
             let strRight = stringify(right);
-            return frame.mode === Mode.Ignore
-                ? new NoneValue()
-                : new StrValue(strLeft.payload + strRight.payload);
+            return new StrValue(strLeft.payload + strRight.payload);
         }
     }
     throw new E000_InternalError("Unreachable state");
@@ -238,9 +225,7 @@ infixOpMap.set("&&", (frame) => {
                 return tailRecurse(frame, { node: rhs });
             }
             else {
-                return frame.mode === Mode.Ignore
-                    ? new NoneValue()
-                    : left;
+                return left;
             }
         }
     }
@@ -258,9 +243,7 @@ infixOpMap.set("||", (frame) => {
             let left = frame.value;
             let rhs = infixOpExprRhs(frame.node);
             if (boolify(left)) {
-                return frame.mode === Mode.Ignore
-                    ? new NoneValue()
-                    : left;
+                return left;
             }
             else {
                 return tailRecurse(frame, { node: rhs });
@@ -319,14 +302,11 @@ infixOpMap.set("=", (frame) => {
             let cell = frame.cell!;
             let value = frame.value;
             assign(cell, value);
-            if (frame.mode === Mode.GetValue) {
-                return value;
-            }
-            else if (frame.mode === Mode.GetCell) {
+            if (frame.mode === Mode.GetCell) {
                 return cell;
             }
-            else {  // Mode.Ignore
-                return new NoneValue();
+            else {
+                return value;
             }
         }
     }

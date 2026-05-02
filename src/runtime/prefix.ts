@@ -10,7 +10,6 @@ import {
 } from "./error";
 import {
     Frame,
-    Mode,
     recurse,
 } from "./frame";
 import {
@@ -19,7 +18,6 @@ import {
 import {
     BoolValue,
     IntValue,
-    NoneValue,
     Value,
 } from "./value";
 
@@ -37,9 +35,7 @@ prefixOpMap.set("+", (frame) => {
             if (!(value instanceof IntValue)) {
                 throw new E603_TypeError("Expected Int as operand of +");
             }
-            return frame.mode === Mode.Ignore
-                ? new NoneValue()
-                : new IntValue(value.payload);
+            return new IntValue(value.payload);
         }
     }
     throw new E000_InternalError("Unreachable state");
@@ -56,9 +52,7 @@ prefixOpMap.set("-", (frame) => {
             if (!(value instanceof IntValue)) {
                 throw new E603_TypeError("Expected Int as operand of -");
             }
-            return frame.mode === Mode.Ignore
-                ? new NoneValue()
-                : new IntValue(-value.payload);
+            return new IntValue(-value.payload);
         }
     }
     throw new E000_InternalError("Unreachable state");
@@ -72,9 +66,7 @@ prefixOpMap.set("~", (frame) => {
         }
         case 1: {
             let value = frame.value;
-            return frame.mode === Mode.Ignore
-                ? new NoneValue()
-                : stringify(value);
+            return stringify(value);
         }
     }
     throw new E000_InternalError("Unreachable state");
@@ -88,9 +80,7 @@ prefixOpMap.set("?", (frame) => {
         }
         case 1: {
             let value = frame.value;
-            return frame.mode === Mode.Ignore
-                ? new NoneValue()
-                : new BoolValue(boolify(value));
+            return new BoolValue(boolify(value));
         }
     }
     throw new E000_InternalError("Unreachable state");
@@ -104,9 +94,7 @@ prefixOpMap.set("!", (frame) => {
         }
         case 1: {
             let value = frame.value;
-            return frame.mode === Mode.Ignore
-                ? new NoneValue()
-                : new BoolValue(!boolify(value));
+            return new BoolValue(!boolify(value));
         }
     }
     throw new E000_InternalError("Unreachable state");
