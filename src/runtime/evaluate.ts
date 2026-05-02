@@ -1,8 +1,9 @@
 // The evaluator
 //
-// Can be described as a CEKJ machine. The CEK part is standard: code,
-// environment, kontinuation with a "k". The J part contains a table of _jump
-// targets_, making `next`/`last`/`return` work.
+// Structured as a CEK machine, but with the components unified into a data
+// type called `Frame`, which holds the "C" component (`.node`), the "E"
+// component (`.env`), and the "K" component (`.tail`). An additional
+// component, `.jumpMap`, handles nonlocal transfers of control.
 import {
     argumentExpr,
     argumentListArguments,

@@ -31,7 +31,7 @@
       trees into Mozzarella values, and `absorb.ts`, which transforms
       Mozzarella values into the implementation's syntax trees
     * It also depends, inevitably, on the runtime. In fact, the runtime has a
-      dedicated entry function for macro calls. The order is reify, run the
+      dedicated entry point for macro calls. The order is reify, run the
       macro, abstract.
 
 ```
@@ -53,8 +53,12 @@
     * `compare.ts` handles comparison of values, as used by comparison ops
     * `display.ts` converts a value to a string for a REPL
     * `env.ts` declares environments (name/value bindings for variables)
+    * `frame.ts` contains the definition of `Frame` and various helpers
+    * `infix.ts` contains handlers for the individual infix operators
+    * `prefix.ts` contains handlers for the individual prefix operators
     * `stringify.ts` can convert any value to a Mozzarella string value
-    * The runtime is a CEKJ machine, with the following parts:
+    * The runtime is a CEKJ machine (albeit nowadays factored into the `Frame`
+      data type), with the following parts:
         * **Code**, the next bit of the program to evaluate
         * **Environment**, the current set of name/value bindings
         * **Kontinuation** with a "k", a linked list of what to do next; these
@@ -67,10 +71,13 @@
 
 ```
                                            stringify
-                                           location
+                                           prefix
+                                           infix
+                                           frame
                                            env
                                            display
                                            compare
+                                           cell
                                            boolify
                                           +-----------+
                                           |  evaluate |
