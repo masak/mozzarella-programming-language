@@ -762,7 +762,7 @@ handlerMap.set(SyntaxKind.CALL_EXPR, (frame) => {
                 throw new E612_NotEnoughArgumentsError();
             }
             frame.datum2 = funcValue;
-            frame.vv
+            frame.datum4
                 = Array.from({ length: args.length }, () => new UninitValue());
             return new Frame(frame, { state: 2 });
         }
@@ -777,7 +777,7 @@ handlerMap.set(SyntaxKind.CALL_EXPR, (frame) => {
                 jumpMap.lastTarget = null;
                 jumpMap.nextTarget = null;
                 let funcValue = frame.datum2 as FuncValue;
-                let argValues = frame.vv;
+                let argValues = frame.datum4;
                 let bodyEnv = extend(funcValue.outerEnv);
                 for (let [param, arg] of
                      zip(funcValue.parameters, argValues)) {
@@ -796,7 +796,7 @@ handlerMap.set(SyntaxKind.CALL_EXPR, (frame) => {
         }
         case 3: {
             let argValue = frame.value;
-            frame.vv[frame.datum1] = argValue;
+            frame.datum4[frame.datum1] = argValue;
             return new Frame(frame, { state: 2, datum1: frame.datum1 + 1 });
         }
     }
@@ -854,11 +854,11 @@ handlerMap.set(SyntaxKind.ARRAY_INITIALIZER_EXPR, (frame) => {
                 return recurse(frame, 1, { node: elements[frame.datum1] });
             }
             else {
-                return new ArrayValue(frame.vv);
+                return new ArrayValue(frame.datum4);
             }
         }
         case 1: {
-            frame.vv[frame.datum1] = frame.value;
+            frame.datum4[frame.datum1] = frame.value;
             return new Frame(frame, { state: 0, datum1: frame.datum1 + 1 });
         }
     }
@@ -931,23 +931,23 @@ handlerMap.set(SyntaxKind.QUOTE_EXPR, (frame) => {
             else {
                 if (statements.length === 1
                     && isExprStatement(statements[0])) {
-                    return (frame.vv[0] as SyntaxNodeValue).children[0];
+                    return (frame.datum4[0] as SyntaxNodeValue).children[0];
                 }
                 else if (statements.length === 1
                          && isStatement(statements[0])) {
-                    return frame.vv[0];
+                    return frame.datum4[0];
                 }
                 else {
                     return new SyntaxNodeValue(
                         new IntValue(SYNTAX_KIND__BLOCK),
-                        frame.vv as Array<SyntaxNodeValue>,
+                        frame.datum4 as Array<SyntaxNodeValue>,
                         new NoneValue(),
                     );
                 }
             }
         }
         case 1: {
-            frame.vv[frame.datum1] = frame.value;
+            frame.datum4[frame.datum1] = frame.value;
             return new Frame(frame, { state: 0, datum1: frame.datum1 + 1 });
         }
         case 2: {
@@ -987,14 +987,14 @@ handlerMap.set(SyntaxKind.QUOTE_EXPR, (frame) => {
                     let [kind, payload] = kindAndPayloadOfNode(subNode);
                     return new SyntaxNodeValue(
                         kind,
-                        frame.vv as Array<SyntaxNodeValue>,
+                        frame.datum4 as Array<SyntaxNodeValue>,
                         payload,
                     );
                 }
             }
         }
         case 3: {
-            frame.vv[frame.datum1] = frame.value;
+            frame.datum4[frame.datum1] = frame.value;
             return new Frame(frame, { state: 2, datum1: frame.datum1 + 1 });
         }
         case 4: {

@@ -45,7 +45,6 @@ export class Frame {
     staticEnvs: Map<SyntaxNode, Env>;
     value: Value;
     cell: Cell | null;
-    vv: Array<Value>;
     jumpMap: JumpMap;
     tail: Frame;
 
@@ -53,6 +52,7 @@ export class Frame {
     datum1: number;
     datum2: number | Value;
     datum3: Array<SyntaxNode>;
+    datum4: Array<Value>;
 
     constructor(oldFrame: Frame | null, newProps: Partial<Frame>) {
         this.mode = newProps.mode ?? oldFrame?.mode ?? Mode.GetValue;
@@ -64,7 +64,6 @@ export class Frame {
             ?? error("staticEnvs");
         this.value = newProps.value ?? oldFrame?.value ?? new NoneValue();
         this.cell = newProps.cell ?? oldFrame?.cell ?? null;
-        this.vv = newProps.vv ?? oldFrame?.vv ?? [];
         this.jumpMap = newProps.jumpMap
             ?? oldFrame?.jumpMap
             ?? error("jumpMap");
@@ -73,6 +72,7 @@ export class Frame {
         this.datum1 = newProps.datum1 ?? oldFrame?.datum1 ?? 0;
         this.datum2 = newProps.datum2 ?? oldFrame?.datum2 ?? 0;
         this.datum3 = newProps.datum3 ?? oldFrame?.datum3 ?? [];
+        this.datum4 = newProps.datum4 ?? oldFrame?.datum4 ?? [];
     }
 }
 
