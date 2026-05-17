@@ -283,14 +283,7 @@ handlerMap.set(SyntaxKind.BLOCK, (frame) => {
                 frame.node,
                 frame.staticEnvs,
             );
-            return new Frame(
-                frame,
-                {
-                    state: 1,
-                    env,
-                    staticEnvs: frame.staticEnvs,
-                }
-            );
+            return new Frame(frame, { state: 1, env });
         }
         case 1: {
             if (frame.index < statements.length) {
