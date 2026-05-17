@@ -37,13 +37,13 @@ function error(propName: string): never {
 }
 
 export class Frame {
+    // immutable properties
     mode: Mode;
     node: SyntaxNode;
     state: number;
     quoteLevel: number;
     env: Env;
     staticEnvs: Map<SyntaxNode, Env>;
-    index: number;
     value: Value;
     cell: Cell | null;
     v1: Value;
@@ -52,6 +52,9 @@ export class Frame {
     vv: Array<Value>;
     jumpMap: JumpMap;
     tail: Frame;
+
+    // mutable properties
+    datum1: number;
 
     constructor(oldFrame: Frame | null, newProps: Partial<Frame>) {
         this.mode = newProps.mode ?? oldFrame?.mode ?? Mode.GetValue;
@@ -62,7 +65,6 @@ export class Frame {
         this.staticEnvs = newProps.staticEnvs
             ?? oldFrame?.staticEnvs
             ?? error("staticEnvs");
-        this.index = newProps.index ?? oldFrame?.index ?? 0;
         this.value = newProps.value ?? oldFrame?.value ?? new NoneValue();
         this.cell = newProps.cell ?? oldFrame?.cell ?? null;
         this.v1 = newProps.v1 ?? oldFrame?.v1 ?? new NoneValue();
@@ -73,6 +75,8 @@ export class Frame {
             ?? oldFrame?.jumpMap
             ?? error("jumpMap");
         this.tail = newProps.tail ?? oldFrame?.tail ?? error("tail");
+
+        this.datum1 = newProps.datum1 ?? oldFrame?.datum1 ?? 0;
     }
 }
 

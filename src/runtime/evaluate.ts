@@ -239,13 +239,13 @@ handlerMap.set(SyntaxKind.COMPUNIT, (frame) => {
     assertNotAssignable(frame);
     let statements = compUnitStatements(frame.node);
     let lastIndex = statements.length - 1;
-    if (frame.index < statements.length) {
-        let statement = statements[frame.index];
-        if (frame.index === lastIndex) {
+    if (frame.datum1 < statements.length) {
+        let statement = statements[frame.datum1];
+        if (frame.datum1 === lastIndex) {
             return tailRecurse(frame, { node: statement });
         }
         else {
-            frame.index++;
+            frame.datum1++;
             return recurse(frame, 0, { node: statement });
         }
     }
@@ -286,16 +286,16 @@ handlerMap.set(SyntaxKind.BLOCK, (frame) => {
             return new Frame(frame, { state: 1, env });
         }
         case 1: {
-            if (frame.index < statements.length) {
-                let statement = statements[frame.index];
-                if (frame.index === lastIndex) {
+            if (frame.datum1 < statements.length) {
+                let statement = statements[frame.datum1];
+                if (frame.datum1 === lastIndex) {
                     return tailRecurse(
                         frame,
                         { node: statement, mode: frame.mode },
                     );
                 }
                 else {
-                    frame.index++;
+                    frame.datum1++;
                     return recurse(frame, 1, { node: statement });
                 }
             }
@@ -346,8 +346,8 @@ handlerMap.set(SyntaxKind.IF_STATEMENT, (frame) => {
     let clauses = ifClauseListClauses(ifStatementClauseList(frame.node));
     switch (frame.state) {
         case 0: {
-            if (frame.index < clauses.length) {
-                let condExpr = ifClauseCondExpr(clauses[frame.index]);
+            if (frame.datum1 < clauses.length) {
+                let condExpr = ifClauseCondExpr(clauses[frame.datum1]);
                 return recurse(frame, 1, { node: condExpr });
             }
             else {
@@ -365,13 +365,13 @@ handlerMap.set(SyntaxKind.IF_STATEMENT, (frame) => {
         case 1: {
             let cond = frame.value;
             if (boolify(cond)) {
-                let block = ifClauseBlock(clauses[frame.index]);
+                let block = ifClauseBlock(clauses[frame.datum1]);
                 return tailRecurse(
                     frame,
                     { node: block, mode: frame.mode },
                 );
             }
-            return new Frame(frame, { state: 0, index: frame.index + 1 });
+            return new Frame(frame, { state: 0, datum1: frame.datum1 + 1 });
         }
     }
     throw new E000_InternalError("Unreachable state");
@@ -416,10 +416,10 @@ handlerMap.set(SyntaxKind.FOR_STATEMENT, (frame) => {
         }
         case 2: {
             let arrayValue = frame.v1 as ArrayValue;
-            if (frame.index < arrayValue.elements.length) {
+            if (frame.datum1 < arrayValue.elements.length) {
                 let bodyEnv = extend(frame.env);
                 let name = forStatementName(frame.node).payload as string;
-                let element = arrayValue.elements[frame.index];
+                let element = arrayValue.elements[frame.datum1];
                 bindReadonly(bodyEnv, name, element);
                 let jumpMap = cloneJumpMap(frame.jumpMap);
                 jumpMap.lastTarget = frame.tail;
@@ -436,7 +436,7 @@ handlerMap.set(SyntaxKind.FOR_STATEMENT, (frame) => {
             }
         }
         case 3: {
-            return new Frame(frame, { state: 2, index: frame.index + 1 });
+            return new Frame(frame, { state: 2, datum1: frame.datum1 + 1 });
         }
     }
     throw new E000_InternalError("Unreachable state");
@@ -625,8 +625,8 @@ handlerMap.set(SyntaxKind.CHAINED_OP_EXPR, (frame) => {
             return recurse(frame, 1, { node: lhs });
         }
         case 1: {
-            if (frame.index < frame.nn.length) {
-                let element = frame.nn[frame.index];
+            if (frame.datum1 < frame.nn.length) {
+                let element = frame.nn[frame.datum1];
                 let operand = chainElementOperand(element);
                 frame.v1 = frame.value;
                 return recurse(frame, 2, { node: operand });
@@ -639,14 +639,14 @@ handlerMap.set(SyntaxKind.CHAINED_OP_EXPR, (frame) => {
         }
         case 2: {
             let prev = frame.v1;
-            let element = frame.nn[frame.index];
+            let element = frame.nn[frame.datum1];
             let opName = chainElementOpName(element).payload as string;
             let next = frame.value;
             if (!evaluateComparison(prev, opName, next)) {
                 return new BoolValue(false);
             }
             frame.v1 = next;
-            return new Frame(frame, { state: 1, index: frame.index + 1 });
+            return new Frame(frame, { state: 1, datum1: frame.datum1 + 1 });
         }
     }
     throw new E000_InternalError("Unreachable state");
@@ -766,8 +766,8 @@ handlerMap.set(SyntaxKind.CALL_EXPR, (frame) => {
             return new Frame(frame, { state: 2 });
         }
         case 2: {
-            if (frame.index < args.length) {
-                let argExpr = argumentExpr(args[frame.index]);
+            if (frame.datum1 < args.length) {
+                let argExpr = argumentExpr(args[frame.datum1]);
                 return recurse(frame, 3, { node: argExpr });
             }
             else {
@@ -795,8 +795,8 @@ handlerMap.set(SyntaxKind.CALL_EXPR, (frame) => {
         }
         case 3: {
             let argValue = frame.value;
-            frame.vv[frame.index] = argValue;
-            return new Frame(frame, { state: 2, index: frame.index + 1 });
+            frame.vv[frame.datum1] = argValue;
+            return new Frame(frame, { state: 2, datum1: frame.datum1 + 1 });
         }
     }
     throw new E000_InternalError("Unreachable state");
@@ -849,16 +849,16 @@ handlerMap.set(SyntaxKind.ARRAY_INITIALIZER_EXPR, (frame) => {
     let elements = arrayInitializerExprElements(frame.node);
     switch (frame.state) {
         case 0: {
-            if (frame.index < elements.length) {
-                return recurse(frame, 1, { node: elements[frame.index] });
+            if (frame.datum1 < elements.length) {
+                return recurse(frame, 1, { node: elements[frame.datum1] });
             }
             else {
                 return new ArrayValue(frame.vv);
             }
         }
         case 1: {
-            frame.vv[frame.index] = frame.value;
-            return new Frame(frame, { state: 0, index: frame.index + 1 });
+            frame.vv[frame.datum1] = frame.value;
+            return new Frame(frame, { state: 0, datum1: frame.datum1 + 1 });
         }
     }
     throw new E000_InternalError("Unreachable state");
@@ -915,14 +915,14 @@ handlerMap.set(SyntaxKind.QUOTE_EXPR, (frame) => {
     let statements = quoteExprStatements(frame.node);
     switch (frame.state) {
         case 0: {
-            if (frame.index < statements.length) {
+            if (frame.datum1 < statements.length) {
                 return recurse(
                     frame,
                     1,
                     {
                         node: frame.node,
                         state: 2,
-                        nn: [statements[frame.index]],
+                        nn: [statements[frame.datum1]],
                         quoteLevel: 1,
                     },
                 );
@@ -946,8 +946,8 @@ handlerMap.set(SyntaxKind.QUOTE_EXPR, (frame) => {
             }
         }
         case 1: {
-            frame.vv[frame.index] = frame.value;
-            return new Frame(frame, { state: 0, index: frame.index + 1 });
+            frame.vv[frame.datum1] = frame.value;
+            return new Frame(frame, { state: 0, datum1: frame.datum1 + 1 });
         }
         case 2: {
             let subNode = frame.nn[0];
@@ -969,14 +969,14 @@ handlerMap.set(SyntaxKind.QUOTE_EXPR, (frame) => {
                     : isUnquoteExpr(subNode)
                         ? frame.quoteLevel - 1
                         : frame.quoteLevel;
-                if (frame.index < subNode.children.length) {
+                if (frame.datum1 < subNode.children.length) {
                     return recurse(
                         frame,
                         3,
                         {
                             node: frame.node,
                             state: 2,
-                            nn: [subNode.children[frame.index]],
+                            nn: [subNode.children[frame.datum1]],
                             quoteLevel,
                         },
                     );
@@ -992,8 +992,8 @@ handlerMap.set(SyntaxKind.QUOTE_EXPR, (frame) => {
             }
         }
         case 3: {
-            frame.vv[frame.index] = frame.value;
-            return new Frame(frame, { state: 2, index: frame.index + 1 });
+            frame.vv[frame.datum1] = frame.value;
+            return new Frame(frame, { state: 2, datum1: frame.datum1 + 1 });
         }
         case 4: {
             let value = frame.value;
