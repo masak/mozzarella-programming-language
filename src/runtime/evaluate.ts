@@ -619,14 +619,15 @@ handlerMap.set(SyntaxKind.CHAINED_OP_EXPR, (frame) => {
 
     switch (frame.state) {
         case 0: {
-            frame.nn = chainListElements(chainedOpExprChainList(frame.node));
-            checkForUnchainableOps(frame.nn);
+            frame.datum3
+                = chainListElements(chainedOpExprChainList(frame.node));
+            checkForUnchainableOps(frame.datum3);
             let lhs = chainedOpExprLhs(frame.node);
             return recurse(frame, 1, { node: lhs });
         }
         case 1: {
-            if (frame.datum1 < frame.nn.length) {
-                let element = frame.nn[frame.datum1];
+            if (frame.datum1 < frame.datum3.length) {
+                let element = frame.datum3[frame.datum1];
                 let operand = chainElementOperand(element);
                 frame.datum2 = frame.value;
                 return recurse(frame, 2, { node: operand });
@@ -639,7 +640,7 @@ handlerMap.set(SyntaxKind.CHAINED_OP_EXPR, (frame) => {
         }
         case 2: {
             let prev = frame.datum2;
-            let element = frame.nn[frame.datum1];
+            let element = frame.datum3[frame.datum1];
             let opName = chainElementOpName(element).payload as string;
             let next = frame.value;
             if (!evaluateComparison(prev, opName, next)) {
@@ -922,8 +923,8 @@ handlerMap.set(SyntaxKind.QUOTE_EXPR, (frame) => {
                     {
                         node: frame.node,
                         state: 2,
-                        nn: [statements[frame.datum1]],
                         datum2: 1,
+                        datum3: [statements[frame.datum1]],
                     },
                 );
             }
@@ -950,7 +951,7 @@ handlerMap.set(SyntaxKind.QUOTE_EXPR, (frame) => {
             return new Frame(frame, { state: 0, datum1: frame.datum1 + 1 });
         }
         case 2: {
-            let subNode = frame.nn[0];
+            let subNode = frame.datum3[0];
             let quoteLevel = frame.datum2 as number;
             if (isUnquoteExpr(subNode) && quoteLevel < 1) {
                 throw new E000_InternalError(
@@ -977,8 +978,8 @@ handlerMap.set(SyntaxKind.QUOTE_EXPR, (frame) => {
                         {
                             node: frame.node,
                             state: 2,
-                            nn: [subNode.children[frame.datum1]],
                             datum2: quoteLevel,
+                            datum3: [subNode.children[frame.datum1]],
                         },
                     );
                 }
