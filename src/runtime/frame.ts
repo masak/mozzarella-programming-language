@@ -45,7 +45,6 @@ export class Frame {
     staticEnvs: Map<SyntaxNode, Env>;
     value: Value;
     cell: Cell | null;
-    ss: Array<string>;
     vv: Array<Value>;
     jumpMap: JumpMap;
     tail: Frame;
@@ -65,7 +64,6 @@ export class Frame {
             ?? error("staticEnvs");
         this.value = newProps.value ?? oldFrame?.value ?? new NoneValue();
         this.cell = newProps.cell ?? oldFrame?.cell ?? null;
-        this.ss = newProps.ss ?? oldFrame?.ss ?? [];
         this.vv = newProps.vv ?? oldFrame?.vv ?? [];
         this.jumpMap = newProps.jumpMap
             ?? oldFrame?.jumpMap
