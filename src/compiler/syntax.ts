@@ -29,6 +29,9 @@ export class SyntaxKind {
     static MACRO_DECL = new SyntaxKind("MacroDecl");
     static PREFIX_OP_EXPR = new SyntaxKind("PrefixOpExpr");
     static INFIX_OP_EXPR = new SyntaxKind("InfixOpExpr");
+    static CHAIN_ELEMENT = new SyntaxKind("ChainElement");
+    static CHAIN_LIST = new SyntaxKind("ChainList");
+    static CHAINED_OP_EXPR = new SyntaxKind("ChainedOpExpr");
     static INDEXING_EXPR = new SyntaxKind("IndexingExpr");
     static ARGUMENT = new SyntaxKind("Argument");
     static ARGUMENT_LIST = new SyntaxKind("ArgumentList");
@@ -473,6 +476,56 @@ export function infixOpExprOpName(syntaxNode: SyntaxNode): SyntaxNode {
 
 export function infixOpExprRhs(syntaxNode: SyntaxNode): SyntaxNode {
     return syntaxNode.children[2];
+}
+
+export function makeChainElement(
+    opName: SyntaxNode,
+    operand: SyntaxNode,
+): SyntaxNode {
+    return new SyntaxNode(SyntaxKind.CHAIN_ELEMENT, [opName, operand], null);
+}
+
+export function isChainElement(syntaxNode: SyntaxNode): boolean {
+    return syntaxNode.kind === SyntaxKind.CHAIN_ELEMENT;
+}
+
+export function chainElementOpName(syntaxNode: SyntaxNode): SyntaxNode {
+    return syntaxNode.children[0];
+}
+
+export function chainElementOperand(syntaxNode: SyntaxNode): SyntaxNode {
+    return syntaxNode.children[1];
+}
+
+export function makeChainList(elements: Array<SyntaxNode>): SyntaxNode {
+    return new SyntaxNode(SyntaxKind.CHAIN_LIST, elements, null);
+}
+
+export function isChainList(syntaxNode: SyntaxNode): boolean {
+    return syntaxNode.kind === SyntaxKind.CHAIN_LIST;
+}
+
+export function chainListElements(syntaxNode: SyntaxNode): Array<SyntaxNode> {
+    return syntaxNode.children;
+}
+
+export function makeChainedOpExpr(
+    lhs: SyntaxNode,
+    chainList: SyntaxNode,
+): SyntaxNode {
+    return new SyntaxNode(SyntaxKind.CHAINED_OP_EXPR, [lhs, chainList], null);
+}
+
+export function isChainedOpExpr(syntaxNode: SyntaxNode): boolean {
+    return syntaxNode.kind === SyntaxKind.CHAINED_OP_EXPR;
+}
+
+export function chainedOpExprLhs(syntaxNode: SyntaxNode): SyntaxNode {
+    return syntaxNode.children[0];
+}
+
+export function chainedOpExprChainList(syntaxNode: SyntaxNode): SyntaxNode {
+    return syntaxNode.children[1];
 }
 
 export function makeIndexingExpr(

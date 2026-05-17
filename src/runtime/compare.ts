@@ -1,8 +1,5 @@
 import {
-    infixOpExprLhs,
-    infixOpExprOpName,
-    infixOpExprRhs,
-    isInfixOpExpr,
+    chainElementOpName,
     SyntaxNode,
 } from "../compiler/syntax";
 import {
@@ -129,49 +126,13 @@ function pairwise<T>(fn: (x: T, y: T) => boolean, xs: Array<T>, ys: Array<T>) {
     return true;
 }
 
-export const comparisonOps = new Set(["<", "<=", ">", ">=", "==", "!="]);
-
-// Traverses down the left leg of an expression tree, collecting all comparison
-// operators and their operands, in left-to-right (top-to-bottom) order.
-export function findAllChainedOps(
-    root: SyntaxNode,
-): [Array<SyntaxNode>, Array<string>] {
-    if (!isInfixOpExpr(root)
-        || !comparisonOps.has(infixOpExprOpName(root).payload as string)) {
-        throw new E000_InternalError(
-            "Precondition failed: root must be comparison expr"
-        );
-    }
-    let stack: Array<SyntaxNode> = [root];
-    while (true) {
-        let lhs = infixOpExprLhs(stack[stack.length - 1]);
-        if (isInfixOpExpr(lhs)
-            && comparisonOps.has(infixOpExprOpName(lhs).payload as string)) {
-            stack.push(lhs);
-        }
-        else {
-            break;
-        }
-    }
-    let firstLhs: SyntaxNode = infixOpExprLhs(stack[stack.length - 1]);
-    let exprs: Array<SyntaxNode> = [firstLhs];
-    let ops: Array<string> = [];
-    while (stack.length > 0) {
-        let expr = stack.pop()!;
-        let op = infixOpExprOpName(expr).payload as string;
-        ops.push(op);
-        let rhs = infixOpExprRhs(expr);
-        exprs.push(rhs);
-    }
-    return [exprs, ops];
-}
-
 // Upholds the following rules:
 //
 // - The != operator doesn't chain with anything (even itself)
 // - The (< <= ==) operators go together, as do the (> >= ==) operators, but
 //   any other combination of comparison operators is disallowed
-export function checkForUnchainableOps(ops: Array<string>): void {
+export function checkForUnchainableOps(elements: Array<SyntaxNode>): void {
+    let ops = elements.map((e) => chainElementOpName(e).payload as string);
     let hasNotEq = ops.some((op) => op === "!=");
     if (hasNotEq && ops.length > 1) {
         let notEqOpIndex = ops.findIndex((op) => op === "!=");

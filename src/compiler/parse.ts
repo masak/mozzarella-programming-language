@@ -6,6 +6,14 @@ import {
     lex,
 } from "./lex";
 import {
+    chainedOpExprChainList,
+    chainedOpExprLhs,
+    chainListElements,
+    infixOpExprLhs,
+    infixOpExprOpName,
+    infixOpExprRhs,
+    isChainedOpExpr,
+    isInfixOpExpr,
     makeArgument,
     makeArgumentList,
     makeArrayInitializerExpr,
@@ -14,6 +22,9 @@ import {
     makeBoolLitExpr,
     makeBoolNode,
     makeCallExpr,
+    makeChainedOpExpr,
+    makeChainElement,
+    makeChainList,
     makeCompUnit,
     makeDoExpr,
     makeEmptyPlaceholder,
@@ -81,6 +92,8 @@ const comparisonOps = new Set([
     TokenKind.EqEq,
     TokenKind.BangEq,
 ]);
+
+const comparisonOpNames = new Set(["<", "<=", ">", ">=", "==", "!="]);
 
 const multiplicativeStrength = 90;
 const additiveStrength = 80;
@@ -508,7 +521,30 @@ export class Parser {
                 let rhs = termStack.pop()!;
                 let lhs = termStack.pop()!;
                 let opName = makeStrNode(opTokenName(op.token));
-                termStack.push(makeInfixOpExpr(lhs, opName, rhs));
+                if (isInfixOpExpr(lhs)
+                    && comparisonOpNames.has(
+                        infixOpExprOpName(lhs).payload as string)
+                    && comparisonOpNames.has(opTokenName(op.token))) {
+                    let lhsLhs = infixOpExprLhs(lhs);
+                    let lhsOpName = infixOpExprOpName(lhs);
+                    let lhsRhs = infixOpExprRhs(lhs);
+                    termStack.push(makeChainedOpExpr(lhsLhs, makeChainList([
+                        makeChainElement(lhsOpName, lhsRhs),
+                        makeChainElement(opName, rhs),
+                    ])));
+                }
+                else if (isChainedOpExpr(lhs)
+                         && comparisonOpNames.has(opTokenName(op.token))) {
+                    let lhsLhs = chainedOpExprLhs(lhs);
+                    let lhsChainList = chainedOpExprChainList(lhs);
+                    termStack.push(makeChainedOpExpr(lhsLhs, makeChainList([
+                        ...chainListElements(lhsChainList),
+                        makeChainElement(opName, rhs),
+                    ])));
+                }
+                else {
+                    termStack.push(makeInfixOpExpr(lhs, opName, rhs));
+                }
             }
             else {
                 throw new E000_InternalError(

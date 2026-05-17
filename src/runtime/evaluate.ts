@@ -12,6 +12,11 @@ import {
     boolLitExprValue,
     callExprArgumentList,
     callExprFuncExpr,
+    chainedOpExprChainList,
+    chainedOpExprLhs,
+    chainElementOperand,
+    chainElementOpName,
+    chainListElements,
     compUnitStatements,
     doExprStatement,
     exprStatementExpr,
@@ -37,6 +42,7 @@ import {
     isBlockStatement,
     isBoolLitExpr,
     isCallExpr,
+    isChainedOpExpr,
     isCompUnit,
     isDoExpr,
     isEmptyPlaceholder,
@@ -86,9 +92,7 @@ import {
 } from "./boolify";
 import {
     checkForUnchainableOps,
-    comparisonOps,
     evaluateComparison,
-    findAllChainedOps,
 } from "./compare";
 import {
     E000_InternalError,
@@ -154,8 +158,8 @@ type Kont =
     | CompUnitKont
     | InfixOp1Kont
     | InfixOp2Kont
-    | ComparisonOp1Kont
-    | ComparisonOp2Kont
+    | ChainedOp1Kont
+    | ChainedOp2Kont
     | BlockKont
     | IfKont
     | ArrayInitializerKont
@@ -179,6 +183,8 @@ type Kont =
     | BlockIgnoreKont
     | InfixOpIgnore1Kont
     | InfixOpIgnore2Kont
+    | ChainedOpIgnore1Kont
+    | ChainedOpIgnore2Kont
     | ComparisonOpIgnore1Kont
     | AssignIgnore1Kont
     | AssignIgnore2Kont
@@ -259,32 +265,28 @@ class InfixOp2Kont {
     }
 }
 
-class ComparisonOp1Kont {
-    exprs: Array<SyntaxNode>;
-    ops: Array<string>;
+class ChainedOp1Kont {
+    chainListElements: Array<SyntaxNode>;
     env: Env;
     tail: Kont;
     jumpMap: JumpMap;
 
     constructor(
-        exprs: Array<SyntaxNode>,
-        ops: Array<string>,
+        chainListElements: Array<SyntaxNode>,
         env: Env,
         tail: Kont,
         jumpMap: JumpMap,
     ) {
-        this.exprs = exprs;
-        this.ops = ops;
+        this.chainListElements = chainListElements;
         this.env = env;
         this.tail = tail;
         this.jumpMap = jumpMap;
     }
 }
 
-class ComparisonOp2Kont {
+class ChainedOp2Kont {
     prev: Value;
-    exprs: Array<SyntaxNode>;
-    ops: Array<string>;
+    chainListElements: Array<SyntaxNode>;
     index: number;
     env: Env;
     tail: Kont;
@@ -292,16 +294,14 @@ class ComparisonOp2Kont {
 
     constructor(
         prev: Value,
-        exprs: Array<SyntaxNode>,
-        ops: Array<string>,
+        chainListElements: Array<SyntaxNode>,
         index: number,
         env: Env,
         tail: Kont,
         jumpMap: JumpMap,
     ) {
         this.prev = prev;
-        this.exprs = exprs;
-        this.ops = ops;
+        this.chainListElements = chainListElements;
         this.index = index;
         this.env = env;
         this.tail = tail;
@@ -743,6 +743,50 @@ class InfixOpIgnore2Kont {
     }
 }
 
+class ChainedOpIgnore1Kont {
+    chainListElements: Array<SyntaxNode>;
+    env: Env;
+    tail: Kont;
+    jumpMap: JumpMap;
+
+    constructor(
+        chainListElements: Array<SyntaxNode>,
+        env: Env,
+        tail: Kont,
+        jumpMap: JumpMap,
+    ) {
+        this.chainListElements = chainListElements;
+        this.env = env;
+        this.tail = tail;
+        this.jumpMap = jumpMap;
+    }
+}
+
+class ChainedOpIgnore2Kont {
+    prev: Value;
+    chainListElements: Array<SyntaxNode>;
+    index: number;
+    env: Env;
+    tail: Kont;
+    jumpMap: JumpMap;
+
+    constructor(
+        prev: Value,
+        chainListElements: Array<SyntaxNode>,
+        index: number,
+        env: Env,
+        tail: Kont,
+        jumpMap: JumpMap,
+    ) {
+        this.prev = prev;
+        this.chainListElements = chainListElements;
+        this.index = index;
+        this.env = env;
+        this.tail = tail;
+        this.jumpMap = jumpMap;
+    }
+}
+
 class ComparisonOpIgnore1Kont {
     exprs: Array<SyntaxNode>;
     ops: Array<string>;
@@ -1078,6 +1122,8 @@ function zip<T, U>(ts: Array<T>, us: Array<U>): Array<[T, U]> {
     return result;
 }
 
+const comparisonOps = new Set(["<", "<=", ">", ">=", "==", "!="]);
+
 function reducePState(
     { code: [mode, syntaxNode, quoteLevel], env, kont, jumpMap }: PState,
     staticEnvs: Map<SyntaxNode, Env>,
@@ -1149,30 +1195,14 @@ function reducePState(
             let lhs = infixOpExprLhs(syntaxNode);
             let opName = infixOpExprOpName(syntaxNode).payload as string;
             let rhs = infixOpExprRhs(syntaxNode);
-            if (["+", "-", "*", "//", "%", "~", "&&", "||"].includes(opName)) {
+            if (["+", "-", "*", "//", "%", "~", "&&", "||"].includes(opName)
+               || comparisonOps.has(opName)) {
                 let infixOpKont1
                     = new InfixOp1Kont(opName, rhs, env, kont, jumpMap);
                 return new PState(
                     [Mode.GetValue, lhs, quoteLevel],
                     env,
                     infixOpKont1,
-                    jumpMap,
-                );
-            }
-            else if (comparisonOps.has(opName)) {
-                let [exprs, ops] = findAllChainedOps(syntaxNode);
-                checkForUnchainableOps(ops);
-                let comparisonOp1Kont = new ComparisonOp1Kont(
-                    exprs,
-                    ops,
-                    env,
-                    kont,
-                    jumpMap,
-                );
-                return new PState(
-                    [Mode.GetValue, exprs[0], quoteLevel],
-                    env,
-                    comparisonOp1Kont,
                     jumpMap,
                 );
             }
@@ -1188,6 +1218,24 @@ function reducePState(
             else {
                 throw new E000_InternalError(`Unknown infix op ${opName}`);
             }
+        }
+        else if (isChainedOpExpr(syntaxNode)) {
+            let elements
+                = chainListElements(chainedOpExprChainList(syntaxNode));
+            checkForUnchainableOps(elements);
+            let lhs = chainedOpExprLhs(syntaxNode);
+            let chainedOp1Kont = new ChainedOp1Kont(
+                elements,
+                env,
+                kont,
+                jumpMap,
+            );
+            return new PState(
+                [Mode.GetValue, lhs, quoteLevel],
+                env,
+                chainedOp1Kont,
+                jumpMap,
+            );
         }
         else if (isParenExpr(syntaxNode)) {
             let innerExpr = parenExprInnerExpr(syntaxNode);
@@ -1628,7 +1676,8 @@ function reducePState(
             let lhs = infixOpExprLhs(syntaxNode);
             let opName = infixOpExprOpName(syntaxNode).payload as string;
             let rhs = infixOpExprRhs(syntaxNode);
-            if (["+", "-", "*", "//", "%", "~", "&&", "||"].includes(opName)) {
+            if (["+", "-", "*", "//", "%", "~", "&&", "||"].includes(opName)
+               || comparisonOps.has(opName)) {
                 let infixOpIgnore1Kont = new InfixOpIgnore1Kont(
                     opName,
                     rhs,
@@ -1640,22 +1689,6 @@ function reducePState(
                     [Mode.GetValue, lhs, quoteLevel],
                     env,
                     infixOpIgnore1Kont,
-                    jumpMap,
-                );
-            }
-            else if (comparisonOps.has(opName)) {
-                let [exprs, ops] = findAllChainedOps(syntaxNode);
-                checkForUnchainableOps(ops);
-                let comparisonOpIgnore1Kont = new ComparisonOpIgnore1Kont(
-                    exprs,
-                    ops,
-                    env,
-                    kont,
-                );
-                return new PState(
-                    [Mode.GetValue, exprs[0], quoteLevel],
-                    env,
-                    comparisonOpIgnore1Kont,
                     jumpMap,
                 );
             }
@@ -1679,6 +1712,24 @@ function reducePState(
         }
         else if (isIntLitExpr(syntaxNode)) {
             return new RetState(new NoneValue(), kont);
+        }
+        else if (isChainedOpExpr(syntaxNode)) {
+            let elements
+                = chainListElements(chainedOpExprChainList(syntaxNode));
+            checkForUnchainableOps(elements);
+            let lhs = chainedOpExprLhs(syntaxNode);
+            let chainedOpIgnore1Kont = new ChainedOpIgnore1Kont(
+                elements,
+                env,
+                kont,
+                jumpMap,
+            );
+            return new PState(
+                [Mode.GetValue, lhs, quoteLevel],
+                env,
+                chainedOpIgnore1Kont,
+                jumpMap,
+            );
         }
         else if (isReturnStatement(syntaxNode)) {
             let expr = returnStatementExpr(syntaxNode);
@@ -2016,6 +2067,16 @@ function reduceRetState({ value, kont }: RetState): State {
                 );
             }
         }
+        else if (comparisonOps.has(opName)) {
+            let left = value;
+            let infixOp2Kont = new InfixOp2Kont(left, opName, kont.tail);
+            return new PState(
+                [Mode.GetValue, kont.rhs, /* quoteLevel */ 0],
+                kont.env,
+                infixOp2Kont,
+                kont.jumpMap,
+            );
+        }
         else {
             throw new E000_InternalError(`Unknown infix op ${opName}`);
         }
@@ -2105,48 +2166,57 @@ function reduceRetState({ value, kont }: RetState): State {
                 "Precondition failed: no second continuation for ||"
             );
         }
+        else if (comparisonOps.has(opName)) {
+            let compareResult = evaluateComparison(kont.left, opName, value);
+            return new RetState(new BoolValue(compareResult), kont.tail);
+        }
         else {
             throw new E000_InternalError(`Unknown infix op ${opName}`);
         }
     }
-    else if (kont instanceof ComparisonOp1Kont) {
-        let comparisonOp2Kont = new ComparisonOp2Kont(
-            value,
-            kont.exprs,
-            kont.ops,
-            0,
-            kont.env,
-            kont.tail,
-            kont.jumpMap,
-        );
-        return new PState(
-            [Mode.GetValue, kont.exprs[1], /* quoteLevel */ 0],
-            kont.env,
-            comparisonOp2Kont,
-            kont.jumpMap,
-        );
+    else if (kont instanceof ChainedOp1Kont) {
+        if (kont.chainListElements.length === 0) {
+            return new RetState(new BoolValue(true), kont.tail);
+        }
+        else {
+            let chainedOp2Kont = new ChainedOp2Kont(
+                value,
+                kont.chainListElements,
+                /* index */ 0,
+                kont.env,
+                kont.tail,
+                kont.jumpMap,
+            );
+            let operand = chainElementOperand(kont.chainListElements[0]);
+            return new PState(
+                [Mode.GetValue, operand, /* quoteLevel */ 0],
+                kont.env,
+                chainedOp2Kont,
+                kont.jumpMap,
+            );
+        }
     }
-    else if (kont instanceof ComparisonOp2Kont) {
-        let op = kont.ops[kont.index];
-        if (evaluateComparison(kont.prev, op, value)) {
-            if (kont.index + 1 < kont.ops.length) {
-                let comparisonOp2Kont = new ComparisonOp2Kont(
+    else if (kont instanceof ChainedOp2Kont) {
+        let opName = chainElementOpName(
+            kont.chainListElements[kont.index]
+        ).payload as string;
+        if (evaluateComparison(kont.prev, opName, value)) {
+            if (kont.index + 1 < kont.chainListElements.length) {
+                let chainedOp2Kont = new ChainedOp2Kont(
                     value,
-                    kont.exprs,
-                    kont.ops,
+                    kont.chainListElements,
                     kont.index + 1,
                     kont.env,
                     kont.tail,
                     kont.jumpMap,
                 );
+                let operand = chainElementOperand(
+                    kont.chainListElements[kont.index + 1]
+                );
                 return new PState(
-                    [
-                        Mode.GetValue,
-                        kont.exprs[kont.index + 2],
-                        /* quoteLevel */ 0,
-                    ],
+                    [Mode.GetValue, operand, /* quoteLevel */ 0],
                     kont.env,
-                    comparisonOp2Kont,
+                    chainedOp2Kont,
                     kont.jumpMap,
                 );
             }
@@ -2862,6 +2932,17 @@ function reduceRetState({ value, kont }: RetState): State {
                 );
             }
         }
+        else if (comparisonOps.has(opName)) {
+            let left = value;
+            let infixOpIgnore2Kont
+                = new InfixOpIgnore2Kont(left, opName, kont.tail);
+            return new PState(
+                [Mode.GetValue, kont.rhs, /* quoteLevel */ 0],
+                kont.env,
+                infixOpIgnore2Kont,
+                kont.jumpMap,
+            );
+        }
         else {
             throw new E000_InternalError(`Unknown infix op ${opName}`);
         }
@@ -2940,8 +3021,66 @@ function reduceRetState({ value, kont }: RetState): State {
                 "Precondition failed: no second continuation for ||"
             );
         }
+        else if (comparisonOps.has(opName)) {
+            /* ignore */ evaluateComparison(kont.left, opName, value);
+            return new RetState(new NoneValue(), kont.tail);
+        }
         else {
             throw new E000_InternalError(`Unknown infix op ${opName}`);
+        }
+    }
+    else if (kont instanceof ChainedOpIgnore1Kont) {
+        if (kont.chainListElements.length === 0) {
+            return new RetState(new BoolValue(true), kont.tail);
+        }
+        else {
+            let chainedOpIgnore2Kont = new ChainedOpIgnore2Kont(
+                value,
+                kont.chainListElements,
+                /* index */ 0,
+                kont.env,
+                kont.tail,
+                kont.jumpMap,
+            );
+            let operand = chainElementOperand(kont.chainListElements[0]);
+            return new PState(
+                [Mode.GetValue, operand, /* quoteLevel */ 0],
+                kont.env,
+                chainedOpIgnore2Kont,
+                kont.jumpMap,
+            );
+        }
+    }
+    else if (kont instanceof ChainedOpIgnore2Kont) {
+        let opName = chainElementOpName(
+            kont.chainListElements[kont.index]
+        ).payload as string;
+        if (evaluateComparison(kont.prev, opName, value)) {
+            if (kont.index + 1 < kont.chainListElements.length) {
+                let chainedOpIgnore2Kont = new ChainedOpIgnore2Kont(
+                    value,
+                    kont.chainListElements,
+                    kont.index + 1,
+                    kont.env,
+                    kont.tail,
+                    kont.jumpMap,
+                );
+                let operand = chainElementOperand(
+                    kont.chainListElements[kont.index + 1]
+                );
+                return new PState(
+                    [Mode.GetValue, operand, /* quoteLevel */ 0],
+                    kont.env,
+                    chainedOpIgnore2Kont,
+                    kont.jumpMap,
+                );
+            }
+            else {
+                return new RetState(new NoneValue(), kont.tail);
+            }
+        }
+        else {
+            return new RetState(new NoneValue(), kont.tail);
         }
     }
     else if (kont instanceof Quote1Kont) {

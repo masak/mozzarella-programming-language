@@ -15,6 +15,8 @@ test("call expression", (t) => {
     t.is(run("my x = 0; func f() { x = 1; }; x"), "0");
     t.is(run("my x = 0; func f() { x = 1; }; f(); x"), "1");
     t.is(run("func f() { 5; }; f()"), "none");
+    t.is(run("func f() { 2 < 6; }; f()"), "none");
+    t.is(run("func f() { 8 < -3 < 1; }; f()"), "none");
 
     {
         let program = `

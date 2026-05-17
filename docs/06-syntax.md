@@ -47,6 +47,8 @@ Argument                    -- Expr
 ArgumentList                -- Argument*
 IfClause                    -- Expr, Block
 IfClauseList                -- IfClause*
+ChainElement                -- StrNode, Expr
+ChainList                   -- ChainElement*
 StatementOrDecl
   Statement
     EmptyStatement          -- (no children)
@@ -74,6 +76,7 @@ Expr
     NoneLitExpr             -- (no children)
     InfixOpExpr             -- Expr, StrNode, Expr
     PrefixOpExpr            -- StrNode, Expr
+    ChainedOpExpr           -- Expr, ChainList
     ParenExpr               -- Expr
     DoExpr                  -- Statement
     ArrayInitializerExpr    -- Expr*
