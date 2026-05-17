@@ -41,7 +41,6 @@ export class Frame {
     mode: Mode;
     node: SyntaxNode;
     state: number;
-    quoteLevel: number;
     env: Env;
     staticEnvs: Map<SyntaxNode, Env>;
     value: Value;
@@ -55,12 +54,12 @@ export class Frame {
 
     // mutable properties
     datum1: number;
+    datum2: number;
 
     constructor(oldFrame: Frame | null, newProps: Partial<Frame>) {
         this.mode = newProps.mode ?? oldFrame?.mode ?? Mode.GetValue;
         this.node = newProps.node ?? oldFrame?.node ?? error("node");
         this.state = newProps.state ?? oldFrame?.state ?? 0;
-        this.quoteLevel = newProps.quoteLevel ?? oldFrame?.quoteLevel ?? 0;
         this.env = newProps.env ?? oldFrame?.env ?? error("env");
         this.staticEnvs = newProps.staticEnvs
             ?? oldFrame?.staticEnvs
@@ -77,6 +76,7 @@ export class Frame {
         this.tail = newProps.tail ?? oldFrame?.tail ?? error("tail");
 
         this.datum1 = newProps.datum1 ?? oldFrame?.datum1 ?? 0;
+        this.datum2 = newProps.datum2 ?? oldFrame?.datum2 ?? 0;
     }
 }
 

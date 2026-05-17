@@ -923,7 +923,7 @@ handlerMap.set(SyntaxKind.QUOTE_EXPR, (frame) => {
                         node: frame.node,
                         state: 2,
                         nn: [statements[frame.datum1]],
-                        quoteLevel: 1,
+                        datum2: 1,
                     },
                 );
             }
@@ -951,12 +951,12 @@ handlerMap.set(SyntaxKind.QUOTE_EXPR, (frame) => {
         }
         case 2: {
             let subNode = frame.nn[0];
-            if (isUnquoteExpr(subNode) && frame.quoteLevel < 1) {
+            if (isUnquoteExpr(subNode) && frame.datum2 < 1) {
                 throw new E000_InternalError(
                     "Precondition failed: Quote level too low"
                 );
             }
-            else if (isUnquoteExpr(subNode) && frame.quoteLevel === 1) {
+            else if (isUnquoteExpr(subNode) && frame.datum2 === 1) {
                 return recurse(
                     frame,
                     4,
@@ -965,10 +965,10 @@ handlerMap.set(SyntaxKind.QUOTE_EXPR, (frame) => {
             }
             else {  // either UnquoteExpr at quoteLevel > 1, or any other node
                 let quoteLevel = isQuoteExpr(subNode)
-                    ? frame.quoteLevel + 1
+                    ? frame.datum2 + 1
                     : isUnquoteExpr(subNode)
-                        ? frame.quoteLevel - 1
-                        : frame.quoteLevel;
+                        ? frame.datum2 - 1
+                        : frame.datum2;
                 if (frame.datum1 < subNode.children.length) {
                     return recurse(
                         frame,
@@ -977,7 +977,7 @@ handlerMap.set(SyntaxKind.QUOTE_EXPR, (frame) => {
                             node: frame.node,
                             state: 2,
                             nn: [subNode.children[frame.datum1]],
-                            quoteLevel,
+                            datum2: quoteLevel,
                         },
                     );
                 }
@@ -1177,7 +1177,6 @@ export function callMacro(
     let frame = new Frame(null, {
         mode: Mode.Ignore,
         node: macroValue.body,
-        quoteLevel: 0,
         env: bodyEnv,
         staticEnvs,
         jumpMap,
