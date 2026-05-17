@@ -50,12 +50,12 @@ infixOpMap.set("+", (frame) => {
             if (!(left instanceof IntValue)) {
                 throw new E603_TypeError("Expected Int as lhs of +");
             }
-            frame.v1 = left;
+            frame.datum2 = left;
             let rhs = infixOpExprRhs(frame.node);
             return recurse(frame, 2, { node: rhs });
         }
         case 2: {
-            let left = frame.v1 as IntValue;
+            let left = frame.datum2 as IntValue;
             let right = frame.value;
             if (!(right instanceof IntValue)) {
                 throw new E603_TypeError("Expected Int as rhs of +");
@@ -78,12 +78,12 @@ infixOpMap.set("-", (frame) => {
             if (!(left instanceof IntValue)) {
                 throw new E603_TypeError("Expected Int as lhs of +");
             }
-            frame.v1 = left;
+            frame.datum2 = left;
             let rhs = infixOpExprRhs(frame.node);
             return recurse(frame, 2, { node: rhs });
         }
         case 2: {
-            let left = frame.v1 as IntValue;
+            let left = frame.datum2 as IntValue;
             let right = frame.value;
             if (!(right instanceof IntValue)) {
                 throw new E603_TypeError("Expected Int as rhs of +");
@@ -106,12 +106,12 @@ infixOpMap.set("*", (frame) => {
             if (!(left instanceof IntValue)) {
                 throw new E603_TypeError("Expected Int as lhs of +");
             }
-            frame.v1 = left;
+            frame.datum2 = left;
             let rhs = infixOpExprRhs(frame.node);
             return recurse(frame, 2, { node: rhs });
         }
         case 2: {
-            let left = frame.v1 as IntValue;
+            let left = frame.datum2 as IntValue;
             let right = frame.value;
             if (!(right instanceof IntValue)) {
                 throw new E603_TypeError("Expected Int as rhs of +");
@@ -134,12 +134,12 @@ infixOpMap.set("//", (frame) => {
             if (!(left instanceof IntValue)) {
                 throw new E603_TypeError("Expected Int as lhs of +");
             }
-            frame.v1 = left;
+            frame.datum2 = left;
             let rhs = infixOpExprRhs(frame.node);
             return recurse(frame, 2, { node: rhs });
         }
         case 2: {
-            let left = frame.v1 as IntValue;
+            let left = frame.datum2 as IntValue;
             let right = frame.value;
             if (!(right instanceof IntValue)) {
                 throw new E603_TypeError("Expected Int as rhs of //");
@@ -168,12 +168,12 @@ infixOpMap.set("%", (frame) => {
             if (!(left instanceof IntValue)) {
                 throw new E603_TypeError("Expected Int as lhs of +");
             }
-            frame.v1 = left;
+            frame.datum2 = left;
             let rhs = infixOpExprRhs(frame.node);
             return recurse(frame, 2, { node: rhs });
         }
         case 2: {
-            let left = frame.v1 as IntValue;
+            let left = frame.datum2 as IntValue;
             let right = frame.value;
             if (!(right instanceof IntValue)) {
                 throw new E603_TypeError("Expected Int as rhs of %");
@@ -197,12 +197,12 @@ infixOpMap.set("~", (frame) => {
         case 1: {
             let left = frame.value;
             let strLeft = stringify(left);
-            frame.v1 = strLeft;
+            frame.datum2 = strLeft;
             let rhs = infixOpExprRhs(frame.node);
             return recurse(frame, 2, { node: rhs });
         }
         case 2: {
-            let strLeft = frame.v1 as StrValue;
+            let strLeft = frame.datum2 as StrValue;
             let right = frame.value;
             let strRight = stringify(right);
             return new StrValue(strLeft.payload + strRight.payload);
@@ -267,12 +267,12 @@ let comparisonOpHandler: Handler = (frame) => {
         }
         case 1: {
             let left = frame.value;
-            frame.v1 = left;
+            frame.datum2 = left;
             let rhs = infixOpExprRhs(frame.node);
             return recurse(frame, 2, { node: rhs });
         }
         case 2: {
-            let left = frame.v1;
+            let left = frame.datum2;
             let right = frame.value;
             let compareResult = evaluateComparison(left, opName, right);
             return new BoolValue(compareResult);

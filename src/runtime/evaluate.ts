@@ -411,11 +411,11 @@ handlerMap.set(SyntaxKind.FOR_STATEMENT, (frame) => {
             if (!(frame.value instanceof ArrayValue)) {
                 throw new E603_TypeError("Type error: not an array");
             }
-            frame.v1 = frame.value;
+            frame.datum2 = frame.value;
             return new Frame(frame, { state: 2 });
         }
         case 2: {
-            let arrayValue = frame.v1 as ArrayValue;
+            let arrayValue = frame.datum2 as ArrayValue;
             if (frame.datum1 < arrayValue.elements.length) {
                 let bodyEnv = extend(frame.env);
                 let name = forStatementName(frame.node).payload as string;
@@ -628,7 +628,7 @@ handlerMap.set(SyntaxKind.CHAINED_OP_EXPR, (frame) => {
             if (frame.datum1 < frame.nn.length) {
                 let element = frame.nn[frame.datum1];
                 let operand = chainElementOperand(element);
-                frame.v1 = frame.value;
+                frame.datum2 = frame.value;
                 return recurse(frame, 2, { node: operand });
             }
             else {
@@ -638,14 +638,14 @@ handlerMap.set(SyntaxKind.CHAINED_OP_EXPR, (frame) => {
             }
         }
         case 2: {
-            let prev = frame.v1;
+            let prev = frame.datum2;
             let element = frame.nn[frame.datum1];
             let opName = chainElementOpName(element).payload as string;
             let next = frame.value;
             if (!evaluateComparison(prev, opName, next)) {
                 return new BoolValue(false);
             }
-            frame.v1 = next;
+            frame.datum2 = next;
             return new Frame(frame, { state: 1, datum1: frame.datum1 + 1 });
         }
     }
@@ -686,12 +686,12 @@ handlerMap.set(SyntaxKind.INDEXING_EXPR, (frame) => {
             if (!(array instanceof ArrayValue)) {
                 throw new E603_TypeError("Can only index an Array");
             }
-            frame.v1 = array;
+            frame.datum2 = array;
             let indexExpr = indexingExprIndexExpr(frame.node);
             return recurse(frame, 2, { node: indexExpr });
         }
         case 2: {
-            let array = frame.v1 as ArrayValue;
+            let array = frame.datum2 as ArrayValue;
             let index = frame.value;
             if (!(index instanceof IntValue)) {
                 throw new E603_TypeError("Can only index using an Int");
@@ -760,7 +760,7 @@ handlerMap.set(SyntaxKind.CALL_EXPR, (frame) => {
             else if (args.length < funcValue.parameters.length) {
                 throw new E612_NotEnoughArgumentsError();
             }
-            frame.v1 = funcValue;
+            frame.datum2 = funcValue;
             frame.vv
                 = Array.from({ length: args.length }, () => new UninitValue());
             return new Frame(frame, { state: 2 });
@@ -775,7 +775,7 @@ handlerMap.set(SyntaxKind.CALL_EXPR, (frame) => {
                 jumpMap.returnTarget = frame.tail;
                 jumpMap.lastTarget = null;
                 jumpMap.nextTarget = null;
-                let funcValue = frame.v1 as FuncValue;
+                let funcValue = frame.datum2 as FuncValue;
                 let argValues = frame.vv;
                 let bodyEnv = extend(funcValue.outerEnv);
                 for (let [param, arg] of
@@ -951,7 +951,8 @@ handlerMap.set(SyntaxKind.QUOTE_EXPR, (frame) => {
         }
         case 2: {
             let subNode = frame.nn[0];
-            if (isUnquoteExpr(subNode) && frame.datum2 < 1) {
+            let quoteLevel = frame.datum2 as number;
+            if (isUnquoteExpr(subNode) && quoteLevel < 1) {
                 throw new E000_InternalError(
                     "Precondition failed: Quote level too low"
                 );
@@ -965,9 +966,9 @@ handlerMap.set(SyntaxKind.QUOTE_EXPR, (frame) => {
             }
             else {  // either UnquoteExpr at quoteLevel > 1, or any other node
                 let quoteLevel = isQuoteExpr(subNode)
-                    ? frame.datum2 + 1
+                    ? (frame.datum2 as number) + 1
                     : isUnquoteExpr(subNode)
-                        ? frame.datum2 - 1
+                        ? (frame.datum2 as number) - 1
                         : frame.datum2;
                 if (frame.datum1 < subNode.children.length) {
                     return recurse(

@@ -45,7 +45,6 @@ export class Frame {
     staticEnvs: Map<SyntaxNode, Env>;
     value: Value;
     cell: Cell | null;
-    v1: Value;
     nn: Array<SyntaxNode>;
     ss: Array<string>;
     vv: Array<Value>;
@@ -54,7 +53,7 @@ export class Frame {
 
     // mutable properties
     datum1: number;
-    datum2: number;
+    datum2: number | Value;
 
     constructor(oldFrame: Frame | null, newProps: Partial<Frame>) {
         this.mode = newProps.mode ?? oldFrame?.mode ?? Mode.GetValue;
@@ -66,7 +65,6 @@ export class Frame {
             ?? error("staticEnvs");
         this.value = newProps.value ?? oldFrame?.value ?? new NoneValue();
         this.cell = newProps.cell ?? oldFrame?.cell ?? null;
-        this.v1 = newProps.v1 ?? oldFrame?.v1 ?? new NoneValue();
         this.nn = newProps.nn ?? oldFrame?.nn ?? [];
         this.ss = newProps.ss ?? oldFrame?.ss ?? [];
         this.vv = newProps.vv ?? oldFrame?.vv ?? [];
