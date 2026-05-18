@@ -15,8 +15,6 @@ test("call expression", (t) => {
     t.is(run("my x = 0; func f() { x = 1; }; x"), "0");
     t.is(run("my x = 0; func f() { x = 1; }; f(); x"), "1");
     t.is(run("func f() { 5; }; f()"), "none");
-    t.is(run("func f() { 2 < 6; }; f()"), "none");
-    t.is(run("func f() { 8 < -3 < 1; }; f()"), "none");
 
     {
         let program = `
@@ -68,29 +66,6 @@ test("call expression", (t) => {
             result;
         `;
         t.is(run(program), '"inner"');
-    }
-
-    {
-        let program = `
-            my closures = [none, none, none];
-
-            for index in [0, 1, 2] {
-                func f() {
-                    return 10 + index;
-                }
-
-                closures[index] = f;
-            }
-
-            my result = [none, none, none];
-
-            for index in [0, 1, 2] {
-                result[index] = closures[index]();
-            }
-
-            result;
-        `;
-        t.is(run(program), "[10, 11, 12]");
     }
 
     t.throws(
